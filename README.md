@@ -6,13 +6,21 @@
 
 Frakti lets Kubernetes run pods and containers directly inside hypervisors via [HyperContainer](http://hypercontainer.io/). It is light weighted and portable, but can provide much stronger isolation with independent kernel than linux-namespace-based container runtimes.
 
+<p align="center">
+  <img src="docs/images/frakti.png" width="600">
+</p>
+
 Frakti serves as a kubelet container runtime API server. Its endpoint should be configured while starting kubelet.
 
-## Usage
+## QuickStart
 
 ### Install
 
+TODO
+
 ### Start
+
+TODO
 
 ## Documentation
 
