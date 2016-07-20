@@ -1,7 +1,5 @@
 # Frakti
 
-[![GoDoc](https://godoc.org/k8s.io/frakti?status.svg)](https://godoc.org/k8s.io/frakti)
-
 ## The hypervisor-based container runtime for Kubernetes
 
 Frakti lets Kubernetes run pods and containers directly inside hypervisors via [HyperContainer](http://hypercontainer.io/). It is light weighted and portable, but can provide much stronger isolation with independent kernel than linux-namespace-based container runtimes.
@@ -14,13 +12,34 @@ Frakti serves as a kubelet container runtime API server. Its endpoint should be 
 
 ## QuickStart
 
-### Install
+Build frakti:
 
-TODO
+```sh
+mkdir -p $GOPATH/src/k8s.io
+git clone https://github.com/kubernetes/frakti.git $GOPATH/src/k8s.io/frakti
+cd $GOPATH/src/k8s.io/frakti
+make && make install
+```
 
-### Start
+Start hyperd with gRPC endpoint `127.0.0.1:22318`:
 
-TODO
+```sh
+echo > /etc/hyper/config <<EOF
+Kernel=/var/lib/hyper/kernel
+Initrd=/var/lib/hyper/hyper-initrd.img
+StorageDriver=overlay
+Hypervisor=libvirt
+gRPCHost=127.0.0.1:22318
+EOF
+
+systemctl restart hyperd
+```
+
+Then start frakti:
+
+```sh
+frakti --v=3 --logtostderr --listen=/var/run/frakti.sock --hyper-endpoint=127.0.0.1:22318
+```
 
 ## Documentation
 
