@@ -24,11 +24,16 @@ make && make install
 Start hyperd with gRPC endpoint `127.0.0.1:22318`:
 
 ```sh
-echo > /etc/hyper/config <<EOF
+cat >/etc/hyper/config <<EOF
+# Boot kernel
 Kernel=/var/lib/hyper/kernel
+# Boot initrd
 Initrd=/var/lib/hyper/hyper-initrd.img
+# Storage driver for hyperd, valid value includes devicemapper, overlay, and aufs
 StorageDriver=overlay
+# Hypervisor to run containers and pods, valid values are: libvirt, qemu, kvm, xen
 Hypervisor=libvirt
+# The tcp endpoint of gRPC API
 gRPCHost=127.0.0.1:22318
 EOF
 
