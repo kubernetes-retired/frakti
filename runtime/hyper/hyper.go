@@ -91,7 +91,7 @@ func (h *Runtime) StartContainer(rawContainerID string) error {
 	return fmt.Errorf("Not implemented")
 }
 
-// StopContainer stops a running container with a grace period (i.e., timeout).
+// StopContainer stops a running container with a grace period (i.e. timeout).
 func (h *Runtime) StopContainer(rawContainerID string, timeout int64) error {
 	return fmt.Errorf("Not implemented")
 }

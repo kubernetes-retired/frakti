@@ -151,7 +151,7 @@ func (s *FraktiManager) PodSandboxStatus(ctx context.Context, req *kubeapi.PodSa
 func (s *FraktiManager) ListPodSandbox(ctx context.Context, req *kubeapi.ListPodSandboxRequest) (*kubeapi.ListPodSandboxResponse, error) {
 	glog.V(3).Infof("ListPodSandbox with request %s", req.String())
 
-	items, err := s.runtimeService.ListPodSandbox(req.Filter)
+	items, err := s.runtimeService.ListPodSandbox(req.GetFilter())
 	if err != nil {
 		glog.Errorf("ListPodSandbox from runtime service failed: %v", err)
 		return nil, err
@@ -186,7 +186,7 @@ func (s *FraktiManager) StartContainer(ctx context.Context, req *kubeapi.StartCo
 	return &kubeapi.StartContainerResponse{}, nil
 }
 
-// StopContainer stops a running container with a grace period (i.e., timeout).
+// StopContainer stops a running container with a grace period (i.e. timeout).
 func (s *FraktiManager) StopContainer(ctx context.Context, req *kubeapi.StopContainerRequest) (*kubeapi.StopContainerResponse, error) {
 	glog.V(3).Infof("StopContainer with request %s", req.String())
 
@@ -216,7 +216,7 @@ func (s *FraktiManager) RemoveContainer(ctx context.Context, req *kubeapi.Remove
 func (s *FraktiManager) ListContainers(ctx context.Context, req *kubeapi.ListContainersRequest) (*kubeapi.ListContainersResponse, error) {
 	glog.V(3).Infof("ListContainers with request %s", req.String())
 
-	containers, err := s.runtimeService.ListContainers(req.Filter)
+	containers, err := s.runtimeService.ListContainers(req.GetFilter())
 	if err != nil {
 		glog.Errorf("ListContainers from runtime service failed: %v", err)
 		return nil, err
@@ -252,7 +252,7 @@ func (s *FraktiManager) Exec(stream kubeapi.RuntimeService_ExecServer) error {
 func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesRequest) (*kubeapi.ListImagesResponse, error) {
 	glog.V(3).Infof("ListImages with request %s", req.String())
 
-	images, err := s.imageService.ListImages(req.Filter)
+	images, err := s.imageService.ListImages(req.GetFilter())
 	if err != nil {
 		glog.Errorf("ListImages from image service failed: %v", err)
 		return nil, err

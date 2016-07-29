@@ -22,9 +22,8 @@ import (
 	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
-// RuntimeService interface defines the interfaces that should be implemented
-// by a container runtime.
-// Thread safety is required from implementations of this interface.
+// RuntimeService interface should be implemented by a container runtime.
+// The methods should be thread-safe.
 type RuntimeService interface {
 	// Version returns the runtime name, runtime version and runtime API version
 	Version() (string, string, string, error)
@@ -33,41 +32,43 @@ type RuntimeService interface {
 	CreatePodSandbox(config *runtimeApi.PodSandboxConfig) (string, error)
 	// StopPodSandbox stops the sandbox. If there are any running containers in the
 	// sandbox, they should be force terminated.
-	StopPodSandbox(podSandBoxID string) error
-	// DeletePodSandbox deletes the sandbox. If there are any running containers in the
-	// sandbox, they should be force deleted.
-	DeletePodSandbox(podSandBoxID string) error
+	// It should return success if the sandbox has already been deleted.
+	StopPodSandbox(podSandboxID string) error
+	// DeletePodSandbox deletes the sandbox. If there are running containers in the
+	// sandbox, they should be forcibly deleted.
+	DeletePodSandbox(podSandboxID string) error
 	// PodSandboxStatus returns the Status of the PodSandbox.
-	PodSandboxStatus(podSandBoxID string) (*runtimeApi.PodSandboxStatus, error)
-	// ListPodSandbox returns a list of SandBox.
+	PodSandboxStatus(podSandboxID string) (*runtimeApi.PodSandboxStatus, error)
+	// ListPodSandbox returns a list of Sandbox.
 	ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]*runtimeApi.PodSandbox, error)
-	// CreateContainer creates a new container in specified PodSandbox
-	CreateContainer(podSandBoxID string, config *runtimeApi.ContainerConfig, sandboxConfig *runtimeApi.PodSandboxConfig) (string, error)
+	// CreateContainer creates a new container in specified PodSandbox.
+	CreateContainer(podSandboxID string, config *runtimeApi.ContainerConfig, sandboxConfig *runtimeApi.PodSandboxConfig) (string, error)
 	// StartContainer starts the container.
 	StartContainer(rawContainerID string) error
 	// StopContainer stops a running container with a grace period (i.e., timeout).
 	StopContainer(rawContainerID string, timeout int64) error
 	// RemoveContainer removes the container. If the container is running, the container
 	// should be force removed.
+	// It should return success if the container has already been removed.
 	RemoveContainer(rawContainerID string) error
 	// ListContainers lists all containers by filters.
 	ListContainers(filter *runtimeApi.ContainerFilter) ([]*runtimeApi.Container, error)
-	// ContainerStatus returns the container status.
+	// ContainerStatus returns the status of the container.
 	ContainerStatus(rawContainerID string) (*runtimeApi.ContainerStatus, error)
-	// Exec execute a command in the container.
+	// Exec executes a command in the container.
 	Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error
 }
 
-// ImageService interface defines the interfaces that should be implemented
-// by a container image manager.
-// Thread safety is required from implementations of this interface.
+// ImageService interface should be implemented by a container image manager.
+// The methods should be thread-safe.
 type ImageService interface {
-	// ListImages lists existing images.
+	// ListImages lists the existing images.
 	ListImages(filter *runtimeApi.ImageFilter) ([]*runtimeApi.Image, error)
 	// ImageStatus returns the status of the image.
 	ImageStatus(image *runtimeApi.ImageSpec) (*runtimeApi.Image, error)
-	// PullImage pulls a image with authentication config.
+	// PullImage pulls an image with the authentication config.
 	PullImage(image *runtimeApi.ImageSpec, auth *runtimeApi.AuthConfig) error
 	// RemoveImage removes the image.
+	// It should return success if the image has already been removed.
 	RemoveImage(image *runtimeApi.ImageSpec) error
 }
