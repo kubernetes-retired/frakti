@@ -1,0 +1,13 @@
+language: go
+
+matrix:
+  include:
+    - go: 1.6
+
+install:
+  - go get github.com/tools/godep
+
+script: 
+  - cd ${TRAVIS_BUILD_DIR}
+  - ./verify-all.sh
+  - make
