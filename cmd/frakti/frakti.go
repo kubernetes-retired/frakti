@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/frakti/manager"
-	"k8s.io/frakti/runtime/hyper"
+	"k8s.io/frakti/pkg/hyper"
+	"k8s.io/frakti/pkg/manager"
 )
 
 const (
