@@ -25,7 +25,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"k8s.io/frakti/runtime"
+	"k8s.io/frakti/pkg/runtime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
