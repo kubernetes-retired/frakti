@@ -1,13 +1,17 @@
 language: go
+sudo: required
+dist: trusty
 
 matrix:
   include:
     - go: 1.6
 
 install:
-  - go get github.com/tools/godep
+  - mkdir -p $HOME/gopath/src/k8s.io
+  - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/frakti
+  - go install -v $(go list ./... | grep -v /vendor/)
+  - ./hack/verify-all.sh
 
-script: 
-  - cd ${TRAVIS_BUILD_DIR}
-  - ./verify-all.sh
-  - make
+script:
+  - cd $HOME/gopath/src/k8s.io/frakti
+  - hack/test-go.sh
