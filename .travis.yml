@@ -1,17 +1,13 @@
 language: go
-sudo: required
-dist: trusty
 
-matrix:
-  include:
-    - go: 1.6
+go:
+  - 1.6.3
+go_import_path: k8s.io/frakti
 
 install:
-  - mkdir -p $HOME/gopath/src/k8s.io
-  - mv $TRAVIS_BUILD_DIR $HOME/gopath/src/k8s.io/frakti
   - go install -v $(go list ./... | grep -v /vendor/)
   - ./hack/verify-all.sh
 
 script:
-  - cd $HOME/gopath/src/k8s.io/frakti
   - hack/test-go.sh
+

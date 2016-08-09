@@ -17,18 +17,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-find_files() {
-  find . -not \( \
-      \( \
-        -wholename '*/vendor/*' \
-      \) -prune \
-    \) -name '*.go'
-}
-
-GOFMT="gofmt -s"
-bad_files=$(find_files | xargs $GOFMT -l)
-if [[ -n "${bad_files}" ]]; then
-  echo "!!! '$GOFMT' needs to be run on the following files: "
-  echo "${bad_files}"
-  exit 1
+# Check boilerplate
+echo "Checking boilerplate..."
+BOILERPLATEDIR=$(dirname "${BASH_SOURCE}")/../hack/boilerplate
+set +e
+files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v vendor)
+set -e
+if [[ ! -z ${files} ]]; then
+    echo "Boilerplate missing or errored in: ${files}."
+    exit 1
 fi
