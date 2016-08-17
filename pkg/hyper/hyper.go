@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/hyperhq/hyperd/types"
+	"golang.org/x/net/context"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
@@ -68,7 +70,20 @@ func (h *Runtime) StopPodSandbox(podSandBoxID string) error {
 // DeletePodSandbox deletes the sandbox. If there are any running containers in the
 // sandbox, they should be force deleted.
 func (h *Runtime) DeletePodSandbox(podSandBoxID string) error {
-	return fmt.Errorf("Not implemented")
+	request := types.PodRemoveRequest{
+		PodID: podSandBoxID,
+	}
+
+	request, err := h.client.client.PodRemove(context.Background(), &request)
+	if request.Code == -2 {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("Delete pod error: %v", err)
+	}
+
+	return nil
 }
 
 // PodSandboxStatus returns the Status of the PodSandbox.
