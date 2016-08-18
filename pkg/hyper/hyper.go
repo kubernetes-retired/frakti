@@ -23,7 +23,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/hyperhq/hyperd/types"
-	"golang.org/x/net/context"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
@@ -33,6 +32,12 @@ const (
 
 	// timeout in second for interacting with hyperd's gRPC API.
 	hyperConnectionTimeout = 300 * time.Second
+
+	//timeout in second for creating context with timeout.
+	hyperContextTimeout = 15 * time.Second
+
+	//response code of PodRemove, when the pod can not be found.
+	E_NOT_FOUND = -2
 )
 
 // Runtime is the HyperContainer implementation of kubelet runtime API
@@ -63,19 +68,22 @@ func (h *Runtime) CreatePodSandbox(config *kubeapi.PodSandboxConfig) (string, er
 
 // StopPodSandbox stops the sandbox. If there are any running containers in the
 // sandbox, they should be force terminated.
-func (h *Runtime) StopPodSandbox(podSandBoxID string) error {
+func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	return fmt.Errorf("Not implemented")
 }
 
 // DeletePodSandbox deletes the sandbox. If there are any running containers in the
 // sandbox, they should be force deleted.
-func (h *Runtime) DeletePodSandbox(podSandBoxID string) error {
+func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
 	request := types.PodRemoveRequest{
-		PodID: podSandBoxID,
+		PodID: podSandboxID,
 	}
 
-	request, err := h.client.client.PodRemove(context.Background(), &request)
-	if request.Code == -2 {
+	cxt, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	response, err := h.client.client.PodRemove(cxt, &request)
+	if response.Code == E_NOT_FOUND {
 		return nil
 	}
 
@@ -87,17 +95,17 @@ func (h *Runtime) DeletePodSandbox(podSandBoxID string) error {
 }
 
 // PodSandboxStatus returns the Status of the PodSandbox.
-func (h *Runtime) PodSandboxStatus(podSandBoxID string) (*kubeapi.PodSandboxStatus, error) {
+func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStatus, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
-// ListPodSandbox returns a list of SandBox.
+// ListPodSandbox returns a list of Sandbox.
 func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.PodSandbox, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
 // CreateContainer creates a new container in specified PodSandbox
-func (h *Runtime) CreateContainer(podSandBoxID string, config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (string, error) {
+func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (string, error) {
 	return "", fmt.Errorf("Not implemented")
 }
 
