@@ -42,4 +42,36 @@ func NewClient(server string, timeout time.Duration) (*Client, error) {
 	}, nil
 }
 
-// TODO: implements hyper client
+// Version gets hyperd version
+func (c *Client) Version() (string, string, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	resp, err := c.client.Version(ctx, &types.VersionRequest{})
+	if err != nil {
+		return "", "", err
+	}
+
+	return resp.Version, resp.ApiVersion, nil
+}
+
+// RemovePod removes a pod by podID
+func (c *Client) RemovePod(podID string) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	resp, err := c.client.PodRemove(
+		ctx,
+		&types.PodRemoveRequest{PodID: podID},
+	)
+
+	if resp.Code == E_NOT_FOUND {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
