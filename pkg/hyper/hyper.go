@@ -58,7 +58,17 @@ func NewHyperRuntime(hyperEndpoint string) (*Runtime, error) {
 
 // Version returns the runtime name, runtime version and runtime API version
 func (h *Runtime) Version() (string, string, string, error) {
-	return hyperRuntimeName, "", "", fmt.Errorf("Not implemented")
+	request := types.VersionRequest{}
+
+	cxt, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	response, err := h.client.client.Version(cxt, &request)
+	if err != nil {
+		return "", "", "", fmt.Errorf("Get version error: %v", err)
+	}
+
+	return hyperRuntimeName, response.Version, response.ApiVersion, nil
 }
 
 // CreatePodSandbox creates a pod-level sandbox.
