@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/hyperhq/hyperd/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
@@ -32,12 +31,6 @@ const (
 
 	// timeout in second for interacting with hyperd's gRPC API.
 	hyperConnectionTimeout = 300 * time.Second
-
-	//timeout in second for creating context with timeout.
-	hyperContextTimeout = 15 * time.Second
-
-	//response code of PodRemove, when the pod can not be found.
-	E_NOT_FOUND = -2
 )
 
 // Runtime is the HyperContainer implementation of kubelet runtime API
@@ -58,17 +51,13 @@ func NewHyperRuntime(hyperEndpoint string) (*Runtime, error) {
 
 // Version returns the runtime name, runtime version and runtime API version
 func (h *Runtime) Version() (string, string, string, error) {
-	request := types.VersionRequest{}
-
-	cxt, cancel := getContextWithTimeout(hyperContextTimeout)
-	defer cancel()
-
-	response, err := h.client.client.Version(cxt, &request)
+	version, apiVersion, err := h.client.GetVersion()
 	if err != nil {
-		return "", "", "", fmt.Errorf("Get version error: %v", err)
+		glog.Errorf("Get hyper version failed: %v", err)
+		return "", "", "", err
 	}
 
-	return hyperRuntimeName, response.Version, response.ApiVersion, nil
+	return hyperRuntimeName, version, apiVersion, nil
 }
 
 // CreatePodSandbox creates a pod-level sandbox.
@@ -85,20 +74,10 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 // DeletePodSandbox deletes the sandbox. If there are any running containers in the
 // sandbox, they should be force deleted.
 func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
-	request := types.PodRemoveRequest{
-		PodID: podSandboxID,
-	}
-
-	cxt, cancel := getContextWithTimeout(hyperContextTimeout)
-	defer cancel()
-
-	response, err := h.client.client.PodRemove(cxt, &request)
-	if response.Code == E_NOT_FOUND {
-		return nil
-	}
-
+	err := h.client.RemovePod(podSandboxID)
 	if err != nil {
-		return fmt.Errorf("Delete pod error: %v", err)
+		glog.Errorf("Remove pod %s failed: %v", podSandboxID, err)
+		return err
 	}
 
 	return nil

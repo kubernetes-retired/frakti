@@ -23,6 +23,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	//timeout in second for creating context with timeout.
+	hyperContextTimeout = 15 * time.Second
+
+	//response code of PodRemove, when the pod can not be found.
+	E_NOT_FOUND = -2
+)
+
 // Client is the gRPC client for hyperd
 type Client struct {
 	client  types.PublicAPIClient
@@ -42,4 +50,36 @@ func NewClient(server string, timeout time.Duration) (*Client, error) {
 	}, nil
 }
 
-// TODO: implements hyper client
+// GetVersion gets hyperd version
+func (c *Client) GetVersion() (string, string, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	resp, err := c.client.Version(ctx, &types.VersionRequest{})
+	if err != nil {
+		return "", "", err
+	}
+
+	return resp.Version, resp.ApiVersion, nil
+}
+
+// RemovePod removes a pod by podID
+func (c *Client) RemovePod(podID string) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	resp, err := c.client.PodRemove(
+		ctx,
+		&types.PodRemoveRequest{PodID: podID},
+	)
+
+	if resp.Code == E_NOT_FOUND {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
