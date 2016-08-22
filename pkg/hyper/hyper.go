@@ -69,7 +69,20 @@ func (h *Runtime) CreatePodSandbox(config *kubeapi.PodSandboxConfig) (string, er
 // StopPodSandbox stops the sandbox. If there are any running containers in the
 // sandbox, they should be force terminated.
 func (h *Runtime) StopPodSandbox(podSandboxID string) error {
-	return fmt.Errorf("Not implemented")
+	request := types.PodStopRequest{
+		PodID: podSandboxID,
+	}
+
+	cxt, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	response, err := h.client.client.PodStop(cxt, &request)
+
+	if err != nil {
+		return fmt.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, response.Code, response.Cause, err)
+	}
+
+	return nil
 }
 
 // DeletePodSandbox deletes the sandbox. If there are any running containers in the
