@@ -39,3 +39,4 @@ else
     echo "Generated hyperd api from proto is out of date. Please run hack/update-generated-hyperd-api.sh"
     exit 1
 fi
+
