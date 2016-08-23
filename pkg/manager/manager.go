@@ -121,8 +121,8 @@ func (s *FraktiManager) StopPodSandbox(ctx context.Context, req *kubeapi.StopPod
 	return &kubeapi.StopPodSandboxResponse{}, nil
 }
 
-// DeletePodSandbox deletes the sandbox.
-func (s *FraktiManager) DeletePodSandbox(ctx context.Context, req *kubeapi.DeletePodSandboxRequest) (*kubeapi.DeletePodSandboxResponse, error) {
+// RemovePodSandbox deletes the sandbox.
+func (s *FraktiManager) RemovePodSandbox(ctx context.Context, req *kubeapi.RemovePodSandboxRequest) (*kubeapi.RemovePodSandboxResponse, error) {
 	glog.V(3).Infof("DeletePodSandbox with request %s", req.String())
 
 	err := s.runtimeService.DeletePodSandbox(req.GetPodSandboxId())
@@ -131,7 +131,7 @@ func (s *FraktiManager) DeletePodSandbox(ctx context.Context, req *kubeapi.Delet
 		return nil, err
 	}
 
-	return &kubeapi.DeletePodSandboxResponse{}, nil
+	return &kubeapi.RemovePodSandboxResponse{}, nil
 }
 
 // PodSandboxStatus returns the Status of the PodSandbox.

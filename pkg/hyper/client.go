@@ -21,8 +21,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/hyperhq/hyperd/types"
 	"google.golang.org/grpc"
+	"k8s.io/frakti/pkg/hyper/api"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 
 // Client is the gRPC client for hyperd
 type Client struct {
-	client  types.PublicAPIClient
+	client  api.PublicAPIClient
 	timeout time.Duration
 }
 
@@ -47,7 +47,7 @@ func NewClient(server string, timeout time.Duration) (*Client, error) {
 	}
 
 	return &Client{
-		client:  types.NewPublicAPIClient(conn),
+		client:  api.NewPublicAPIClient(conn),
 		timeout: timeout,
 	}, nil
 }
@@ -57,7 +57,7 @@ func (c *Client) GetVersion() (string, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.Version(ctx, &types.VersionRequest{})
+	resp, err := c.client.Version(ctx, &api.VersionRequest{})
 	if err != nil {
 		return "", "", err
 	}
@@ -72,7 +72,7 @@ func (c *Client) RemovePod(podID string) error {
 
 	resp, err := c.client.PodRemove(
 		ctx,
-		&types.PodRemoveRequest{PodID: podID},
+		&api.PodRemoveRequest{PodID: podID},
 	)
 
 	if resp.Code == E_NOT_FOUND {
