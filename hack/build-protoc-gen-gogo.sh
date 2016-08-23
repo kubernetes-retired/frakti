@@ -17,15 +17,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Check boilerplate
-echo "Checking boilerplate..."
-BOILERPLATEDIR=$(dirname "${BASH_SOURCE}")/../hack/boilerplate
-set +e
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v vendor)
-set -e
-if [[ ! -z ${files} ]]; then
-    echo "Boilerplate missing or errored in: ${files}."
+which protoc>/dev/null
+if [[ $? != 0 ]]; then
+    echo "Please install grpc from www.grpc.io"
     exit 1
 fi
 
-echo "All boilerplates are good."
+FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
+FRAKTI_ROOT_ABS=$(cd ${FRAKTI_ROOT}; pwd)
+cd ${FRAKTI_ROOT_ABS}/cmd/protoc-gen-gogo
+go build
+

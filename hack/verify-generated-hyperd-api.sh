@@ -17,15 +17,25 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Check boilerplate
-echo "Checking boilerplate..."
-BOILERPLATEDIR=$(dirname "${BASH_SOURCE}")/../hack/boilerplate
-set +e
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v vendor)
-set -e
-if [[ ! -z ${files} ]]; then
-    echo "Boilerplate missing or errored in: ${files}."
+FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
+PROTO_ROOT=${FRAKTI_ROOT}/pkg/hyper/api
+_tmp="${FRAKTI_ROOT}/_tmp"
+
+cleanup() {
+  rm -rf "${_tmp}"
+}
+
+trap "cleanup" EXIT SIGINT
+
+mkdir -p ${_tmp}
+cp ${PROTO_ROOT}/api.pb.go ${_tmp}
+
+ret=0
+hack/update-generated-hyperd-api.sh
+diff -I "gzipped FileDescriptorProto" -I "0x" -Naupr ${_tmp}/api.pb.go ${PROTO_ROOT}/api.pb.go || ret=$?
+if [[ $ret -eq 0 ]]; then
+    echo "Generated hyperd api from proto up to date."
+else
+    echo "Generated hyperd api from proto is out of date. Please run hack/update-generated-hyperd-api.sh"
     exit 1
 fi
-
-echo "All boilerplates are good."
