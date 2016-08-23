@@ -128,23 +128,3 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 func (h *Runtime) Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
 	return fmt.Errorf("Not implemented")
 }
-
-// ListImages lists existing images.
-func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, error) {
-	return nil, fmt.Errorf("Not implemented")
-}
-
-// ImageStatus returns the status of the image.
-func (h *Runtime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) {
-	return nil, fmt.Errorf("Not implemented")
-}
-
-// PullImage pulls a image with authentication config.
-func (h *Runtime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthConfig) error {
-	return fmt.Errorf("Not implemented")
-}
-
-// RemoveImage removes the image.
-func (h *Runtime) RemoveImage(image *kubeapi.ImageSpec) error {
-	return fmt.Errorf("Not implemented")
-}
