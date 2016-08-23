@@ -41,4 +41,3 @@ export PATH=${FRAKTI_ROOT}/cmd/protoc-gen-gogo:$PATH
 protoc -I${HYPERD_API_ROOT} --gogo_out=plugins=grpc:${HYPERD_API_ROOT} ${HYPERD_API_ROOT}/api.proto
 echo "$(cat hack/boilerplate/boilerplate.go.txt ${HYPERD_API_ROOT}/api.pb.go)" > ${HYPERD_API_ROOT}/api.pb.go
 sed -i".bak" "s/Copyright YEAR/Copyright $(date '+%Y')/g" ${HYPERD_API_ROOT}/api.pb.go
-

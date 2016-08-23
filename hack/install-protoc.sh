@@ -13,17 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
-
-which protoc>/dev/null
+which yum>/dev/null
 if [[ $? != 0 ]]; then
-    echo "Please install grpc from www.grpc.io"
-    exit 1
+  sudo apt-get install -y unzip
+else
+  sudo yum install -y unzip
 fi
 
-FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
-FRAKTI_ROOT_ABS=$(cd ${FRAKTI_ROOT}; pwd)
-cd ${FRAKTI_ROOT_ABS}/cmd/protoc-gen-gogo
-go build
+# Install protoc
+cd /tmp
+curl -sSL https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-linux-x86_64.zip -o protoc-3.0.0-linux-x86_64.zip
+unzip protoc-3.0.0-linux-x86_64.zip
+sudo mv bin/protoc /usr/bin/protoc
+
+echo "protoc installed success."
