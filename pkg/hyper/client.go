@@ -17,6 +17,8 @@ limitations under the License.
 package hyper
 
 import (
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/hyperhq/hyperd/types"
@@ -82,4 +84,82 @@ func (c *Client) RemovePod(podID string) error {
 	}
 
 	return nil
+}
+
+// GetImageInfo gets the information of the image.
+func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.ImageListRequest{Filter: fmt.Sprintf("%s:%s", image, tag)}
+	imageList, err := c.client.ImageList(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	if len(imageList.ImageList) == 0 {
+		return nil, fmt.Errorf("image %q not found", image)
+	}
+
+	return imageList.ImageList[0], nil
+}
+
+// GetImages gets a list of images
+func (c *Client) GetImages() ([]*types.ImageInfo, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.ImageListRequest{}
+	imageList, err := c.client.ImageList(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return imageList.ImageList, nil
+}
+
+// PullImage pulls a image from registry
+func (c *Client) PullImage(image, tag string, auth *types.AuthConfig, out io.Writer) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	request := types.ImagePullRequest{
+		Image: image,
+		Tag:   tag,
+		Auth:  auth,
+	}
+	stream, err := c.client.ImagePull(ctx, &request)
+	if err != nil {
+		return err
+	}
+
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		if out != nil {
+			n, err := out.Write(res.Data)
+			if err != nil {
+				return err
+			}
+			if n != len(res.Data) {
+				return io.ErrShortWrite
+			}
+		}
+	}
+
+	return nil
+}
+
+// RemoveImage removes a image from hyperd
+func (c *Client) RemoveImage(image, tag string) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
+	return err
 }
