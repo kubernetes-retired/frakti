@@ -112,7 +112,28 @@ func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
 
 // PodSandboxStatus returns the Status of the PodSandbox.
 func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStatus, error) {
-	return nil, fmt.Errorf("Not implemented")
+	info, err := h.client.GetPodInfo(podSandboxID)
+	if err != nil {
+		glog.Errorf("GetPodInfo for %s failed: %v", podSandboxID, err)
+		return nil, err
+	}
+
+	state := toPodSandboxState(info.Status.Phase)
+	podIP := ""
+	if len(info.Status.PodIP) > 0 {
+		podIP = info.Status.PodIP[0]
+	}
+
+	podStatus := &kubeapi.PodSandboxStatus{
+		Id:        &podSandboxID,
+		Metadata:  &kubeapi.PodSandboxMetadata{Name: &info.PodName},
+		State:     &state,
+		Network:   &kubeapi.PodSandboxNetworkStatus{Ip: &podIP},
+		CreatedAt: &info.CreatedAt,
+		Labels:    info.Spec.Labels,
+	}
+
+	return podStatus, nil
 }
 
 // ListPodSandbox returns a list of Sandbox.

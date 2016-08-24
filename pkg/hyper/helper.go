@@ -178,3 +178,11 @@ func getAnnotationsFromLabels(labels map[string]string) map[string]string {
 
 	return annotations
 }
+
+func toPodSandboxState(state string) kubeapi.PodSandBoxState {
+	if state == "running" || state == "Running" {
+		return kubeapi.PodSandBoxState_READY
+	}
+
+	return kubeapi.PodSandBoxState_NOTREADY
+}
