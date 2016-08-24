@@ -62,7 +62,28 @@ func (h *Runtime) Version() (string, string, string, error) {
 
 // CreatePodSandbox creates a pod-level sandbox.
 func (h *Runtime) CreatePodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
-	return "", fmt.Errorf("Not implemented")
+	userpod, err := buildUserPod(config)
+	if err != nil {
+		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+
+	podID, err := h.client.CreatePod(userpod)
+	if err != nil {
+		glog.Errorf("Create pod for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+
+	err = h.client.StartPod(podID)
+	if err != nil {
+		glog.Errorf("Start pod %q failed: %v", podID, err)
+		if removeError := h.client.RemovePod(podID); removeError != nil {
+			glog.Warningf("Remove pod %q failed: %v", removeError)
+		}
+		return "", err
+	}
+
+	return podID, nil
 }
 
 // StopPodSandbox stops the sandbox. If there are any running containers in the

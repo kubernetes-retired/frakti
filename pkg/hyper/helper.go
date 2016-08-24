@@ -17,12 +17,26 @@ limitations under the License.
 package hyper
 
 import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/frakti/pkg/hyper/api"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+)
+
+const (
+	// kubePrefix is used to identify the containers/sandboxes on the node managed by kubelet
+	kubePrefix = "k8s"
+	// kubeSandboxNamePrefix is used to identify a sandbox name
+	kubeSandboxNamePrefix = "POD"
+	// fraktiAnnotationLabel is used to save anntations into labels
+	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
 )
 
 // getContextWithTimeout returns a context with timeout.
@@ -74,4 +88,93 @@ func inList(in string, list []string) bool {
 	}
 
 	return false
+}
+
+// buildKubeGenericName creates a name which can be reversed to identify container/sandbox name.
+// This function returns the unique name.
+func buildKubeGenericName(sandboxConfig *kubeapi.PodSandboxConfig, containerName string) string {
+	stableName := fmt.Sprintf("%s_%s_%s_%s_%s",
+		kubePrefix,
+		containerName,
+		sandboxConfig.Metadata.GetName(),
+		sandboxConfig.Metadata.GetNamespace(),
+		sandboxConfig.Metadata.GetUid(),
+	)
+	UID := fmt.Sprintf("%08x", rand.Uint32())
+	return fmt.Sprintf("%s_%s", stableName, UID)
+}
+
+// buildSandboxName creates a name which can be reversed to identify sandbox full name.
+func buildSandboxName(sandboxConfig *kubeapi.PodSandboxConfig) string {
+	sandboxName := fmt.Sprintf("%s.%d", kubeSandboxNamePrefix, sandboxConfig.Metadata.GetAttempt())
+	return buildKubeGenericName(sandboxConfig, sandboxName)
+}
+
+// parseSandboxName unpacks a sandbox full name, returning the pod name, namespace, uid and attempt.
+func parseSandboxName(name string) (string, string, string, uint32, error) {
+	podName, podNamespace, podUID, _, attempt, err := parseContainerName(name)
+	if err != nil {
+		return "", "", "", 0, err
+	}
+
+	return podName, podNamespace, podUID, attempt, nil
+}
+
+// buildContainerName creates a name which can be reversed to identify container name.
+// This function returns stable name, unique name and an unique id.
+func buildContainerName(sandboxConfig *kubeapi.PodSandboxConfig, containerConfig *kubeapi.ContainerConfig) string {
+	containerName := fmt.Sprintf("%s.%d", containerConfig.Metadata.GetName(), containerConfig.Metadata.GetAttempt())
+	return buildKubeGenericName(sandboxConfig, containerName)
+}
+
+// parseContainerName unpacks a container name, returning the pod name, namespace, UID,
+// container name and attempt.
+func parseContainerName(name string) (podName, podNamespace, podUID, containerName string, attempt uint32, err error) {
+	parts := strings.Split(name, "_")
+	if len(parts) == 0 || parts[0] != kubePrefix {
+		err = fmt.Errorf("failed to parse container name %q into parts", name)
+		return "", "", "", "", 0, err
+	}
+	if len(parts) < 6 {
+		glog.Warningf("Found a container with the %q prefix, but too few fields (%d): %q", kubePrefix, len(parts), name)
+		err = fmt.Errorf("container name %q has fewer parts than expected %v", name, parts)
+		return "", "", "", "", 0, err
+	}
+
+	nameParts := strings.Split(parts[1], ".")
+	containerName = nameParts[0]
+	if len(nameParts) > 1 {
+		attemptNumber, err := strconv.ParseUint(nameParts[1], 10, 32)
+		if err != nil {
+			glog.Warningf("invalid container attempt %q in container %q", nameParts[1], name)
+		}
+
+		attempt = uint32(attemptNumber)
+	}
+
+	return parts[2], parts[3], parts[4], containerName, attempt, nil
+}
+
+// buildLabelsWithAnnotations merges annotations into labels.
+func buildLabelsWithAnnotations(labels, annotations map[string]string) map[string]string {
+	rawAnnotations, err := json.Marshal(annotations)
+	if err != nil {
+		glog.Warningf("Unable to marshal annotations %q: %v", annotations, err)
+	}
+
+	labels[fraktiAnnotationLabel] = string(rawAnnotations)
+	return labels
+}
+
+// getAnnotationsFromLabels gets annotations from labels.
+func getAnnotationsFromLabels(labels map[string]string) map[string]string {
+	annotations := make(map[string]string)
+	if strValue, found := labels[fraktiAnnotationLabel]; found {
+		err := json.Unmarshal([]byte(strValue), annotations)
+		if err != nil {
+			glog.Warningf("Unable to get annotations from labels %q", labels)
+		}
+	}
+
+	return annotations
 }
