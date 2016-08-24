@@ -178,3 +178,17 @@ func getAnnotationsFromLabels(labels map[string]string) map[string]string {
 
 	return annotations
 }
+
+func toPodSandboxState(state string) kubeapi.PodSandBoxState {
+	if state == "running" || state == "Running" {
+		return kubeapi.PodSandBoxState_READY
+	}
+
+	return kubeapi.PodSandBoxState_NOTREADY
+}
+
+//getKubeletLabels gets kubelet labels from labels.
+func getKubeletLabels(lables map[string]string) map[string]string {
+	delete(lables, fraktiAnnotationLabel)
+	return lables
+}
