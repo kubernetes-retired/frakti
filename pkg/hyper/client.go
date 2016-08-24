@@ -189,6 +189,40 @@ func (c *Client) GetContainerInfo(container string) (*types.ContainerInfo, error
 	return cinfo.ContainerInfo, nil
 }
 
+// StopContainer stops a hyper container
+func (c *Client) StopContainer(containerID string, timeout int64) error {
+	if timeout <= 0 {
+		return fmt.Errorf("Timeout can not be %d, it must be greater than zero.", timeout)
+	}
+
+	// do checks about container status
+	containerInfo, err := c.GetContainerInfo(containerID)
+	if err != nil {
+		return err
+	}
+
+	if containerInfo.Status.Phase != "running" {
+		return fmt.Errorf("Container %s is not running.", containerID)
+	}
+
+	ch := make(chan error, 1)
+
+	go func(containerID string) {
+		ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+		defer cancel()
+
+		_, err := c.client.ContainerStop(ctx, &types.ContainerStopRequest{ContainerID: containerID})
+		ch <- err
+	}(containerID)
+
+	select {
+	case <-time.After(time.Duration(timeout) * time.Second):
+		return fmt.Errorf("Stop container %s timeout", containerID)
+	case err := <-ch:
+		return err
+	}
+}
+
 // GetImageInfo gets the information of the image.
 func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
