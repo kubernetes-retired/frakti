@@ -21,8 +21,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/hyperhq/hyperd/types"
 	"google.golang.org/grpc"
+	"k8s.io/frakti/pkg/hyper/api"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 
 // Client is the gRPC client for hyperd
 type Client struct {
-	client  types.PublicAPIClient
+	client  api.PublicAPIClient
 	timeout time.Duration
 }
 
@@ -47,7 +47,7 @@ func NewClient(server string, timeout time.Duration) (*Client, error) {
 	}
 
 	return &Client{
-		client:  types.NewPublicAPIClient(conn),
+		client:  api.NewPublicAPIClient(conn),
 		timeout: timeout,
 	}, nil
 }
@@ -57,7 +57,7 @@ func (c *Client) GetVersion() (string, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.Version(ctx, &types.VersionRequest{})
+	resp, err := c.client.Version(ctx, &api.VersionRequest{})
 	if err != nil {
 		return "", "", err
 	}
@@ -72,7 +72,7 @@ func (c *Client) RemovePod(podID string) error {
 
 	resp, err := c.client.PodRemove(
 		ctx,
-		&types.PodRemoveRequest{PodID: podID},
+		&api.PodRemoveRequest{PodID: podID},
 	)
 
 	if resp.Code == E_NOT_FOUND {
@@ -87,11 +87,11 @@ func (c *Client) RemovePod(podID string) error {
 }
 
 // GetImageInfo gets the information of the image.
-func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
+func (c *Client) GetImageInfo(image, tag string) (*api.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	req := types.ImageListRequest{Filter: fmt.Sprintf("%s:%s", image, tag)}
+	req := api.ImageListRequest{Filter: fmt.Sprintf("%s:%s", image, tag)}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -104,11 +104,11 @@ func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 }
 
 // GetImages gets a list of images
-func (c *Client) GetImages() ([]*types.ImageInfo, error) {
+func (c *Client) GetImages() ([]*api.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	req := types.ImageListRequest{}
+	req := api.ImageListRequest{}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -118,11 +118,11 @@ func (c *Client) GetImages() ([]*types.ImageInfo, error) {
 }
 
 // PullImage pulls a image from registry
-func (c *Client) PullImage(image, tag string, auth *types.AuthConfig, out io.Writer) error {
+func (c *Client) PullImage(image, tag string, auth *api.AuthConfig, out io.Writer) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	request := types.ImagePullRequest{
+	request := api.ImagePullRequest{
 		Image: image,
 		Tag:   tag,
 		Auth:  auth,
@@ -160,6 +160,6 @@ func (c *Client) RemoveImage(image, tag string) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
+	_, err := c.client.ImageRemove(ctx, &api.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
 	return err
 }

@@ -27,3 +27,5 @@ if [[ ! -z ${files} ]]; then
     echo "Boilerplate missing or errored in: ${files}."
     exit 1
 fi
+
+echo "All boilerplates are good."

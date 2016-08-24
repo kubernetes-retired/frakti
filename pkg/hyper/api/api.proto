@@ -1,7 +1,7 @@
 // Generate cmd: protoc --go_out=plugins=grpc:. types.proto
 syntax = "proto3";
 
-package types;
+package api;
 
 // Types definitions for HyperContainer
 message ContainerPort {
@@ -576,6 +576,13 @@ message ContainerCreateResponse {
   string containerID = 1;
 }
 
+message ContainerRenameRequest {
+  string oldContainerName = 1;
+  string newContainerName = 2;
+}
+
+message ContainerRenameResponse {}
+
 message AuthConfig {
   string username = 1;
   string password = 2;
@@ -708,6 +715,12 @@ message PodStatsResponse {
   PodStats podStats = 1;
 }
 
+message PingRequest {}
+
+message PingResponse {
+  string hyperdStats = 1;
+}
+
 // PublicAPI defines the public APIs which are handled over TCP sockets.
 service PublicAPI {
     // PodList gets a list of pods
@@ -754,7 +767,8 @@ service PublicAPI {
     rpc ContainerLogs(ContainerLogsRequest) returns (stream ContainerLogsResponse) {}
     // ContainerCreate creates a container in specified pod
     rpc ContainerCreate(ContainerCreateRequest) returns (ContainerCreateResponse) {}
-    // TODO: ContainerRename renames a container
+    // ContainerRename renames a container
+    rpc ContainerRename(ContainerRenameRequest) returns (ContainerRenameResponse) {}
     // TODO: ContainerCommit commits the changes of the specified container
     // TODO: ContainerSignal sends a singla to specified container
     // TODO: ContainerLabels updates labels of the specified container
@@ -788,7 +802,8 @@ service PublicAPI {
     // TODO: ImageBuild builds a image from Dockerfile
     // TODO: ImageLoad loads a image from stream
 
-    // TODO: Ping checks if hyperd is running (returns 'OK' on success)
+    // Ping checks if hyperd is running (returns 'OK' on success)
+    rpc Ping(PingRequest) returns (PingResponse) {}
     // Info gets the info of hyperd
     rpc Info(InfoRequest) returns (InfoResponse) {}
     // Version gets the version and apiVersion of hyperd
