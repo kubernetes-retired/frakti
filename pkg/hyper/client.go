@@ -65,6 +65,21 @@ func (c *Client) GetVersion() (string, string, error) {
 	return resp.Version, resp.ApiVersion, nil
 }
 
+// StopPod stops a pod
+func (c *Client) StopPod(podID string) (int, string, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	resp, err := c.client.PodStop(ctx, &types.PodStopRequest{
+		PodID: podID,
+	})
+	if err != nil {
+		return int(resp.Code), resp.Cause, err
+	}
+
+	return int(resp.Code), resp.Cause, nil
+}
+
 // RemovePod removes a pod by podID
 func (c *Client) RemovePod(podID string) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
