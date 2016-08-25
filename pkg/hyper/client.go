@@ -65,12 +65,48 @@ func (c *Client) GetVersion() (string, string, error) {
 	return resp.Version, resp.ApiVersion, nil
 }
 
-// StopPod stops a pod
+// CreatePod creates a pod and returns the pod ID.
+func (c *Client) CreatePod(spec *api.UserPod) (string, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	resp, err := c.client.PodCreate(ctx, &api.PodCreateRequest{
+		PodSpec: spec,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.PodID, nil
+}
+
+// StartPod starts a pod by podID.
+func (c *Client) StartPod(podID string) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	stream, err := c.client.PodStart(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := stream.Send(&api.PodStartMessage{PodID: podID}); err != nil {
+		return err
+	}
+
+	if _, err := stream.Recv(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// StopPod stops a pod.
 func (c *Client) StopPod(podID string) (int, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.PodStop(ctx, &types.PodStopRequest{
+	resp, err := c.client.PodStop(ctx, &api.PodStopRequest{
 		PodID: podID,
 	})
 	if err != nil {
