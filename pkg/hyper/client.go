@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"k8s.io/frakti/pkg/hyper/api"
+	"k8s.io/frakti/pkg/hyper/types"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 
 // Client is the gRPC client for hyperd
 type Client struct {
-	client  api.PublicAPIClient
+	client  types.PublicAPIClient
 	timeout time.Duration
 }
 
@@ -47,7 +47,7 @@ func NewClient(server string, timeout time.Duration) (*Client, error) {
 	}
 
 	return &Client{
-		client:  api.NewPublicAPIClient(conn),
+		client:  types.NewPublicAPIClient(conn),
 		timeout: timeout,
 	}, nil
 }
@@ -57,7 +57,7 @@ func (c *Client) GetVersion() (string, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.Version(ctx, &api.VersionRequest{})
+	resp, err := c.client.Version(ctx, &types.VersionRequest{})
 	if err != nil {
 		return "", "", err
 	}
@@ -66,11 +66,11 @@ func (c *Client) GetVersion() (string, string, error) {
 }
 
 // CreatePod creates a pod and returns the pod ID.
-func (c *Client) CreatePod(spec *api.UserPod) (string, error) {
+func (c *Client) CreatePod(spec *types.UserPod) (string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.PodCreate(ctx, &api.PodCreateRequest{
+	resp, err := c.client.PodCreate(ctx, &types.PodCreateRequest{
 		PodSpec: spec,
 	})
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *Client) StartPod(podID string) error {
 		return err
 	}
 
-	if err := stream.Send(&api.PodStartMessage{PodID: podID}); err != nil {
+	if err := stream.Send(&types.PodStartMessage{PodID: podID}); err != nil {
 		return err
 	}
 
@@ -106,7 +106,7 @@ func (c *Client) StopPod(podID string) (int, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.PodStop(ctx, &api.PodStopRequest{
+	resp, err := c.client.PodStop(ctx, &types.PodStopRequest{
 		PodID: podID,
 	})
 	if err != nil {
@@ -123,7 +123,7 @@ func (c *Client) RemovePod(podID string) error {
 
 	resp, err := c.client.PodRemove(
 		ctx,
-		&api.PodRemoveRequest{PodID: podID},
+		&types.PodRemoveRequest{PodID: podID},
 	)
 
 	if resp.Code == E_NOT_FOUND {
@@ -138,11 +138,11 @@ func (c *Client) RemovePod(podID string) error {
 }
 
 // GetPodInfo gets pod info by podID
-func (c *Client) GetPodInfo(podID string) (*api.PodInfo, error) {
+func (c *Client) GetPodInfo(podID string) (*types.PodInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	request := api.PodInfoRequest{
+	request := types.PodInfoRequest{
 		PodID: podID,
 	}
 	pod, err := c.client.PodInfo(ctx, &request)
@@ -154,11 +154,11 @@ func (c *Client) GetPodInfo(podID string) (*api.PodInfo, error) {
 }
 
 // GetImageInfo gets the information of the image.
-func (c *Client) GetImageInfo(image, tag string) (*api.ImageInfo, error) {
+func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	req := api.ImageListRequest{Filter: fmt.Sprintf("%s:%s", image, tag)}
+	req := types.ImageListRequest{Filter: fmt.Sprintf("%s:%s", image, tag)}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -171,11 +171,11 @@ func (c *Client) GetImageInfo(image, tag string) (*api.ImageInfo, error) {
 }
 
 // GetImages gets a list of images
-func (c *Client) GetImages() ([]*api.ImageInfo, error) {
+func (c *Client) GetImages() ([]*types.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	req := api.ImageListRequest{}
+	req := types.ImageListRequest{}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -185,11 +185,11 @@ func (c *Client) GetImages() ([]*api.ImageInfo, error) {
 }
 
 // PullImage pulls a image from registry
-func (c *Client) PullImage(image, tag string, auth *api.AuthConfig, out io.Writer) error {
+func (c *Client) PullImage(image, tag string, auth *types.AuthConfig, out io.Writer) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	request := api.ImagePullRequest{
+	request := types.ImagePullRequest{
 		Image: image,
 		Tag:   tag,
 		Auth:  auth,
@@ -227,6 +227,6 @@ func (c *Client) RemoveImage(image, tag string) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	_, err := c.client.ImageRemove(ctx, &api.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
+	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
 	return err
 }
