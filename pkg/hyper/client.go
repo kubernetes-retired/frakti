@@ -137,6 +137,22 @@ func (c *Client) RemovePod(podID string) error {
 	return nil
 }
 
+// GetPodInfo gets pod info by podID
+func (c *Client) GetPodInfo(podID string) (*api.PodInfo, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	request := api.PodInfoRequest{
+		PodID: podID,
+	}
+	pod, err := c.client.PodInfo(ctx, &request)
+	if err != nil {
+		return nil, err
+	}
+
+	return pod.PodInfo, nil
+}
+
 // GetImageInfo gets the information of the image.
 func (c *Client) GetImageInfo(image, tag string) (*api.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
