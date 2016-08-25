@@ -182,6 +182,7 @@ func getAnnotationsFromLabels(labels map[string]string) map[string]string {
 	return annotations
 }
 
+// toPodSandboxState transfers state to kubelet sandbox state.
 func toPodSandboxState(state string) kubeapi.PodSandBoxState {
 	if state == "running" || state == "Running" {
 		return kubeapi.PodSandBoxState_READY
@@ -211,19 +212,52 @@ func inMap(in, dest map[string]string) bool {
 	return true
 }
 
+// Len is a method for Sort to compute the length of s.
 func (s sandboxByCreated) Len() int {
 	return len(s)
 }
 
+// Len is a method for Sort to compute while one is less between two items of s.
 func (s sandboxByCreated) Less(i, j int) bool {
 	return *s[i].CreatedAt > *s[j].CreatedAt
 }
 
+// Len is a method for Sort to swap the items in s.
 func (s sandboxByCreated) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-//Sort sort podSandboxList by creation time (newest first).
+// sortByCreatedAt sort podSandboxList by creation time (newest first).
 func sortByCreatedAt(podSandboxList []*kubeapi.PodSandbox) {
 	sort.Sort(sandboxByCreated(podSandboxList))
+}
+
+// parseTimeString parse string to time.Unix.
+func parseTimeString(str string) (int64, error) {
+	t := time.Date(0, 0, 0, 0, 0, 0, 0, time.Local)
+	if str == "" {
+		return t.Unix(), nil
+	}
+
+	layout := "2006-01-02T15:04:05Z"
+	t, err := time.Parse(layout, str)
+	if err != nil {
+		return t.Unix(), err
+	}
+
+	return t.Unix(), nil
+}
+
+// toKubeContainerState transfers state to kubelet container state.
+func toKubeContainerState(state string) kubeapi.ContainerState {
+	switch state {
+	case "running":
+		return kubeapi.ContainerState_RUNNING
+	case "pending":
+		return kubeapi.ContainerState_CREATED
+	case "failed", "succeeded":
+		return kubeapi.ContainerState_EXITED
+	default:
+		return kubeapi.ContainerState_UNKNOWN
+	}
 }

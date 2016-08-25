@@ -238,7 +238,89 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 
 // ContainerStatus returns the container status.
 func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus, error) {
-	return nil, fmt.Errorf("Not implemented")
+	status, err := h.client.GetContainerInfo(containerID)
+	if err != nil {
+		glog.Errorf("Get container info for %s failed: %v", containerID, err)
+		return nil, err
+	}
+
+	podInfo, err := h.client.GetPodInfo(status.PodID)
+	if err != nil {
+		glog.Errorf("Get pod info for %s failed: %v", status.PodID, err)
+		return nil, err
+	}
+
+	state := toKubeContainerState(status.Status.Phase)
+	annotations := getAnnotationsFromLabels(status.Container.Labels)
+	kubeletLabels := getKubeletLabels(status.Container.Labels)
+
+	_, _, _, containerName, attempt, err := parseContainerName(containerID)
+	if err != nil {
+		glog.Errorf("ParseContainerName for %s failed: %v", containerID, err)
+		return nil, err
+	}
+
+	containerMetadata := &kubeapi.ContainerMetadata{
+		Name:    &containerName,
+		Attempt: &attempt,
+	}
+
+	kubeStatus := &kubeapi.ContainerStatus{
+		Id:          &status.Container.ContainerID,
+		Image:       &kubeapi.ImageSpec{Image: &status.Container.Image},
+		ImageRef:    &status.Container.ImageID,
+		Metadata:    containerMetadata,
+		State:       &state,
+		Labels:      kubeletLabels,
+		Annotations: annotations,
+		CreatedAt:   &status.CreatedAt,
+	}
+
+	mounts := make([]*kubeapi.Mount, len(status.Container.VolumeMounts))
+	for idx, mnt := range status.Container.VolumeMounts {
+		mounts[idx] = &kubeapi.Mount{
+			Name:          &mnt.Name,
+			ContainerPath: &mnt.MountPath,
+			Readonly:      &mnt.ReadOnly,
+		}
+
+		for _, v := range podInfo.Spec.Volumes {
+			if v.Name == mnt.Name {
+				mounts[idx].HostPath = &v.Source
+			}
+		}
+	}
+	kubeStatus.Mounts = mounts
+
+	switch status.Status.Phase {
+	case "running":
+		startedAt, err := parseTimeString(status.Status.Running.StartedAt)
+		if err != nil {
+			glog.Errorf("Hyper: can't parse startedAt %s", status.Status.Running.StartedAt)
+			return nil, err
+		}
+		kubeStatus.StartedAt = &startedAt
+	case "failed", "succeeded":
+		startedAt, err := parseTimeString(status.Status.Terminated.StartedAt)
+		if err != nil {
+			glog.Errorf("Hyper: can't parse startedAt %s", status.Status.Terminated.StartedAt)
+			return nil, err
+		}
+		finishedAt, err := parseTimeString(status.Status.Terminated.FinishedAt)
+		if err != nil {
+			glog.Errorf("Hyper: can't parse finishedAt %s", status.Status.Terminated.FinishedAt)
+			return nil, err
+		}
+
+		kubeStatus.StartedAt = &startedAt
+		kubeStatus.FinishedAt = &finishedAt
+		kubeStatus.Reason = &status.Status.Terminated.Reason
+		kubeStatus.ExitCode = &status.Status.Terminated.ExitCode
+	default:
+		kubeStatus.Reason = &status.Status.Waiting.Reason
+	}
+
+	return kubeStatus, nil
 }
 
 // Exec execute a command in the container.
