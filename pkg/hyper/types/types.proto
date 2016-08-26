@@ -1,7 +1,7 @@
 // Generate cmd: protoc --go_out=plugins=grpc:. types.proto
 syntax = "proto3";
 
-package api;
+package types;
 
 // Types definitions for HyperContainer
 message ContainerPort {

@@ -17,7 +17,7 @@ limitations under the License.
 package hyper
 
 import (
-	"k8s.io/frakti/pkg/hyper/api"
+	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
@@ -30,12 +30,12 @@ const (
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
 // TODO: support pod-level portmapping (depends on hyperd).
 // TODO: support resource limits via pod-level cgroups, ref https://github.com/kubernetes/kubernetes/issues/27097.
-func buildUserPod(config *kubeapi.PodSandboxConfig) (*api.UserPod, error) {
-	spec := &api.UserPod{
+func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
+	spec := &types.UserPod{
 		Id:       buildSandboxName(config),
 		Hostname: config.GetHostname(),
 		Labels:   buildLabelsWithAnnotations(config.Labels, config.Annotations),
-		Resource: &api.UserResource{
+		Resource: &types.UserResource{
 			Vcpu:   int32(defaultCPUNumber),
 			Memory: int32(defaultMemoryinMegabytes),
 		},

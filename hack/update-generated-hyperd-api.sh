@@ -18,7 +18,7 @@ set -o nounset
 set -o pipefail
 
 FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
-HYPERD_API_ROOT="${FRAKTI_ROOT}/pkg/hyper/api"
+HYPERD_API_ROOT="${FRAKTI_ROOT}/pkg/hyper/types"
 
 if [[ -z "$(which protoc)" || "$(protoc --version)" != "libprotoc 3.0."* ]]; then
   echo "Generating protobuf requires protoc 3.0.0-beta1 or newer. Please download and"
@@ -31,13 +31,13 @@ if [[ -z "$(which protoc)" || "$(protoc --version)" != "libprotoc 3.0."* ]]; the
 fi
 
 function cleanup {
-	rm -f ${HYPERD_API_ROOT}/api.pb.go.bak
+	rm -f ${HYPERD_API_ROOT}/types.pb.go.bak
 }
 
 trap cleanup EXIT
 
 hack/build-protoc-gen-gogo.sh
 export PATH=${FRAKTI_ROOT}/cmd/protoc-gen-gogo:$PATH
-protoc -I${HYPERD_API_ROOT} --gogo_out=plugins=grpc:${HYPERD_API_ROOT} ${HYPERD_API_ROOT}/api.proto
-echo "$(cat hack/boilerplate/boilerplate.go.txt ${HYPERD_API_ROOT}/api.pb.go)" > ${HYPERD_API_ROOT}/api.pb.go
-sed -i".bak" "s/Copyright YEAR/Copyright $(date '+%Y')/g" ${HYPERD_API_ROOT}/api.pb.go
+protoc -I${HYPERD_API_ROOT} --gogo_out=plugins=grpc:${HYPERD_API_ROOT} ${HYPERD_API_ROOT}/types.proto
+echo "$(cat hack/boilerplate/boilerplate.go.txt ${HYPERD_API_ROOT}/types.pb.go)" > ${HYPERD_API_ROOT}/types.pb.go
+sed -i".bak" "s/Copyright YEAR/Copyright $(date '+%Y')/g" ${HYPERD_API_ROOT}/types.pb.go

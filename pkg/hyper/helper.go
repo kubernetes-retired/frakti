@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
-	"k8s.io/frakti/pkg/hyper/api"
+	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
@@ -45,12 +45,12 @@ func getContextWithTimeout(timeout time.Duration) (context.Context, context.Canc
 }
 
 // getHyperAuthConfig converts kubeapi.AuthConfig to hyperd's AuthConfig.
-func getHyperAuthConfig(auth *kubeapi.AuthConfig) *api.AuthConfig {
+func getHyperAuthConfig(auth *kubeapi.AuthConfig) *types.AuthConfig {
 	if auth == nil {
-		return &api.AuthConfig{}
+		return &types.AuthConfig{}
 	}
 
-	return &api.AuthConfig{
+	return &types.AuthConfig{
 		Username:      auth.GetUsername(),
 		Password:      auth.GetPassword(),
 		Auth:          auth.GetAuth(),

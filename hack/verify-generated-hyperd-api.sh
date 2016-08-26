@@ -18,7 +18,7 @@ set -o nounset
 set -o pipefail
 
 FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
-PROTO_ROOT=${FRAKTI_ROOT}/pkg/hyper/api
+PROTO_ROOT=${FRAKTI_ROOT}/pkg/hyper/types
 _tmp="${FRAKTI_ROOT}/_tmp"
 
 cleanup() {
@@ -28,11 +28,11 @@ cleanup() {
 trap "cleanup" EXIT SIGINT
 
 mkdir -p ${_tmp}
-cp ${PROTO_ROOT}/api.pb.go ${_tmp}
+cp ${PROTO_ROOT}/types.pb.go ${_tmp}
 
 ret=0
 hack/update-generated-hyperd-api.sh
-diff -I "gzipped FileDescriptorProto" -I "0x" -Naupr ${_tmp}/api.pb.go ${PROTO_ROOT}/api.pb.go || ret=$?
+diff -I "gzipped FileDescriptorProto" -I "0x" -Naupr ${_tmp}/types.pb.go ${PROTO_ROOT}/types.pb.go || ret=$?
 if [[ $ret -eq 0 ]]; then
     echo "Generated hyperd api from proto up to date."
 else
