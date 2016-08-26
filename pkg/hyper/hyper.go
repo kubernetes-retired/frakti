@@ -155,7 +155,59 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 
 // ListPodSandbox returns a list of Sandbox.
 func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.PodSandbox, error) {
-	return nil, fmt.Errorf("Not implemented")
+	pods, err := h.client.GetPodList()
+	if err != nil {
+		glog.Errorf("GetPodList failed: %v", err)
+		return nil, err
+	}
+
+	items := make([]*kubeapi.PodSandbox, 0, len(pods))
+	for _, pod := range pods {
+		state := toPodSandboxState(pod.Status)
+
+		podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodID)
+		if err != nil {
+			glog.Errorf("ParseSandboxName for %s failed: %v", pod.PodID, err)
+			return nil, err
+		}
+
+		if filter != nil {
+			if filter.Name != nil && podName != filter.GetName() {
+				continue
+			}
+
+			if filter.Id != nil && pod.PodID != filter.GetId() {
+				continue
+			}
+
+			if filter.State != nil && state != filter.GetState() {
+				continue
+			}
+
+			if filter.LabelSelector != nil && !inMap(filter.LabelSelector, pod.Labels) {
+				continue
+			}
+		}
+
+		podSandboxMetadata := &kubeapi.PodSandboxMetadata{
+			Name:      &podName,
+			Uid:       &podUID,
+			Namespace: &podNamespace,
+			Attempt:   &attempt,
+		}
+
+		items = append(items, &kubeapi.PodSandbox{
+			Id:        &pod.PodID,
+			Metadata:  podSandboxMetadata,
+			Labels:    pod.Labels,
+			State:     &state,
+			CreatedAt: &pod.CreatedAt,
+		})
+	}
+
+	sortByCreatedAt(items)
+
+	return items, nil
 }
 
 // CreateContainer creates a new container in specified PodSandbox
