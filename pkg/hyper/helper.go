@@ -192,3 +192,18 @@ func getKubeletLabels(lables map[string]string) map[string]string {
 	delete(lables, fraktiAnnotationLabel)
 	return lables
 }
+
+// inMap checks if a map is in dest map
+func inMap(in, dest map[string]string) bool {
+	for k, v := range in {
+		if value, ok := dest[k]; ok {
+			if value != v {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	return true
+}
