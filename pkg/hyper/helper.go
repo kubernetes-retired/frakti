@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +39,8 @@ const (
 	// fraktiAnnotationLabel is used to save annotations into labels
 	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
 )
+
+type sandboxByCreated []*kubeapi.PodSandbox
 
 // getContextWithTimeout returns a context with timeout.
 func getContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
@@ -191,4 +194,36 @@ func toPodSandboxState(state string) kubeapi.PodSandBoxState {
 func getKubeletLabels(lables map[string]string) map[string]string {
 	delete(lables, fraktiAnnotationLabel)
 	return lables
+}
+
+// inMap checks if a map is in dest map.
+func inMap(in, dest map[string]string) bool {
+	for k, v := range in {
+		if value, ok := dest[k]; ok {
+			if value != v {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (s sandboxByCreated) Len() int {
+	return len(s)
+}
+
+func (s sandboxByCreated) Less(i, j int) bool {
+	return *s[i].CreatedAt > *s[j].CreatedAt
+}
+
+func (s sandboxByCreated) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+//Sort sort podSandboxList by creation time (newest first).
+func sortByCreatedAt(podSandboxList []*kubeapi.PodSandbox) {
+	sort.Sort(sandboxByCreated(podSandboxList))
 }
