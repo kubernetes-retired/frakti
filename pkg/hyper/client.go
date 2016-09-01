@@ -170,6 +170,25 @@ func (c *Client) GetPodList() ([]*types.PodListResult, error) {
 	return podList.PodList, nil
 }
 
+// GetContainerInfo gets container info by container name or id
+func (c *Client) GetContainerInfo(container string) (*types.ContainerInfo, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.ContainerInfoRequest{
+		Container: container,
+	}
+	cinfo, err := c.client.ContainerInfo(
+		ctx,
+		&req,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return cinfo.ContainerInfo, nil
+}
+
 // GetImageInfo gets the information of the image.
 func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
