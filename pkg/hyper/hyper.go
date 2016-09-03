@@ -129,9 +129,9 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 		podIP = info.Status.PodIP[0]
 	}
 
-	podName, podNamespace, podUID, attempt, err := parseSandboxName(podSandboxID)
+	podName, podNamespace, podUID, attempt, err := parseSandboxName(info.PodName)
 	if err != nil {
-		glog.Errorf("ParseSandboxName for %s failed: %v", podSandboxID, err)
+		glog.Errorf("ParseSandboxName for %s failed: %v", info.PodName, err)
 		return nil, err
 	}
 
