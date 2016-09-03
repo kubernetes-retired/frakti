@@ -62,6 +62,11 @@ func (h *Runtime) Version() (string, string, string, error) {
 
 // CreatePodSandbox creates a pod-level sandbox.
 func (h *Runtime) CreatePodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
+	err := updatePodSandboxConfig(config)
+	if err != nil {
+		glog.Errorf("Update PodSandbox config failed: %v", err)
+		return "", err
+	}
 	userpod, err := buildUserPod(config)
 	if err != nil {
 		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
