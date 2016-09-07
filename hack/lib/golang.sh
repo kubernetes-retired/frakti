@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+readonly FRAKTI_GO_PACKAGE=k8s.io/frakti
+
 frakti::golang::build_binaries() {
   # Create a sub-shell so that we don't pollute the outer environment
   (
@@ -62,4 +64,11 @@ frakti::golang::output_filename_for_binary() {
   local output_path="${FRAKTI_ROOT}/out"
   local bin=$(basename "${binary}")
   echo "${output_path}/${bin}"
+}
+
+frakti::golang::unit_test_dirs() {
+  local test_dirs=($(frakti::test::find_dirs))
+  for dir in "${test_dirs[@]:+${test_dirs[@]}}"; do
+      echo "${FRAKTI_GO_PACKAGE}/${dir}"
+  done
 }

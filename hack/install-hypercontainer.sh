@@ -17,20 +17,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# The root of the build/dist directory
-FRAKTI_ROOT=$(readlink -f $(dirname "${BASH_SOURCE}")/../..)
+FRAKTI_ROOT=$(readlink -f $(dirname "${BASH_SOURCE}")/..)
+source "${FRAKTI_ROOT}/hack/lib/init.sh"
 
-FRAKTI_OUTPUT_BINDIR="${FRAKTI_ROOT}/out"
-# Expose frakti directly for readability
-PATH="${FRAKTI_OUTPUT_BINDIR}":$PATH
-shopt -s expand_aliases
-alias sudo='sudo env PATH=$PATH'
-
-source "${FRAKTI_ROOT}/hack/lib/util.sh"
-source "${FRAKTI_ROOT}/hack/lib/logging.sh"
-source "${FRAKTI_ROOT}/hack/lib/golang.sh"
-source "${FRAKTI_ROOT}/hack/lib/hyper.sh"
-
-frakti::log::install_errexit
-
-source "${FRAKTI_ROOT}/hack/lib/test.sh"
+frakti::hyper::install_hypercontainer

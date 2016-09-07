@@ -17,5 +17,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-go test -v $(go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+FRAKTI_ROOT=$(readlink -f $(dirname "${BASH_SOURCE}")/..)
+source "${FRAKTI_ROOT}/hack/lib/init.sh"
 
+UNIT_TEST_FILES=($(frakti::golang::unit_test_dirs))
+
+go test -v $(go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ${UNIT_TEST_FILES[@]})

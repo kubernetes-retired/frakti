@@ -25,3 +25,16 @@ frakti::test::e2e() {
   export PATH=$(dirname "${e2e_test}"):"${PATH}"
   sudo "${ginkgo}" "${e2e_test}"
 }
+
+frakti::test::find_dirs() {
+  (
+    cd ${FRAKTI_ROOT}
+    find -L . -not \( \
+        \( \
+          -path './out/*' \
+          -o -path './test/e2e/*' \
+          -o -path './vendor/*' \
+        \) -prune \
+      \) -name '*_test.go' -print0 | xargs -0n1 dirname | sed 's|^\./||' | sort -u
+  )
+}
