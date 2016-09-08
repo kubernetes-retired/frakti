@@ -40,7 +40,7 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 				filter = filter + ":latest"
 			}
 
-			if !inList(filter, img.RepoTags) {
+			if !inList(filter, img.RepoTags) && !inList(filter, img.RepoDigests) {
 				continue
 			}
 		}

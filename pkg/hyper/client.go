@@ -19,6 +19,7 @@ package hyper
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -27,7 +28,10 @@ import (
 
 const (
 	//timeout in second for creating context with timeout.
-	hyperContextTimeout = 15 * time.Second
+	hyperContextTimeout = 2 * time.Minute
+
+	//timeout for image pulling progress report
+	defaultImagePullingStuckTimeout = 1 * time.Minute
 
 	//response code of PodRemove, when the pod can not be found.
 	E_NOT_FOUND = -2
@@ -222,7 +226,7 @@ func (c *Client) GetImages() ([]*types.ImageInfo, error) {
 
 // PullImage pulls a image from registry
 func (c *Client) PullImage(image, tag string, auth *types.AuthConfig, out io.Writer) error {
-	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	ctx, cancel := getContextWithCancel()
 	defer cancel()
 
 	request := types.ImagePullRequest{
@@ -235,27 +239,53 @@ func (c *Client) PullImage(image, tag string, auth *types.AuthConfig, out io.Wri
 		return err
 	}
 
-	for {
-		res, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
+	errC := make(chan error)
+	progressC := make(chan struct{})
+	ticker := time.NewTicker(defaultImagePullingStuckTimeout)
+	defer ticker.Stop()
 
-		if out != nil {
-			n, err := out.Write(res.Data)
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				errC <- nil
+				return
+			}
 			if err != nil {
-				return err
+				errC <- err
+				return
 			}
-			if n != len(res.Data) {
-				return io.ErrShortWrite
+			progressC <- struct{}{}
+
+			if out != nil {
+				n, err := out.Write(res.Data)
+				if err != nil {
+					errC <- err
+					return
+				}
+				if n != len(res.Data) {
+					errC <- io.ErrShortWrite
+					return
+				}
 			}
+		}
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			// pulling image timeout, cancel it
+			return fmt.Errorf("Cancel pulling image %q because of no progress for %v", image, defaultImagePullingStuckTimeout)
+		case err = <-errC:
+			// if nil, got EOF, session finished
+			// else return err
+			return err
+		case <-progressC:
+			// got progress from pulling image, reset the clock
+			ticker.Stop()
+			ticker = time.NewTicker(defaultImagePullingStuckTimeout)
 		}
 	}
-
-	return nil
 }
 
 // RemoveImage removes a image from hyperd
@@ -263,6 +293,12 @@ func (c *Client) RemoveImage(image, tag string) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
+	// check if tag is digest
+	repoSep := ":"
+	if strings.Index(tag, ":") > 0 {
+		repoSep = "@"
+	}
+
+	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s%s%s", image, repoSep, tag)})
 	return err
 }
