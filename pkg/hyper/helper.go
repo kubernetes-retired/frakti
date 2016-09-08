@@ -47,6 +47,11 @@ func getContextWithTimeout(timeout time.Duration) (context.Context, context.Canc
 	return context.WithTimeout(context.Background(), timeout)
 }
 
+// getContextWithCancel returns a context and cancel func
+func getContextWithCancel() (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.Background())
+}
+
 // getHyperAuthConfig converts kubeapi.AuthConfig to hyperd's AuthConfig.
 func getHyperAuthConfig(auth *kubeapi.AuthConfig) *types.AuthConfig {
 	if auth == nil {
