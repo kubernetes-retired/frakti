@@ -261,3 +261,14 @@ func toKubeContainerState(state string) kubeapi.ContainerState {
 		return kubeapi.ContainerState_UNKNOWN
 	}
 }
+
+// updatePodSandboxConfig initialize config maps in podSandboxConfig
+func updatePodSandboxConfig(config *kubeapi.PodSandboxConfig) error {
+	if config.Labels == nil {
+		config.Labels = make(map[string]string)
+	}
+	if config.Annotations == nil {
+		config.Annotations = make(map[string]string)
+	}
+	return nil
+}

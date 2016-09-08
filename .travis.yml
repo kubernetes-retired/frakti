@@ -1,5 +1,6 @@
 language: go
 sudo: required
+dist: trusty
 
 go:
   - 1.6.3
@@ -8,8 +9,11 @@ go_import_path: k8s.io/frakti
 install:
   - go install -v $(go list ./... | grep -v /vendor/)
   - hack/install-protoc.sh
+  - hack/install-hypercontainer.sh
+  - make ginkgo && make frakti
   - hack/verify-all.sh -v
 
 script:
   - hack/test-go.sh
+  - hack/test-e2e.sh
 

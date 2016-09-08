@@ -28,3 +28,15 @@ install:
 
 clean:
 	rm -rf ${BUILD_DIR}
+
+# Build ginkgo
+#
+# Example:
+# make ginkgo
+.PHONY: ginkgo
+ginkgo:
+	hack/make-rules/build.sh ./vendor/github.com/onsi/ginkgo/ginkgo
+
+.PHONY: test-e2e
+test-e2e: ginkgo frakti
+	hack/test-e2e.sh
