@@ -80,6 +80,14 @@ func PodReady(status *kubeapi.PodSandboxStatus) bool {
 	return false
 }
 
+//podFound returns whether podsandbox is found
+func PodFound(podsandboxs []*kubeapi.PodSandbox, podId string) bool {
+	if len(podsandboxs) == 1 && *podsandboxs[0].Id == podId {
+		return true
+	}
+	return false
+}
+
 func NewUUID() string {
 	uuidLock.Lock()
 	defer uuidLock.Unlock()

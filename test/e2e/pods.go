@@ -23,8 +23,8 @@ import (
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
-var _ = framework.KubeDescribe("Create PodSandbox", func() {
-	f := framework.NewDefaultFramework("create")
+var _ = framework.KubeDescribe("Test PodSandbox", func() {
+	f := framework.NewDefaultFramework("test")
 
 	var c *framework.FraktiClient
 
@@ -51,5 +51,98 @@ var _ = framework.KubeDescribe("Create PodSandbox", func() {
 		status, err := c.PodSandboxStatus(podId)
 		framework.ExpectNoError(err, "Failed to get podsandbox %s status: %v", podId, err)
 		Expect(framework.PodReady(status)).To(BeTrue(), "pod state shoud be ready")
+	})
+
+	It("test stop PodSandbox", func() {
+		name := "create-simple-sandbox-for-stop" + framework.NewUUID()
+
+		By("create a podSandbox with name")
+		config := &kubeapi.PodSandboxConfig{
+			Metadata: &kubeapi.PodSandboxMetadata{
+				Name: &name,
+			},
+		}
+		podId, err := c.CreatePodSandbox(config)
+		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
+		framework.Logf("Created Podsanbox %s\n", podId)
+		defer func() {
+			By("delete pod sandbox")
+			c.RemovePodSandbox(podId)
+		}()
+
+		By("get podSandbox status")
+		status, err := c.PodSandboxStatus(podId)
+		framework.ExpectNoError(err, "Failed to get podsandbox %s status: %v", podId, err)
+		Expect(framework.PodReady(status)).To(BeTrue(), "pod state should be ready")
+
+		By("stop podSandbox with poId")
+		err = c.StopPodSandbox(podId)
+		framework.ExpectNoError(err, "Failed to stop podsandbox: %v", err)
+		framework.Logf("Stoped Podsanbox %s\n", podId)
+
+		By("get podSandbox status")
+		status, err = c.PodSandboxStatus(podId)
+		framework.ExpectNoError(err, "Failed to get podsandbox %s status: %v", podId, err)
+		Expect(framework.PodReady(status)).To(BeFalse(), "pod state should be not ready")
+	})
+
+	It("test remove podsandbox", func() {
+		name := "create-simple-sandbox-for-remove" + framework.NewUUID()
+		By("create a podSandbox with name")
+		config := &kubeapi.PodSandboxConfig{
+			Metadata: &kubeapi.PodSandboxMetadata{
+				Name: &name,
+			},
+		}
+		podId, err := c.CreatePodSandbox(config)
+		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
+		framework.Logf("Created Podsanbox %s\n", podId)
+
+		By("get podSandbox status")
+		status, err := c.PodSandboxStatus(podId)
+		framework.ExpectNoError(err, "Failed to get podsandbox %s status: %v", podId, err)
+		Expect(framework.PodReady(status)).To(BeTrue(), "pod state should be ready")
+
+		By("remove podSandbox with podId")
+		err = c.RemovePodSandbox(podId)
+		framework.ExpectNoError(err, "Failed to remove podsandbox: %v", err)
+		framework.Logf("Removed Podsanbox %s\n", podId)
+
+		By("list podSandbox with podId")
+		filter := &kubeapi.PodSandboxFilter{
+			Id: &podId,
+		}
+		podsandboxs, err := c.ListPodSandbox(filter)
+		framework.ExpectNoError(err, "Failed to list podsandbox %s status: %v", podId, err)
+		Expect(framework.PodFound(podsandboxs, podId)).To(BeFalse(), "pod should be removed")
+	})
+
+	It("test list podsandbox", func() {
+		name := "create-simple-sandbox-for-list" + framework.NewUUID()
+		By("create a podSandbox with name")
+		config := &kubeapi.PodSandboxConfig{
+			Metadata: &kubeapi.PodSandboxMetadata{
+				Name: &name,
+			},
+		}
+		podId, err := c.CreatePodSandbox(config)
+		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
+		framework.Logf("Created Podsanbox %s\n", podId)
+		defer func() {
+			By("delete pod sandbox")
+			c.RemovePodSandbox(podId)
+		}()
+		By("get podSandbox status")
+		status, err := c.PodSandboxStatus(podId)
+		framework.ExpectNoError(err, "Failed to get podsandbox %s status: %v", podId, err)
+		Expect(framework.PodReady(status)).To(BeTrue(), "pod state should be ready")
+
+		By("list podSandbox with podId")
+		filter := &kubeapi.PodSandboxFilter{
+			Id: &podId,
+		}
+		podsandboxs, err := c.ListPodSandbox(filter)
+		framework.ExpectNoError(err, "Failed to list podsandbox %s status: %v", podId, err)
+		Expect(framework.PodFound(podsandboxs, podId)).To(BeTrue(), "pod should be listed")
 	})
 })
