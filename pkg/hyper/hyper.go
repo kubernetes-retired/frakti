@@ -170,7 +170,7 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 	for _, pod := range pods {
 		state := toPodSandboxState(pod.Status)
 
-		podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodID)
+		podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodName)
 		if err != nil {
 			glog.Errorf("ParseSandboxName for %s failed: %v", pod.PodID, err)
 			return nil, err
