@@ -266,3 +266,22 @@ func (c *Client) RemoveImage(image, tag string) error {
 	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s:%s", image, tag)})
 	return err
 }
+
+// GetContainerList gets a list of containers
+func (c *Client) GetContainerList(auxiliary bool) ([]*types.ContainerListResult, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.ContainerListRequest{
+		Auxiliary: auxiliary,
+	}
+	containerList, err := c.client.ContainerList(
+		ctx,
+		&req,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return containerList.ContainerList, nil
+}

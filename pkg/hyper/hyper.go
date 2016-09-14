@@ -172,7 +172,7 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 
 		podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodName)
 		if err != nil {
-			glog.Errorf("ParseSandboxName for %s failed: %v", pod.PodID, err)
+			glog.Errorf("ParseSandboxName for %s failed: %v", pod.PodName, err)
 			return nil, err
 		}
 
@@ -238,7 +238,73 @@ func (h *Runtime) RemoveContainer(rawContainerID string) error {
 
 // ListContainers lists all containers by filters.
 func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Container, error) {
-	return nil, fmt.Errorf("Not implemented")
+	containerList, err := h.client.GetContainerList(false)
+	if err != nil {
+		glog.Errorf("Get container list failed: %v", err)
+		return nil, err
+	}
+
+	containers := make([]*kubeapi.Container, 0, len(containerList))
+
+	for _, c := range containerList {
+		state := toKubeContainerState(c.Status)
+		_, _, _, containerName, attempt, err := parseContainerName(c.ContainerName)
+
+		if err != nil {
+			glog.Errorf("ParseContainerName for %s failed: %v", c.ContainerName, err)
+			return nil, err
+		}
+
+		if filter != nil {
+			if filter.Name != nil && containerName != filter.GetName() {
+				continue
+			}
+
+			if filter.Id != nil && c.ContainerID != filter.GetId() {
+				continue
+			}
+
+			if filter.PodSandboxId != nil && c.PodID != filter.GetPodSandboxId() {
+				continue
+			}
+
+			if filter.State != nil && state != filter.GetState() {
+				continue
+			}
+		}
+
+		info, err := h.client.GetContainerInfo(c.ContainerID)
+		if err != nil {
+			glog.Errorf("Get container info for %s failed: %v", c.ContainerID, err)
+			return nil, err
+		}
+
+		annotations := getAnnotationsFromLabels(info.Container.Labels)
+		kubeletLabels := getKubeletLabels(info.Container.Labels)
+
+		if filter != nil {
+			if filter.LabelSelector != nil && !inMap(filter.LabelSelector, kubeletLabels) {
+				continue
+			}
+		}
+
+		containerMetadata := &kubeapi.ContainerMetadata{
+			Name:    &containerName,
+			Attempt: &attempt,
+		}
+
+		containers = append(containers, &kubeapi.Container{
+			Id:          &c.ContainerID,
+			Metadata:    containerMetadata,
+			Image:       &kubeapi.ImageSpec{Image: &info.Container.Image},
+			ImageRef:    &info.Container.ImageID,
+			State:       &state,
+			Labels:      kubeletLabels,
+			Annotations: annotations,
+		})
+	}
+
+	return containers, nil
 }
 
 // ContainerStatus returns the container status.
@@ -259,9 +325,9 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 	annotations := getAnnotationsFromLabels(status.Container.Labels)
 	kubeletLabels := getKubeletLabels(status.Container.Labels)
 
-	_, _, _, containerName, attempt, err := parseContainerName(containerID)
+	_, _, _, containerName, attempt, err := parseContainerName(status.Container.Name)
 	if err != nil {
-		glog.Errorf("ParseContainerName for %s failed: %v", containerID, err)
+		glog.Errorf("ParseContainerName for %s failed: %v", status.Container.Name, err)
 		return nil, err
 	}
 
