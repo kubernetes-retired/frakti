@@ -227,7 +227,13 @@ func (h *Runtime) StartContainer(rawContainerID string) error {
 
 // StopContainer stops a running container with a grace period (i.e. timeout).
 func (h *Runtime) StopContainer(rawContainerID string, timeout int64) error {
-	return fmt.Errorf("Not implemented")
+	err := h.client.StopContainer(rawContainerID, timeout)
+	if err != nil {
+		glog.Errorf("Stop container %s failed: %v", rawContainerID, err)
+		return err
+	}
+
+	return nil
 }
 
 // RemoveContainer removes the container. If the container is running, the container
