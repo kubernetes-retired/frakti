@@ -82,7 +82,7 @@ func PodReady(status *kubeapi.PodSandboxStatus) bool {
 
 //podFound returns whether podsandbox is found
 func PodFound(podsandboxs []*kubeapi.PodSandbox, podId string) bool {
-	if len(podsandboxs) == 1 && *podsandboxs[0].Id == podId {
+	if len(podsandboxs) == 1 && podsandboxs[0].GetId() == podId {
 		return true
 	}
 	return false
