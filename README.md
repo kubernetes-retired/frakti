@@ -48,6 +48,15 @@ Then start frakti:
 frakti --v=3 --logtostderr --listen=/var/run/frakti.sock --hyper-endpoint=127.0.0.1:22318
 ```
 
+Finally, start kubernetes with frakti runtime:
+
+```sh
+cd $GOPATH/src/k8s.io/kubernetes
+export KUBERNETES_PROVIDER=local
+export CONTAINER_RUNTIME_ENDPOINT=/var/run/frakti.sock
+hack/local-up-cluster.sh
+```
+
 ## Documentation
 
 Further information could be found at:
