@@ -98,3 +98,30 @@ func NewUUID() string {
 	lastUUID = result
 	return result.String()
 }
+
+func ClearAllImages(client *FraktiClient) {
+	imageList, err := client.ListImages(nil)
+	ExpectNoError(err, "Failed to get image list: %v", err)
+	for _, image := range imageList {
+		if len(image.RepoTags) == 0 {
+			for _, rd := range image.RepoDigests {
+				repoDigest := rd
+				err = client.RemoveImage(&kubeapi.ImageSpec{
+					Image: &repoDigest,
+				})
+				ExpectNoError(err, "Failed to remove image: %v", err)
+			}
+			continue
+		}
+		for _, rt := range image.RepoTags {
+			repoTag := rt
+			err = client.RemoveImage(&kubeapi.ImageSpec{
+				Image: &repoTag,
+			})
+			ExpectNoError(err, "Failed to remove image: %v", err)
+		}
+	}
+	imageList, err = client.ListImages(nil)
+	ExpectNoError(err, "Failed to get image list: %v", err)
+	Expect(len(imageList)).To(Equal(0), "should have cleaned all images")
+}
