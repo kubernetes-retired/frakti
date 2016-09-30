@@ -268,8 +268,19 @@ func toKubeContainerState(state string) kubeapi.ContainerState {
 	}
 }
 
-// updatePodSandboxConfig initialize config maps in podSandboxConfig
+// updatePodSandboxConfig initialize config maps in PodSandboxConfig
 func updatePodSandboxConfig(config *kubeapi.PodSandboxConfig) error {
+	if config.Labels == nil {
+		config.Labels = make(map[string]string)
+	}
+	if config.Annotations == nil {
+		config.Annotations = make(map[string]string)
+	}
+	return nil
+}
+
+// updateContainerConfig initialize config maps in ContainerConfig
+func updateContainerConfig(config *kubeapi.ContainerConfig) error {
 	if config.Labels == nil {
 		config.Labels = make(map[string]string)
 	}

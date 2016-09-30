@@ -239,7 +239,25 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 
 // CreateContainer creates a new container in specified PodSandbox
 func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (string, error) {
-	return "", fmt.Errorf("Not implemented")
+	err := updateContainerConfig(config)
+	if err != nil {
+		glog.Errorf("Update PodSandbox config failed: %v", err)
+		return "", err
+	}
+
+	containerSpec, err := buildUserContainer(config, sandboxConfig)
+	if err != nil {
+		glog.Errorf("Build UserContainer for container %q failed: %v", config.String(), err)
+		return "", err
+	}
+
+	containerID, err := h.client.CreateContainer(podSandboxID, containerSpec)
+	if err != nil {
+		glog.Errorf("Create container %s in pod %s failed: %v", config.Metadata.GetName(), podSandboxID, err)
+		return "", err
+	}
+
+	return containerID, nil
 }
 
 // StartContainer starts the container.
