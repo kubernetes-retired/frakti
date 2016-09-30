@@ -346,3 +346,21 @@ func (c *Client) GetContainerList(auxiliary bool) ([]*types.ContainerListResult,
 
 	return containerList.ContainerList, nil
 }
+
+// CreateContainer creates a container
+func (c *Client) CreateContainer(podID string, spec *types.UserContainer) (string, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.ContainerCreateRequest{
+		PodID:         podID,
+		ContainerSpec: spec,
+	}
+
+	resp, err := c.client.ContainerCreate(ctx, &req)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.ContainerID, nil
+}

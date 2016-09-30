@@ -165,6 +165,10 @@ func parseContainerName(name string) (podName, podNamespace, podUID, containerNa
 
 // buildLabelsWithAnnotations merges annotations into labels.
 func buildLabelsWithAnnotations(labels, annotations map[string]string) map[string]string {
+	if annotations == nil {
+		return labels
+	}
+
 	rawAnnotations, err := json.Marshal(annotations)
 	if err != nil {
 		glog.Warningf("Unable to marshal annotations %q: %v", annotations, err)
@@ -266,15 +270,4 @@ func toKubeContainerState(state string) kubeapi.ContainerState {
 	default:
 		return kubeapi.ContainerState_CONTAINER_UNKNOWN
 	}
-}
-
-// updatePodSandboxConfig initialize config maps in podSandboxConfig
-func updatePodSandboxConfig(config *kubeapi.PodSandboxConfig) error {
-	if config.Labels == nil {
-		config.Labels = make(map[string]string)
-	}
-	if config.Annotations == nil {
-		config.Annotations = make(map[string]string)
-	}
-	return nil
 }
