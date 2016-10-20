@@ -17,19 +17,21 @@ limitations under the License.
 package e2e
 
 import (
+	"k8s.io/frakti/test/e2e/framework"
+	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/frakti/test/e2e/framework"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
 var _ = framework.KubeDescribe("Test PodSandbox", func() {
 	f := framework.NewDefaultFramework("test")
 
-	var c *framework.FraktiClient
+	var c internalapi.RuntimeService
 
 	BeforeEach(func() {
-		c = f.Client
+		c = f.Client.FraktiRuntimeService
 	})
 
 	It("test create simple podsandbox", func() {

@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/frakti/test/e2e/framework"
+	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/frakti/test/e2e/framework"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
 var (
@@ -37,7 +39,7 @@ var (
 	latestBusyboxDigestRef string = testImageName + "@sha256:a59906e33509d14c036c8678d687bd4eec81ed7c4b8ce907b888c607f6a1e0e6"
 )
 
-func testPublicImage(client *framework.FraktiClient, image string) {
+func testPublicImage(client internalapi.ImageManagerService, image string) {
 	By(fmt.Sprintf("pull image %s", image))
 	err := client.PullImage(&kubeapi.ImageSpec{
 		Image: &image,
@@ -71,7 +73,7 @@ func testPublicImage(client *framework.FraktiClient, image string) {
 
 // TODO: need some test case with private image
 
-func pullImageList(client *framework.FraktiClient, imageList []string) {
+func pullImageList(client internalapi.ImageManagerService, imageList []string) {
 	for _, imageRef := range imageList {
 		By(fmt.Sprintf("pull image %s", imageRef))
 		err := client.PullImage(&kubeapi.ImageSpec{
@@ -81,7 +83,7 @@ func pullImageList(client *framework.FraktiClient, imageList []string) {
 	}
 }
 
-func removeImageList(client *framework.FraktiClient, imageList []string) {
+func removeImageList(client internalapi.ImageManagerService, imageList []string) {
 	for _, imageRef := range imageList {
 		By(fmt.Sprintf("remove image %s", imageRef))
 		err := client.RemoveImage(&kubeapi.ImageSpec{
@@ -94,10 +96,10 @@ func removeImageList(client *framework.FraktiClient, imageList []string) {
 var _ = framework.KubeDescribe("Test image", func() {
 	f := framework.NewDefaultFramework("image")
 
-	var c *framework.FraktiClient
+	var c internalapi.ImageManagerService
 
 	BeforeEach(func() {
-		c = f.Client
+		c = f.Client.FraktiImageService
 		// clear all images before each test
 		framework.ClearAllImages(c)
 	})

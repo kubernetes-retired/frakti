@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"strings"
 
+	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -38,6 +40,11 @@ type Framework struct {
 
 	// configuration for framework's client
 	options FrameworkOptions
+}
+
+type FraktiClient struct {
+	FraktiRuntimeService internalapi.RuntimeService
+	FraktiImageService   internalapi.ImageManagerService
 }
 
 type TestDataSummary interface {
