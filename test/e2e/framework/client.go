@@ -52,9 +52,9 @@ func (c *FraktiClient) Version(apiVersion string) (*runtimeApi.VersionResponse, 
 	return c.runtimeService.Version(apiVersion)
 }
 
-// CreatePodSandbox creates a pod-level sandbox
-func (c *FraktiClient) CreatePodSandbox(config *runtimeApi.PodSandboxConfig) (string, error) {
-	return c.runtimeService.CreatePodSandbox(config)
+// CreatePodSandbox creates and start a pod-level sandbox
+func (c *FraktiClient) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (string, error) {
+	return c.runtimeService.RunPodSandbox(config)
 }
 
 // StopPodSandbox stops the sandbox. If there are any running containers in the

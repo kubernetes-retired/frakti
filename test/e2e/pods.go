@@ -40,7 +40,7 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 				Name: &name,
 			},
 		}
-		podId, err := c.CreatePodSandbox(config)
+		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
 		framework.Logf("Created Podsanbox %s\n", podId)
 		defer func() {
@@ -62,7 +62,7 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 				Name: &name,
 			},
 		}
-		podId, err := c.CreatePodSandbox(config)
+		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
 		framework.Logf("Created Podsanbox %s\n", podId)
 		defer func() {
@@ -94,7 +94,7 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 				Name: &name,
 			},
 		}
-		podId, err := c.CreatePodSandbox(config)
+		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
 		framework.Logf("Created Podsanbox %s\n", podId)
 
@@ -125,7 +125,7 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 				Name: &name,
 			},
 		}
-		podId, err := c.CreatePodSandbox(config)
+		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
 		framework.Logf("Created Podsanbox %s\n", podId)
 		defer func() {
