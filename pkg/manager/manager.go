@@ -242,10 +242,27 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 	}, nil
 }
 
+// ExecSync runs a command in a container synchronously.
+func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncRequest) (*kubeapi.ExecSyncResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+
+}
+
 // Exec execute a command in the container.
-func (s *FraktiManager) Exec(stream kubeapi.RuntimeService_ExecServer) error {
+func (s *FraktiManager) Exec(ctx context.Context, req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
 	// TODO: implement exec in container
-	return fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("Not implemented")
+}
+
+// Attach prepares a streaming endpoint to attach to a running container.
+func (s *FraktiManager) Attach(ctx context.Context, req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+
+}
+
+// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
+func (s *FraktiManager) PortForward(ctx context.Context, req *kubeapi.PortForwardRequest) (*kubeapi.PortForwardResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
 }
 
 // UpdateRuntimeConfig updates runtime configuration if specified

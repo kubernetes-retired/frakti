@@ -55,8 +55,16 @@ type RuntimeService interface {
 	ListContainers(filter *runtimeApi.ContainerFilter) ([]*runtimeApi.Container, error)
 	// ContainerStatus returns the status of the container.
 	ContainerStatus(rawContainerID string) (*runtimeApi.ContainerStatus, error)
+
+	// ExecSync runs a command in a container synchronously.
+	ExecSync() error
 	// Exec executes a command in the container.
 	Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error
+	// Attach prepares a streaming endpoint to attach to a running container.
+	Attach() error
+	// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
+	PortForward() error
+
 	// UpdateRuntimeConfig updates runtime configuration if specified
 	UpdateRuntimeConfig(runtimeConfig *runtimeApi.RuntimeConfig) error
 }
