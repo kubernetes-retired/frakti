@@ -42,9 +42,9 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 	}
 
 	// Make dns
-	if config.DnsOptions != nil {
+	if config.DnsConfig != nil {
 		// TODO: support DNS search domains in upstream hyperd
-		spec.Dns = config.DnsOptions.Servers
+		spec.Dns = config.DnsConfig.Servers
 	}
 
 	return spec, nil

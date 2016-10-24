@@ -78,7 +78,7 @@ func (s *FraktiManager) registerServer() {
 	kubeapi.RegisterImageServiceServer(s.server, s)
 }
 
-// Version returns the runtime name, runtime version and runtime API version
+// Version returns the runtime name, runtime version and runtime API version.
 func (s *FraktiManager) Version(ctx context.Context, req *kubeapi.VersionRequest) (*kubeapi.VersionResponse, error) {
 	runtimeName, version, apiVersion, err := s.runtimeService.Version()
 	if err != nil {
@@ -95,17 +95,17 @@ func (s *FraktiManager) Version(ctx context.Context, req *kubeapi.VersionRequest
 	}, nil
 }
 
-// CreatePodSandbox creates a hyper Pod
-func (s *FraktiManager) CreatePodSandbox(ctx context.Context, req *kubeapi.CreatePodSandboxRequest) (*kubeapi.CreatePodSandboxResponse, error) {
-	glog.V(3).Infof("CreatePodSandbox with request %s", req.String())
+// RunPodSandbox creates and start a hyper Pod.
+func (s *FraktiManager) RunPodSandbox(ctx context.Context, req *kubeapi.RunPodSandboxRequest) (*kubeapi.RunPodSandboxResponse, error) {
+	glog.V(3).Infof("RunPodSandbox with request %s", req.String())
 
-	podID, err := s.runtimeService.CreatePodSandbox(req.Config)
+	podID, err := s.runtimeService.RunPodSandbox(req.Config)
 	if err != nil {
-		glog.Errorf("CreatePodSandbox from runtime service failed: %v", err)
+		glog.Errorf("RunPodSandbox from runtime service failed: %v", err)
 		return nil, err
 	}
 
-	return &kubeapi.CreatePodSandboxResponse{PodSandboxId: &podID}, nil
+	return &kubeapi.RunPodSandboxResponse{PodSandboxId: &podID}, nil
 }
 
 // StopPodSandbox stops the sandbox.
@@ -242,10 +242,36 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 	}, nil
 }
 
+// ExecSync runs a command in a container synchronously.
+func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncRequest) (*kubeapi.ExecSyncResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+
+}
+
 // Exec execute a command in the container.
-func (s *FraktiManager) Exec(stream kubeapi.RuntimeService_ExecServer) error {
+func (s *FraktiManager) Exec(ctx context.Context, req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
 	// TODO: implement exec in container
-	return fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("Not implemented")
+}
+
+// Attach prepares a streaming endpoint to attach to a running container.
+func (s *FraktiManager) Attach(ctx context.Context, req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+
+}
+
+// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
+func (s *FraktiManager) PortForward(ctx context.Context, req *kubeapi.PortForwardRequest) (*kubeapi.PortForwardResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+
+// UpdateRuntimeConfig updates runtime configuration if specified
+func (s *FraktiManager) UpdateRuntimeConfig(ctx context.Context, req *kubeapi.UpdateRuntimeConfigRequest) (*kubeapi.UpdateRuntimeConfigResponse, error) {
+	err := s.runtimeService.UpdateRuntimeConfig(req.GetRuntimeConfig())
+	if err != nil {
+		return nil, err
+	}
+	return &kubeapi.UpdateRuntimeConfigResponse{}, nil
 }
 
 // ListImages lists existing images.

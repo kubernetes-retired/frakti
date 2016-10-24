@@ -27,9 +27,9 @@ import (
 type RuntimeService interface {
 	// Version returns the runtime name, runtime version and runtime API version
 	Version() (string, string, string, error)
-	// CreatePodSandbox creates a pod-level sandbox.
+	// RunPodSandbox creates and start a pod-level sandbox.
 	// The definition of PodSandbox is at https://github.com/kubernetes/kubernetes/pull/25899
-	CreatePodSandbox(config *runtimeApi.PodSandboxConfig) (string, error)
+	RunPodSandbox(config *runtimeApi.PodSandboxConfig) (string, error)
 	// StopPodSandbox stops the sandbox. If there are any running containers in the
 	// sandbox, they should be force terminated.
 	// It should return success if the sandbox has already been deleted.
@@ -55,8 +55,18 @@ type RuntimeService interface {
 	ListContainers(filter *runtimeApi.ContainerFilter) ([]*runtimeApi.Container, error)
 	// ContainerStatus returns the status of the container.
 	ContainerStatus(rawContainerID string) (*runtimeApi.ContainerStatus, error)
+
+	// ExecSync runs a command in a container synchronously.
+	ExecSync() error
 	// Exec executes a command in the container.
 	Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error
+	// Attach prepares a streaming endpoint to attach to a running container.
+	Attach() error
+	// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
+	PortForward() error
+
+	// UpdateRuntimeConfig updates runtime configuration if specified
+	UpdateRuntimeConfig(runtimeConfig *runtimeApi.RuntimeConfig) error
 }
 
 // ImageService interface should be implemented by a container image manager.

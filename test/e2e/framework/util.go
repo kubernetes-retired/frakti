@@ -21,10 +21,13 @@ import (
 	"sync"
 	"time"
 
+	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/remote"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pborman/uuid"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
 var (
@@ -34,6 +37,23 @@ var (
 	// lastUUID record last generated uuid from NewUUID()
 	lastUUID uuid.UUID
 )
+
+func LoadDefaultClient() (*FraktiClient, error) {
+	rService, err := remote.NewRemoteRuntimeService(TestContext.RuntimeServiceAddr, TestContext.RuntimeServiceTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	iService, err := remote.NewRemoteImageService(TestContext.ImageServiceAddr, TestContext.ImageServiceTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FraktiClient{
+		FraktiRuntimeService: rService,
+		FraktiImageService:   iService,
+	}, nil
+}
 
 func nowStamp() string {
 	return time.Now().Format(time.StampMilli)
@@ -99,7 +119,7 @@ func NewUUID() string {
 	return result.String()
 }
 
-func ClearAllImages(client *FraktiClient) {
+func ClearAllImages(client internalapi.ImageManagerService) {
 	imageList, err := client.ListImages(nil)
 	ExpectNoError(err, "Failed to get image list: %v", err)
 	for _, image := range imageList {

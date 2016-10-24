@@ -60,8 +60,8 @@ func (h *Runtime) Version() (string, string, string, error) {
 	return hyperRuntimeName, version, apiVersion, nil
 }
 
-// CreatePodSandbox creates a pod-level sandbox.
-func (h *Runtime) CreatePodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
+// RunPodSandbox creates and starts a pod-level sandbox.
+func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
 	err := updatePodSandboxConfig(config)
 	if err != nil {
 		glog.Errorf("Update PodSandbox config failed: %v", err)
@@ -177,10 +177,6 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 		}
 
 		if filter != nil {
-			if filter.Name != nil && podName != filter.GetName() {
-				continue
-			}
-
 			if filter.Id != nil && pod.PodID != filter.GetId() {
 				continue
 			}
@@ -262,10 +258,6 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 		}
 
 		if filter != nil {
-			if filter.Name != nil && containerName != filter.GetName() {
-				continue
-			}
-
 			if filter.Id != nil && c.ContainerID != filter.GetId() {
 				continue
 			}
@@ -357,7 +349,6 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 	mounts := make([]*kubeapi.Mount, len(status.Container.VolumeMounts))
 	for idx, mnt := range status.Container.VolumeMounts {
 		mounts[idx] = &kubeapi.Mount{
-			Name:          &mnt.Name,
 			ContainerPath: &mnt.MountPath,
 			Readonly:      &mnt.ReadOnly,
 		}
@@ -401,7 +392,27 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 	return kubeStatus, nil
 }
 
+// ExecSync runs a command in a container synchronously.
+func (h *Runtime) ExecSync() error {
+	return fmt.Errorf("Not implemented")
+}
+
 // Exec execute a command in the container.
 func (h *Runtime) Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
 	return fmt.Errorf("Not implemented")
+}
+
+// Attach prepares a streaming endpoint to attach to a running container.
+func (h *Runtime) Attach() error {
+	return fmt.Errorf("Not implemented")
+}
+
+// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
+func (h *Runtime) PortForward() error {
+	return fmt.Errorf("Not implemented")
+}
+
+// UpdateRuntimeConfig updates runtime configuration if specified
+func (h *Runtime) UpdateRuntimeConfig(runtimeConfig *kubeapi.RuntimeConfig) error {
+	return nil
 }

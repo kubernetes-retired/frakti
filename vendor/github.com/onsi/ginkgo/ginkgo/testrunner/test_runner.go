@@ -29,17 +29,25 @@ type TestRunner struct {
 
 	numCPU         int
 	parallelStream bool
-	goOpts         map[string]interface{}
+	race           bool
+	cover          bool
+	coverPkg       string
+	tags           string
+	gcFlags        string
 	additionalArgs []string
 }
 
-func New(suite testsuite.TestSuite, numCPU int, parallelStream bool, goOpts map[string]interface{}, additionalArgs []string) *TestRunner {
+func New(suite testsuite.TestSuite, numCPU int, parallelStream bool, race bool, cover bool, coverPkg string, tags string, gcFlags string, additionalArgs []string) *TestRunner {
 	runner := &TestRunner{
 		Suite:          suite,
 		numCPU:         numCPU,
 		parallelStream: parallelStream,
-		goOpts:         goOpts,
+		race:           race,
+		cover:          cover,
+		coverPkg:       coverPkg,
+		tags:           tags,
 		additionalArgs: additionalArgs,
+		gcFlags:        gcFlags,
 	}
 
 	if !suite.Precompiled {
@@ -57,70 +65,6 @@ func (t *TestRunner) Compile() error {
 	return t.CompileTo(t.compilationTargetPath)
 }
 
-func (t *TestRunner) BuildArgs(path string) []string {
-	args := []string{"test", "-c", "-i", "-o", path, t.Suite.Path}
-
-	if *t.goOpts["covermode"].(*string) != "" {
-		args = append(args, "-cover", fmt.Sprintf("-covermode=%s", *t.goOpts["covermode"].(*string)))
-	} else {
-		if *t.goOpts["cover"].(*bool) || *t.goOpts["coverpkg"].(*string) != "" {
-			args = append(args, "-cover", "-covermode=atomic")
-		}
-	}
-
-	boolOpts := []string{
-		"a",
-		"n",
-		"msan",
-		"race",
-		"x",
-		"work",
-		"linkshared",
-	}
-
-	for _, opt := range boolOpts {
-		if s, found := t.goOpts[opt].(*bool); found && *s {
-			args = append(args, fmt.Sprintf("-%s", opt))
-		}
-	}
-
-	intOpts := []string{
-		"memprofilerate",
-		"blockprofilerate",
-	}
-
-	for _, opt := range intOpts {
-		if s, found := t.goOpts[opt].(*int); found {
-			args = append(args, fmt.Sprintf("-%s=%d", opt, *s))
-		}
-	}
-
-	stringOpts := []string{
-		"asmflags",
-		"buildmode",
-		"compiler",
-		"gccgoflags",
-		"installsuffix",
-		"ldflags",
-		"pkgdir",
-		"toolexec",
-		"coverprofile",
-		"cpuprofile",
-		"memprofile",
-		"outputdir",
-		"coverpkg",
-		"tags",
-		"gcflags",
-	}
-
-	for _, opt := range stringOpts {
-		if s, found := t.goOpts[opt].(*string); found && *s != "" {
-			args = append(args, fmt.Sprintf("-%s=%s", opt, *s))
-		}
-	}
-	return args
-}
-
 func (t *TestRunner) CompileTo(path string) error {
 	if t.compiled {
 		return nil
@@ -130,7 +74,23 @@ func (t *TestRunner) CompileTo(path string) error {
 		return nil
 	}
 
-	args := t.BuildArgs(path)
+	args := []string{"test", "-c", "-i", "-o", path, t.Suite.Path}
+	if t.race {
+		args = append(args, "-race")
+	}
+	if t.cover || t.coverPkg != "" {
+		args = append(args, "-cover", "-covermode=atomic")
+	}
+	if t.coverPkg != "" {
+		args = append(args, fmt.Sprintf("-coverpkg=%s", t.coverPkg))
+	}
+	if t.tags != "" {
+		args = append(args, fmt.Sprintf("-tags=%s", t.tags))
+	}
+	if t.gcFlags != "" {
+		args = append(args, fmt.Sprintf("-gcflags=%s", t.gcFlags))
+	}
+
 	cmd := exec.Command("go", args...)
 
 	output, err := cmd.CombinedOutput()
@@ -229,7 +189,6 @@ fixCompilationOutput..... rewrites the output to fix the paths.
 yeah......
 */
 func fixCompilationOutput(output string, relToPath string) string {
-	relToPath = filepath.Join(relToPath)
 	re := regexp.MustCompile(`^(\S.*\.go)\:\d+\:`)
 	lines := strings.Split(output, "\n")
 	for i, line := range lines {
@@ -239,10 +198,8 @@ func fixCompilationOutput(output string, relToPath string) string {
 		}
 
 		path := line[indices[2]:indices[3]]
-		if filepath.Dir(path) != relToPath {
-			path = filepath.Join(relToPath, path)
-			lines[i] = path + line[indices[3]:]
-		}
+		path = filepath.Join(relToPath, path)
+		lines[i] = path + line[indices[3]:]
 	}
 	return strings.Join(lines, "\n")
 }
@@ -324,7 +281,7 @@ func (t *TestRunner) runAndStreamParallelGinkgoSuite() RunResult {
 
 	os.Stdout.Sync()
 
-	if *t.goOpts["cover"].(*bool) || *t.goOpts["coverpkg"].(*string) != "" || *t.goOpts["covermode"].(*string) != "" {
+	if t.cover || t.coverPkg != "" {
 		t.combineCoverprofiles()
 	}
 
@@ -406,7 +363,7 @@ func (t *TestRunner) runParallelGinkgoSuite() RunResult {
 		os.Stdout.Sync()
 	}
 
-	if *t.goOpts["cover"].(*bool) || *t.goOpts["coverpkg"].(*string) != "" || *t.goOpts["covermode"].(*string) != "" {
+	if t.cover || t.coverPkg != "" {
 		t.combineCoverprofiles()
 	}
 
@@ -415,7 +372,7 @@ func (t *TestRunner) runParallelGinkgoSuite() RunResult {
 
 func (t *TestRunner) cmd(ginkgoArgs []string, stream io.Writer, node int) *exec.Cmd {
 	args := []string{"--test.timeout=24h"}
-	if *t.goOpts["cover"].(*bool) || *t.goOpts["coverpkg"].(*string) != "" || *t.goOpts["covermode"].(*string) != "" {
+	if t.cover || t.coverPkg != "" {
 		coverprofile := "--test.coverprofile=" + t.Suite.PackageName + ".coverprofile"
 		if t.numCPU > 1 {
 			coverprofile = fmt.Sprintf("%s.%d", coverprofile, node)
