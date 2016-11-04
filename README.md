@@ -53,6 +53,7 @@ Finally, start kubernetes with frakti runtime:
 ```sh
 cd $GOPATH/src/k8s.io/kubernetes
 export KUBERNETES_PROVIDER=local
+export CONTAINER_RUNTIME=remote
 export CONTAINER_RUNTIME_ENDPOINT=/var/run/frakti.sock
 hack/local-up-cluster.sh
 ```
