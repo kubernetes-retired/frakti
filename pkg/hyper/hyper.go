@@ -28,6 +28,7 @@ import (
 const (
 	hyperRuntimeName    = "hyper"
 	minimumHyperVersion = "0.6.0"
+	secondToNano        = 1e9
 
 	// timeout in second for interacting with hyperd's gRPC API.
 	hyperConnectionTimeout = 300 * time.Second
@@ -144,13 +145,13 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 
 	annotations := getAnnotationsFromLabels(info.Spec.Labels)
 	kubeletLabels := getKubeletLabels(info.Spec.Labels)
-
+	createdAtNano := info.CreatedAt * secondToNano
 	podStatus := &kubeapi.PodSandboxStatus{
 		Id:          &podSandboxID,
 		Metadata:    podSandboxMetadata,
 		State:       &state,
 		Network:     &kubeapi.PodSandboxNetworkStatus{Ip: &podIP},
-		CreatedAt:   &info.CreatedAt,
+		CreatedAt:   &createdAtNano,
 		Labels:      kubeletLabels,
 		Annotations: annotations,
 	}
@@ -197,12 +198,13 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 			Attempt:   &attempt,
 		}
 
+		createdAtNano := pod.CreatedAt * secondToNano
 		items = append(items, &kubeapi.PodSandbox{
 			Id:        &pod.PodID,
 			Metadata:  podSandboxMetadata,
 			Labels:    pod.Labels,
 			State:     &state,
-			CreatedAt: &pod.CreatedAt,
+			CreatedAt: &createdAtNano,
 		})
 	}
 
@@ -291,15 +293,17 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 			Attempt: &attempt,
 		}
 
+		createdAtNano := info.CreatedAt * secondToNano
 		containers = append(containers, &kubeapi.Container{
-			// TODO: Add CreateAt and PodSandboxId fields when we update kubeapi to latest.
-			Id:          &c.ContainerID,
-			Metadata:    containerMetadata,
-			Image:       &kubeapi.ImageSpec{Image: &info.Container.Image},
-			ImageRef:    &info.Container.ImageID,
-			State:       &state,
-			Labels:      kubeletLabels,
-			Annotations: annotations,
+			Id:           &c.ContainerID,
+			PodSandboxId: &c.PodID,
+			CreatedAt:    &createdAtNano,
+			Metadata:     containerMetadata,
+			Image:        &kubeapi.ImageSpec{Image: &info.Container.Image},
+			ImageRef:     &info.Container.ImageID,
+			State:        &state,
+			Labels:       kubeletLabels,
+			Annotations:  annotations,
 		})
 	}
 
@@ -335,6 +339,7 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 		Attempt: &attempt,
 	}
 
+	createdAtNano := status.CreatedAt * secondToNano
 	kubeStatus := &kubeapi.ContainerStatus{
 		Id:          &status.Container.ContainerID,
 		Image:       &kubeapi.ImageSpec{Image: &status.Container.Image},
@@ -343,7 +348,7 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 		State:       &state,
 		Labels:      kubeletLabels,
 		Annotations: annotations,
-		CreatedAt:   &status.CreatedAt,
+		CreatedAt:   &createdAtNano,
 	}
 
 	mounts := make([]*kubeapi.Mount, len(status.Container.VolumeMounts))

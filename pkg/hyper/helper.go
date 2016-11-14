@@ -237,20 +237,21 @@ func sortByCreatedAt(podSandboxList []*kubeapi.PodSandbox) {
 	sort.Sort(sandboxByCreated(podSandboxList))
 }
 
-// parseTimeString parses string to time.Unix.
+// parseTimeString parses string to time.UnixNano.
 func parseTimeString(str string) (int64, error) {
 	t := time.Date(0, 0, 0, 0, 0, 0, 0, time.Local)
+	// TODO: fix null timestamp in upstream hyperd.
 	if str == "" {
-		return t.Unix(), nil
+		return t.UnixNano(), nil
 	}
 
 	layout := "2006-01-02T15:04:05Z"
 	t, err := time.Parse(layout, str)
 	if err != nil {
-		return t.Unix(), err
+		return t.UnixNano(), err
 	}
 
-	return t.Unix(), nil
+	return t.UnixNano(), nil
 }
 
 // toKubeContainerState transfers state to kubelet container state.
