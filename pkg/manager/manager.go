@@ -274,6 +274,18 @@ func (s *FraktiManager) UpdateRuntimeConfig(ctx context.Context, req *kubeapi.Up
 	return &kubeapi.UpdateRuntimeConfigResponse{}, nil
 }
 
+// Status returns the status of the runtime.
+func (s *FraktiManager) Status(ctx context.Context, req *kubeapi.StatusRequest) (*kubeapi.StatusResponse, error) {
+	resp, err := s.runtimeService.Status()
+	if err != nil {
+		return nil, err
+	}
+
+	return &kubeapi.StatusResponse{
+		Status: resp,
+	}, nil
+}
+
 // ListImages lists existing images.
 func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesRequest) (*kubeapi.ListImagesResponse, error) {
 	glog.V(3).Infof("ListImages with request %s", req.String())

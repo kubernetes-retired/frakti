@@ -188,12 +188,12 @@ func getAnnotationsFromLabels(labels map[string]string) map[string]string {
 }
 
 // toPodSandboxState transfers state to kubelet sandbox state.
-func toPodSandboxState(state string) kubeapi.PodSandBoxState {
+func toPodSandboxState(state string) kubeapi.PodSandboxState {
 	if state == "running" || state == "Running" {
-		return kubeapi.PodSandBoxState_READY
+		return kubeapi.PodSandboxState_SANDBOX_READY
 	}
 
-	return kubeapi.PodSandBoxState_NOTREADY
+	return kubeapi.PodSandboxState_SANDBOX_NOTREADY
 }
 
 //getKubeletLabels gets kubelet labels from labels.
@@ -258,13 +258,13 @@ func parseTimeString(str string) (int64, error) {
 func toKubeContainerState(state string) kubeapi.ContainerState {
 	switch state {
 	case "running":
-		return kubeapi.ContainerState_RUNNING
+		return kubeapi.ContainerState_CONTAINER_RUNNING
 	case "pending":
-		return kubeapi.ContainerState_CREATED
+		return kubeapi.ContainerState_CONTAINER_CREATED
 	case "failed", "succeeded":
-		return kubeapi.ContainerState_EXITED
+		return kubeapi.ContainerState_CONTAINER_EXITED
 	default:
-		return kubeapi.ContainerState_UNKNOWN
+		return kubeapi.ContainerState_CONTAINER_UNKNOWN
 	}
 }
 

@@ -94,7 +94,7 @@ func ExpectNoError(err error, explain ...interface{}) {
 
 // podReady returns whether podsandbox state is ready.
 func PodReady(status *kubeapi.PodSandboxStatus) bool {
-	if *status.State == kubeapi.PodSandBoxState_READY {
+	if *status.State == kubeapi.PodSandboxState_SANDBOX_READY {
 		return true
 	}
 	return false

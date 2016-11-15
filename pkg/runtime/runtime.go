@@ -27,6 +27,8 @@ import (
 type RuntimeService interface {
 	// Version returns the runtime name, runtime version and runtime API version
 	Version() (string, string, string, error)
+	// Status returns the status of the runtime.
+	Status() (*runtimeApi.RuntimeStatus, error)
 	// RunPodSandbox creates and start a pod-level sandbox.
 	// The definition of PodSandbox is at https://github.com/kubernetes/kubernetes/pull/25899
 	RunPodSandbox(config *runtimeApi.PodSandboxConfig) (string, error)

@@ -1,7 +1,7 @@
 {
 	"ImportPath": "k8s.io/frakti",
-	"GoVersion": "go1.6",
-	"GodepVersion": "v74",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v75",
 	"Packages": [
 		"github.com/onsi/ginkgo/ginkgo",
 		"./..."
@@ -388,18 +388,23 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/api",
-			"Comment": "v1.4.0-alpha.2-5007-gc07c73e",
-			"Rev": "c07c73efbb741b3c3e9064556188d64bea59fea8"
+			"Comment": "v1.6.0-alpha.0-477-gd5014c3",
+			"Rev": "d5014c3f216204c2a8464a5bdf543f408eee6f71"
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime",
-			"Comment": "v1.4.0-alpha.2-5007-gc07c73e",
-			"Rev": "c07c73efbb741b3c3e9064556188d64bea59fea8"
+			"Comment": "v1.6.0-alpha.0-477-gd5014c3",
+			"Rev": "d5014c3f216204c2a8464a5bdf543f408eee6f71"
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/remote",
-			"Comment": "v1.4.0-alpha.2-5007-gc07c73e",
-			"Rev": "c07c73efbb741b3c3e9064556188d64bea59fea8"
+			"Comment": "v1.6.0-alpha.0-477-gd5014c3",
+			"Rev": "d5014c3f216204c2a8464a5bdf543f408eee6f71"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/exec",
+			"Comment": "v1.6.0-alpha.0-477-gd5014c3",
+			"Rev": "d5014c3f216204c2a8464a5bdf543f408eee6f71"
 		}
 	]
 }
