@@ -88,6 +88,9 @@ func (h *Runtime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) 
 	repo, tag := parseRepositoryTag(image.GetImage())
 	imageInfo, err := h.client.GetImageInfo(repo, tag)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, nil
+		}
 		glog.Errorf("Get image info for %q failed: %v", image.GetImage(), err)
 		return nil, err
 	}
