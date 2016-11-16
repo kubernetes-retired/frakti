@@ -178,7 +178,7 @@ func buildLabelsWithAnnotations(labels, annotations map[string]string) map[strin
 func getAnnotationsFromLabels(labels map[string]string) map[string]string {
 	annotations := make(map[string]string)
 	if strValue, found := labels[fraktiAnnotationLabel]; found {
-		err := json.Unmarshal([]byte(strValue), annotations)
+		err := json.Unmarshal([]byte(strValue), &annotations)
 		if err != nil {
 			glog.Warningf("Unable to get annotations from labels %q", labels)
 		}
