@@ -19,7 +19,7 @@ package runtime
 import (
 	"io"
 
-	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
 // RuntimeService interface should be implemented by a container runtime.
@@ -28,10 +28,9 @@ type RuntimeService interface {
 	// Version returns the runtime name, runtime version and runtime API version
 	Version() (string, string, string, error)
 	// Status returns the status of the runtime.
-	Status() (*runtimeApi.RuntimeStatus, error)
+	Status() (*kubeapi.RuntimeStatus, error)
 	// RunPodSandbox creates and start a pod-level sandbox.
-	// The definition of PodSandbox is at https://github.com/kubernetes/kubernetes/pull/25899
-	RunPodSandbox(config *runtimeApi.PodSandboxConfig) (string, error)
+	RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error)
 	// StopPodSandbox stops the sandbox. If there are any running containers in the
 	// sandbox, they should be force terminated.
 	// It should return success if the sandbox has already been deleted.
@@ -40,11 +39,11 @@ type RuntimeService interface {
 	// sandbox, they should be forcibly deleted.
 	DeletePodSandbox(podSandboxID string) error
 	// PodSandboxStatus returns the Status of the PodSandbox.
-	PodSandboxStatus(podSandboxID string) (*runtimeApi.PodSandboxStatus, error)
+	PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStatus, error)
 	// ListPodSandbox returns a list of Sandbox.
-	ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]*runtimeApi.PodSandbox, error)
+	ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.PodSandbox, error)
 	// CreateContainer creates a new container in specified PodSandbox.
-	CreateContainer(podSandboxID string, config *runtimeApi.ContainerConfig, sandboxConfig *runtimeApi.PodSandboxConfig) (string, error)
+	CreateContainer(podSandboxID string, config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (string, error)
 	// StartContainer starts the container.
 	StartContainer(rawContainerID string) error
 	// StopContainer stops a running container with a grace period (i.e., timeout).
@@ -54,9 +53,9 @@ type RuntimeService interface {
 	// It should return success if the container has already been removed.
 	RemoveContainer(rawContainerID string) error
 	// ListContainers lists all containers by filters.
-	ListContainers(filter *runtimeApi.ContainerFilter) ([]*runtimeApi.Container, error)
+	ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Container, error)
 	// ContainerStatus returns the status of the container.
-	ContainerStatus(rawContainerID string) (*runtimeApi.ContainerStatus, error)
+	ContainerStatus(rawContainerID string) (*kubeapi.ContainerStatus, error)
 
 	// ExecSync runs a command in a container synchronously.
 	ExecSync() error
@@ -68,19 +67,19 @@ type RuntimeService interface {
 	PortForward() error
 
 	// UpdateRuntimeConfig updates runtime configuration if specified
-	UpdateRuntimeConfig(runtimeConfig *runtimeApi.RuntimeConfig) error
+	UpdateRuntimeConfig(runtimeConfig *kubeapi.RuntimeConfig) error
 }
 
 // ImageService interface should be implemented by a container image manager.
 // The methods should be thread-safe.
 type ImageService interface {
 	// ListImages lists the existing images.
-	ListImages(filter *runtimeApi.ImageFilter) ([]*runtimeApi.Image, error)
+	ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, error)
 	// ImageStatus returns the status of the image.
-	ImageStatus(image *runtimeApi.ImageSpec) (*runtimeApi.Image, error)
+	ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error)
 	// PullImage pulls an image with the authentication config.
-	PullImage(image *runtimeApi.ImageSpec, auth *runtimeApi.AuthConfig) error
+	PullImage(image *kubeapi.ImageSpec, auth *kubeapi.AuthConfig) error
 	// RemoveImage removes the image.
 	// It should return success if the image has already been removed.
-	RemoveImage(image *runtimeApi.ImageSpec) error
+	RemoveImage(image *kubeapi.ImageSpec) error
 }
