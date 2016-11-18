@@ -71,7 +71,7 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	// 		ReadOnly: v.GetReadonly(),
 	// 	}
 	// }
-	// containerSpec.Volumes = volumes
+	containerSpec.Volumes = []*types.UserVolumeReference{}
 
 	// make environments
 	environments := make([]*types.EnvironmentVar, len(config.Envs))
@@ -98,12 +98,12 @@ func (h *Runtime) StartContainer(rawContainerID string) error {
 	}
 	_, reason, err := h.client.StopPod(container.PodID)
 	if err != nil {
-		glog.Errorf("Failed to stop pod %q with reason (%q): %v", container.PodID, reason, err)
+		glog.Errorf("[StartContainer] Failed to stop pod %q with reason (%q): %v", container.PodID, reason, err)
 		return err
 	}
 	err = h.client.StartPod(container.PodID)
 	if err != nil {
-		glog.Errorf("Failed to start pod %q: %v", container.PodID, err)
+		glog.Errorf("[StartContainer] Failed to start pod %q: %v", container.PodID, err)
 		return err
 	}
 
