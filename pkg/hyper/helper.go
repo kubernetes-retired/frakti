@@ -19,13 +19,16 @@ package hyper
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
+	libcontainercgroups "github.com/opencontainers/runc/libcontainer/cgroups"
 	"golang.org/x/net/context"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
@@ -38,6 +41,24 @@ const (
 	kubeSandboxNamePrefix = "POD"
 	// fraktiAnnotationLabel is used to save annotations into labels
 	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
+
+	// BestEffort defines the BE qos pod
+	// we can not import `pkg/kubelet/qos` because it redefines `log_dir`, conflicts
+	BestEffort = "BestEffort"
+
+	// default resources while the pod level qos of kubelet pod is not specified.
+	defaultCPUNumber         = 1
+	defaultMemoryinMegabytes = 64
+
+	// More details about these: http://kubernetes.io/docs/user-guide/compute-resources/
+	// cpuQuotaCgroupFile is the cgroup file for cpu quota limit set by kubelet pod qos
+	cpuQuotaCgroupFile = "cpu.cfs_quota_us"
+	// memoryCgroupFile is the cgroup file for memory limit set by kubelet pod qos
+	memoryCgroupFile = "memory.limit_in_bytes"
+	// cpu100m is used to convert `cpu.cfs_quota_us` value to real CPU quota amounts
+	cpu100m = 100 * 1000
+
+	MiB = 1024 * 1024
 )
 
 type sandboxByCreated []*kubeapi.PodSandbox
@@ -269,5 +290,55 @@ func toKubeContainerState(state string) kubeapi.ContainerState {
 		return kubeapi.ContainerState_CONTAINER_EXITED
 	default:
 		return kubeapi.ContainerState_CONTAINER_UNKNOWN
+	}
+}
+
+// TODO(harry) These two methods will find subsystem mount point frequently, consider move FindCgroupMountpoint into a unified place.
+// getCpuLimitFromCgroup get the cpu limit from given cgroupParent
+func getCpuLimitFromCgroup(cgroupParent string) (int32, error) {
+	mntPath, err := libcontainercgroups.FindCgroupMountpoint("cpu")
+	if err != nil {
+		return -1, err
+	}
+	contents, err := ioutil.ReadFile(filepath.Join(mntPath, cgroupParent, cpuQuotaCgroupFile))
+	if err != nil {
+		return -1, err
+	}
+
+	cpuQuotaStr := strings.TrimSpace(string(contents))
+
+	if value, err := strconv.Atoi(cpuQuotaStr); err == nil {
+		// k8s use 100 milicpu to describe cpu quota
+		vcpuNumber := value / cpu100m
+		// but hyper only support int32 vcpu number, should be one vcpu at least
+		if vcpuNumber < 1 {
+			vcpuNumber = 1
+		}
+		return int32(vcpuNumber), nil
+	} else {
+		return -1, err
+	}
+}
+
+// getMemeoryLimitFromCgroup get the memory limit from given cgroupParent
+func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
+	mntPath, err := libcontainercgroups.FindCgroupMountpoint("memory")
+	if err != nil {
+		return -1, err
+	}
+	// TODO(harry) k8s does not forbidden illegal number e.g. `512m`, this will create a file with only `4096` bytes Memory
+	// need to fix this on upstream.
+	contents, err := ioutil.ReadFile(filepath.Join(mntPath, cgroupParent, memoryCgroupFile))
+	if err != nil {
+		return -1, err
+	}
+
+	memoryinMegabytesStr := strings.TrimSpace(string(contents))
+
+	if value, err := strconv.Atoi(memoryinMegabytesStr); err == nil {
+		memoryinMegabytes := int32(value / MiB)
+		return memoryinMegabytes, nil
+	} else {
+		return -1, err
 	}
 }

@@ -17,16 +17,12 @@ limitations under the License.
 package hyper
 
 import (
+	"strings"
+
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
-)
-
-const (
-	// default resources while the resource limit of kubelet pod is not specified.
-	defaultCPUNumber         = 1
-	defaultMemoryinMegabytes = 64
 )
 
 // RunPodSandbox creates and starts a pod-level sandbox.
@@ -57,15 +53,38 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
 // TODO: support pod-level portmapping (depends on hyperd).
-// TODO: support resource limits via pod-level cgroups, ref https://github.com/kubernetes/kubernetes/issues/27097.
 func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
+	var (
+		cpuNumber, memoryinMegabytes int32
+		err                          error
+	)
+
+	cgroupParent := *config.Linux.CgroupParent
+	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, BestEffort) {
+		cpuNumber, err = getCpuLimitFromCgroup(cgroupParent)
+		if err != nil {
+			return nil, err
+		}
+		memoryinMegabytes, err = getMemeoryLimitFromCgroup(cgroupParent)
+		if err != nil {
+			return nil, err
+		}
+		glog.V(5).Infof("Calculated cpu and memory limit: %v, %v based on cgroup parent %s ", cpuNumber, memoryinMegabytes, cgroupParent)
+	} else {
+		// If pod level QoS is disabled, or this pod is a BE, use default value instead.
+		// NOTE: thus actually changes BE to guaranteed. But generally, HyperContainer should not be used for BE workload,
+		// it only make sense when we allow multiple runtime in one node.
+		cpuNumber = int32(defaultCPUNumber)
+		memoryinMegabytes = int32(defaultMemoryinMegabytes)
+	}
+
 	spec := &types.UserPod{
 		Id:       buildSandboxName(config),
 		Hostname: config.GetHostname(),
 		Labels:   buildLabelsWithAnnotations(config.Labels, config.Annotations),
 		Resource: &types.UserResource{
-			Vcpu:   int32(defaultCPUNumber),
-			Memory: int32(defaultMemoryinMegabytes),
+			Vcpu:   cpuNumber,
+			Memory: memoryinMegabytes,
 		},
 	}
 
