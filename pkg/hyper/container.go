@@ -144,8 +144,8 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 		_, _, _, containerName, attempt, err := parseContainerName(strings.Replace(c.ContainerName, "/", "", -1))
 
 		if err != nil {
-			glog.Errorf("ParseContainerName for %s failed: %v", c.ContainerName, err)
-			return nil, err
+			glog.V(3).Infof("ParseContainerName for %q failed (%v), assuming it is not managed by frakti", c.ContainerName, err)
+			continue
 		}
 
 		if filter != nil {

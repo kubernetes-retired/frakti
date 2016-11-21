@@ -159,8 +159,8 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 
 		podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodName)
 		if err != nil {
-			glog.Errorf("ParseSandboxName for %s failed: %v", pod.PodName, err)
-			return nil, err
+			glog.V(3).Infof("ParseSandboxName for %q failed (%v), assuming it is not managed by frakti", pod.PodName, err)
+			continue
 		}
 
 		if filter != nil {
