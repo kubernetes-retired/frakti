@@ -59,7 +59,7 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 		err                          error
 	)
 
-	cgroupParent := *config.Linux.CgroupParent
+	cgroupParent := config.Linux.GetCgroupParent()
 	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, BestEffort) {
 		cpuNumber, err = getCpuLimitFromCgroup(cgroupParent)
 		if err != nil {
