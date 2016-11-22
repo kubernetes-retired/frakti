@@ -18,7 +18,6 @@ package hyper
 
 import (
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/golang/glog"
@@ -83,26 +82,6 @@ func (h *Runtime) Status() (*kubeapi.RuntimeStatus, error) {
 	}
 
 	return &kubeapi.RuntimeStatus{Conditions: conditions}, nil
-}
-
-// ExecSync runs a command in a container synchronously.
-func (h *Runtime) ExecSync() error {
-	return fmt.Errorf("Not implemented")
-}
-
-// Exec execute a command in the container.
-func (h *Runtime) Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
-	return fmt.Errorf("Not implemented")
-}
-
-// Attach prepares a streaming endpoint to attach to a running container.
-func (h *Runtime) Attach() error {
-	return fmt.Errorf("Not implemented")
-}
-
-// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
-func (h *Runtime) PortForward() error {
-	return fmt.Errorf("Not implemented")
 }
 
 // UpdateRuntimeConfig updates runtime configuration if specified
