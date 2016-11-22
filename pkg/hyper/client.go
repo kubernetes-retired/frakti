@@ -114,7 +114,7 @@ func (c *Client) StopPod(podID string) (int, string, error) {
 		PodID: podID,
 	})
 	if err != nil {
-		return int(resp.Code), resp.Cause, err
+		return 0, "", err
 	}
 
 	return int(resp.Code), resp.Cause, nil
