@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"path/filepath"
 	"sort"
@@ -51,12 +52,12 @@ const (
 	defaultMemoryinMegabytes = 64
 
 	// More details about these: http://kubernetes.io/docs/user-guide/compute-resources/
-	// cpuQuotaCgroupFile is the cgroup file for cpu quota limit set by kubelet pod qos
+	// cpuQuotaCgroupFile is the `cfs_quota_us` value set by kubelet pod qos
 	cpuQuotaCgroupFile = "cpu.cfs_quota_us"
-	// memoryCgroupFile is the cgroup file for memory limit set by kubelet pod qos
+	// memoryCgroupFile is the `limit_in_bytes` value set by kubelet pod qos
 	memoryCgroupFile = "memory.limit_in_bytes"
-	// cpu100m is used to convert `cpu.cfs_quota_us` value to real CPU quota amounts
-	cpu100m = 100 * 1000
+	// cpuPeriodCgroupFile is the `cfs_period_us` value set by kubelet pod qos
+	cpuPeriodCgroupFile = "cpu.cfs_period_us"
 
 	MiB = 1024 * 1024
 )
@@ -300,21 +301,30 @@ func getCpuLimitFromCgroup(cgroupParent string) (int32, error) {
 	if err != nil {
 		return -1, err
 	}
-	contents, err := ioutil.ReadFile(filepath.Join(mntPath, cgroupParent, cpuQuotaCgroupFile))
+	cgroupPath := filepath.Join(mntPath, cgroupParent)
+	cpuQuota, err := readCgroupFileToInt32(cgroupPath, cpuQuotaCgroupFile)
+	if err != nil {
+		return -1, err
+	}
+	cpuPeriod, err := readCgroupFileToInt32(cgroupPath, cpuPeriodCgroupFile)
 	if err != nil {
 		return -1, err
 	}
 
-	cpuQuotaStr := strings.TrimSpace(string(contents))
+	// HyperContainer only support int32 vcpu number, and we need to use `math.Ceil` to make sure vcpu number is always enough.
+	vcpuNumber := float64(cpuQuota) / float64(cpuPeriod)
+	return int32(math.Ceil(vcpuNumber)), nil
+}
 
-	if value, err := strconv.Atoi(cpuQuotaStr); err == nil {
-		// k8s use 100 milicpu to describe cpu quota
-		vcpuNumber := value / cpu100m
-		// but hyper only support int32 vcpu number, should be one vcpu at least
-		if vcpuNumber < 1 {
-			vcpuNumber = 1
-		}
-		return int32(vcpuNumber), nil
+// readCgroupFileToInt32 reads contents from given `cgroupPath/cgroupFile` and returns its int32 value
+func readCgroupFileToInt32(cgroupPath, cgroupFile string) (int32, error) {
+	contents, err := ioutil.ReadFile(filepath.Join(cgroupPath, cgroupFile))
+	if err != nil {
+		return -1, err
+	}
+	strValue := strings.TrimSpace(string(contents))
+	if value, err := strconv.Atoi(strValue); err == nil {
+		return int32(value), nil
 	} else {
 		return -1, err
 	}
@@ -326,19 +336,18 @@ func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
 	if err != nil {
 		return -1, err
 	}
+	cgroupPath := filepath.Join(mntPath, cgroupParent)
 	// TODO(harry) k8s does not forbidden illegal number e.g. `512m`, this will create a file with only `4096` bytes Memory
 	// need to fix this on upstream.
-	contents, err := ioutil.ReadFile(filepath.Join(mntPath, cgroupParent, memoryCgroupFile))
+	memoryInBytes, err := readCgroupFileToInt32(cgroupPath, memoryCgroupFile)
 	if err != nil {
 		return -1, err
 	}
 
-	memoryinMegabytesStr := strings.TrimSpace(string(contents))
-
-	if value, err := strconv.Atoi(memoryinMegabytesStr); err == nil {
-		memoryinMegabytes := int32(value / MiB)
-		return memoryinMegabytes, nil
-	} else {
-		return -1, err
+	memoryinMegabytes := memoryInBytes / MiB
+	// HyperContainer requires at least 64Mi memory
+	if memoryinMegabytes < 64 {
+		memoryinMegabytes = 64
 	}
+	return memoryinMegabytes, nil
 }
