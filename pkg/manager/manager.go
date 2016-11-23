@@ -244,8 +244,19 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 
 // ExecSync runs a command in a container synchronously.
 func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncRequest) (*kubeapi.ExecSyncResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	glog.V(3).Infof("ExecSync with request %s", req.String())
 
+	stdout, stderr, exitCode, err := s.runtimeService.ExecSync(req.GetContainerId(), req.GetCmd(), req.GetTimeout())
+	if err != nil {
+		glog.Errorf("ExecSync from runtime service failed: %v", err)
+		return nil, err
+	}
+
+	return &kubeapi.ExecSyncResponse{
+		Stdout:   stdout,
+		Stderr:   stderr,
+		ExitCode: &exitCode,
+	}, nil
 }
 
 // Exec execute a command in the container.
