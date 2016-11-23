@@ -1,12 +1,21 @@
 {
 	"ImportPath": "k8s.io/frakti",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v75",
+	"GodepVersion": "v74",
 	"Packages": [
-		"github.com/onsi/ginkgo/ginkgo",
 		"./..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.6.2-10-g51fe59a",
+			"Rev": "51fe59aca108dc5680109e7b2051cbdcfa5a253c"
+		},
+		{
+			"ImportPath": "github.com/docker/go-units",
+			"Comment": "v0.1.0-21-g0bbddae",
+			"Rev": "0bbddae09c5a5419a8c6dcdd7ff90da3d450393b"
+		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
 			"Comment": "v0.2-33-ge18d7aa",
@@ -304,6 +313,16 @@
 			"ImportPath": "github.com/onsi/gomega/types",
 			"Comment": "v1.0-122-gd59fa0a",
 			"Rev": "d59fa0ac68bb5dd932ee8d24eed631cdd519efc3"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/cgroups",
+			"Comment": "v1.0.0-rc2-140-g692254b",
+			"Rev": "692254b91dddffb79702cdc997e6ae554f33140e"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/configs",
+			"Comment": "v1.0.0-rc2-140-g692254b",
+			"Rev": "692254b91dddffb79702cdc997e6ae554f33140e"
 		},
 		{
 			"ImportPath": "github.com/pborman/uuid",
