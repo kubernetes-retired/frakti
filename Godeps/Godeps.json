@@ -3,13 +3,19 @@
 	"GoVersion": "go1.7",
 	"GodepVersion": "v74",
 	"Packages": [
+		"github.com/onsi/ginkgo/ginkgo",
 		"./..."
 	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.6.2-10-g51fe59a",
-			"Rev": "51fe59aca108dc5680109e7b2051cbdcfa5a253c"
+			"Comment": "v0.10.0-38-g3ec0642",
+			"Rev": "3ec0642a7fb6488f65b06f9040adc67e3990296a"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/stdcopy",
+			"Comment": "v1.10.3",
+			"Rev": "20f81dde9bd97c86b2d0e33bbbf1388018611929"
 		},
 		{
 			"ImportPath": "github.com/docker/go-units",
@@ -417,6 +423,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/remote",
+			"Comment": "v1.6.0-alpha.0-477-gd5014c3",
+			"Rev": "d5014c3f216204c2a8464a5bdf543f408eee6f71"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/util/ioutils",
 			"Comment": "v1.6.0-alpha.0-477-gd5014c3",
 			"Rev": "d5014c3f216204c2a8464a5bdf543f408eee6f71"
 		},
