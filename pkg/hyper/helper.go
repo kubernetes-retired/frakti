@@ -337,8 +337,6 @@ func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
 		return -1, err
 	}
 	cgroupPath := filepath.Join(mntPath, cgroupParent)
-	// TODO(harry) k8s does not forbidden illegal number e.g. `512m`, this will create a file with only `4096` bytes memory
-	// need to fix this on upstream.
 	memoryInBytes, err := readCgroupFileToInt64(cgroupPath, memoryCgroupFile)
 	if err != nil {
 		return -1, err
