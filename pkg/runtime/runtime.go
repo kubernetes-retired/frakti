@@ -58,7 +58,7 @@ type RuntimeService interface {
 	ContainerStatus(rawContainerID string) (*kubeapi.ContainerStatus, error)
 
 	// ExecSync runs a command in a container synchronously.
-	ExecSync() error
+	ExecSync(rawContainerID string, cmd []string, timeout int64) ([]byte, []byte, int32, error)
 	// Exec executes a command in the container.
 	Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error
 	// Attach prepares a streaming endpoint to attach to a running container.

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
 )
@@ -194,13 +195,9 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 	}
 
 	// do checks about container status
-	containerInfo, err := c.GetContainerInfo(containerID)
+	err := c.CheckIfContainerRunning(containerID)
 	if err != nil {
 		return err
-	}
-
-	if containerInfo.Status.Phase != "running" {
-		return fmt.Errorf("Container %s is not running.", containerID)
 	}
 
 	ch := make(chan error, 1)
@@ -363,4 +360,168 @@ func (c *Client) CreateContainer(podID string, spec *types.UserContainer) (strin
 	}
 
 	return resp.ContainerID, nil
+}
+
+// ContainerExecCreate creates exec in a container
+func (c *Client) ContainerExecCreate(containerId string, cmd []string, tty bool) (string, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.ExecCreateRequest{
+		ContainerID: containerId,
+		Command:     cmd,
+		Tty:         tty,
+	}
+	resp, err := c.client.ExecCreate(ctx, &req)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.ExecID, nil
+}
+
+// ExecInContainer exec a command in container with specified io, tty and timeout
+func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, timeout int64) (int32, error) {
+	execID, err := c.ContainerExecCreate(containerId, cmd, tty)
+	if err != nil {
+		return -1, err
+	}
+
+	req := types.ExecStartRequest{
+		ContainerID: containerId,
+		ExecID:      execID,
+	}
+
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	if timeout > 0 {
+		ctx, cancel = getContextWithTimeout(time.Duration(timeout) * time.Second)
+	} else if timeout == 0 {
+		ctx, cancel = getContextWithCancel()
+	} else {
+		return -1, fmt.Errorf("timeout should be non-negative")
+	}
+	defer cancel()
+
+	stream, err := c.client.ExecStart(ctx)
+	if err != nil {
+		return -1, err
+	}
+	if err := stream.Send(&req); err != nil {
+		return -1, err
+	}
+
+	var recvStdoutError chan error
+	extractor := NewExtractor(tty)
+
+	if stdout != nil || stderr != nil {
+		recvStdoutError = promiseGo(func() (err error) {
+			for {
+				out, err := stream.Recv()
+				if err != nil && err != io.EOF {
+					return err
+				}
+				if out != nil && out.Stdout != nil {
+					so, se, ee := extractor.Extract(out.Stdout)
+					if ee != nil {
+						return ee
+					}
+					if len(so) > 0 && stdout != nil {
+						nw, ew := stdout.Write(so)
+						if ew != nil {
+							return ew
+						}
+						if nw != len(so) {
+							return io.ErrShortWrite
+						}
+					}
+					if len(se) > 0 && stderr != nil {
+						nw, ew := stderr.Write(se)
+						if ew != nil {
+							return ew
+						}
+						if nw != len(se) {
+							return io.ErrShortWrite
+						}
+					}
+				}
+				if err == io.EOF {
+					break
+				}
+			}
+			return nil
+		})
+	}
+
+	if stdin != nil {
+		go func() error {
+			defer stream.CloseSend()
+			buf := make([]byte, 32)
+			for {
+				nr, err := stdin.Read(buf)
+				if nr > 0 {
+					if err := stream.Send(&types.ExecStartRequest{Stdin: buf[:nr]}); err != nil {
+						return err
+					}
+				}
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}()
+	}
+
+	if stdout != nil || stderr != nil {
+		if err := <-recvStdoutError; err != nil {
+			return -1, err
+		}
+	}
+
+	// get exit code
+	exitCode, err := c.Wait(containerId, execID, false)
+	if err != nil {
+		return -1, err
+	}
+
+	return exitCode, nil
+}
+
+// Wait gets exit code by containerID and execID
+func (c *Client) Wait(containerId, execId string, noHang bool) (int32, error) {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := types.WaitRequest{
+		Container: containerId,
+		ProcessId: execId,
+		NoHang:    noHang,
+	}
+
+	resp, err := c.client.Wait(ctx, &req)
+	if err != nil {
+		return -1, err
+	}
+
+	return resp.ExitCode, nil
+}
+
+// CheckIfContainerRunning check if container is running by containerID
+func (c *Client) CheckIfContainerRunning(containerID string) error {
+	containerInfo, err := c.GetContainerInfo(containerID)
+	if err != nil {
+		return err
+	}
+
+	if containerInfo.Status.Phase != "running" {
+		return fmt.Errorf("Container %s is not running.", containerID)
+	}
+
+	return nil
 }

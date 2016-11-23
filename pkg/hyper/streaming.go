@@ -17,13 +17,38 @@ limitations under the License.
 package hyper
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+
+	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 )
 
 // ExecSync runs a command in a container synchronously.
-func (h *Runtime) ExecSync() error {
-	return fmt.Errorf("Not implemented")
+func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (stdout, stderr []byte, exitCode int32, err error) {
+	var (
+		stdoutBuffer bytes.Buffer
+		stderrBuffer bytes.Buffer
+	)
+
+	// check if container is running
+	err = h.client.CheckIfContainerRunning(rawContainerID)
+	if err != nil {
+		return nil, nil, -1, err
+	}
+
+	exitCode, err = h.client.ExecInContainer(rawContainerID, cmd,
+		nil, // doesn't need stdin here
+		ioutils.WriteCloserWrapper(&stdoutBuffer),
+		ioutils.WriteCloserWrapper(&stderrBuffer),
+		false, // doesn't need tty in ExecSync
+		timeout)
+
+	if err != nil {
+		return nil, nil, -1, err
+	}
+
+	return stdoutBuffer.Bytes(), stderrBuffer.Bytes(), exitCode, nil
 }
 
 // Exec execute a command in the container.
