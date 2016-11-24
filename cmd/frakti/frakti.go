@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
+	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
 const (
@@ -35,6 +36,7 @@ var (
 		"The sockets to listen on, e.g. /var/run/frakti.sock")
 	hyperEndpoint = flag.String("hyper-endpoint", "127.0.0.1:22318",
 		"The endpoint for connecting hyperd, e.g. 127.0.0.1:22318")
+	streamingServerPort = flag.String("streaming-server-port", "22521", "The port streaming server listen on, e.g. 22521")
 )
 
 func main() {
@@ -45,7 +47,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	hyperRuntime, err := hyper.NewHyperRuntime(*hyperEndpoint)
+	streamingConfig := getStreamingConfig()
+	hyperRuntime, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig)
 	if err != nil {
 		fmt.Println("Initialize hyper runtime failed: ", err)
 		os.Exit(1)
@@ -58,4 +61,15 @@ func main() {
 	}
 
 	fmt.Println(server.Serve(*listen))
+}
+
+func getStreamingConfig() *streaming.Config {
+	config := &streaming.Config{
+		Addr:                  "localhost:" + *streamingServerPort,
+		StreamIdleTimeout:     streaming.DefaultConfig.StreamIdleTimeout,
+		StreamCreationTimeout: streaming.DefaultConfig.StreamCreationTimeout,
+		SupportedProtocols:    streaming.DefaultConfig.SupportedProtocols,
+		// TODO: add TLSConfig
+	}
+	return config
 }

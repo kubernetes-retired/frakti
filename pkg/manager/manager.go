@@ -259,7 +259,7 @@ func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncReque
 	}, nil
 }
 
-// Exec execute a command in the container.
+// Exec prepares a streaming endpoint to execute a command in the container.
 func (s *FraktiManager) Exec(ctx context.Context, req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
 	// TODO: implement exec in container
 	return nil, fmt.Errorf("Not implemented")
