@@ -349,3 +349,12 @@ func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
 	}
 	return memoryinMegabytes, nil
 }
+
+// promiseGo is a basic promise implementation
+func promiseGo(f func() error) chan error {
+	ch := make(chan error, 1)
+	go func() {
+		ch <- f()
+	}()
+	return ch
+}
