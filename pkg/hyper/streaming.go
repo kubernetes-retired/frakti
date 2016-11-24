@@ -21,8 +21,29 @@ import (
 	"fmt"
 	"io"
 
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
+	"k8s.io/kubernetes/pkg/util/term"
 )
+
+type streamingRuntime struct {
+	client *Client
+}
+
+// Exec execute a command in the container.
+func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+	return fmt.Errorf("Not implemented")
+}
+
+// Attach attach to a running container.
+func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, resize <-chan term.Size) error {
+	return fmt.Errorf("Not implemented")
+}
+
+// PortForward forward ports from a PodSandbox.
+func (sr *streamingRuntime) PortForward(podSandboxID string, port int32, stream io.ReadWriteCloser) error {
+	return fmt.Errorf("Not implemented")
+}
 
 // ExecSync runs a command in a container synchronously.
 func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (stdout, stderr []byte, exitCode int32, err error) {
@@ -51,17 +72,17 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 	return stdoutBuffer.Bytes(), stderrBuffer.Bytes(), exitCode, nil
 }
 
-// Exec execute a command in the container.
-func (h *Runtime) Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
-	return fmt.Errorf("Not implemented")
+// Exec prepares a streaming endpoint to execute a command in the container.
+func (h *Runtime) Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
 }
 
 // Attach prepares a streaming endpoint to attach to a running container.
-func (h *Runtime) Attach() error {
-	return fmt.Errorf("Not implemented")
+func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
 }
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
-func (h *Runtime) PortForward() error {
-	return fmt.Errorf("Not implemented")
+func (h *Runtime) PortForward(req *kubeapi.PortForwardRequest) (*kubeapi.PortForwardResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
 }
