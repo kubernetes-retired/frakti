@@ -22,6 +22,7 @@ import (
 	"io"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	"k8s.io/kubernetes/pkg/util/term"
 )
@@ -32,7 +33,12 @@ type streamingRuntime struct {
 
 // Exec execute a command in the container.
 func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	return fmt.Errorf("Not implemented")
+	err := sr.client.CheckIfContainerRunning(rawContainerID)
+	if err != nil {
+		return err
+	}
+	_, err = sr.client.ExecInContainer(rawContainerID, cmd, stdin, stdout, stderr, tty, resize, 0)
+	return err
 }
 
 // Attach attach to a running container.
@@ -59,10 +65,11 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 	}
 
 	exitCode, err = h.client.ExecInContainer(rawContainerID, cmd,
-		nil, // doesn't need stdin here
+		nil, // don't need stdin here
 		ioutils.WriteCloserWrapper(&stdoutBuffer),
 		ioutils.WriteCloserWrapper(&stderrBuffer),
-		false, // doesn't need tty in ExecSync
+		false, // don't need tty in ExecSync
+		nil,   // don't need resize
 		timeout)
 
 	if err != nil {
@@ -74,7 +81,15 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 
 // Exec prepares a streaming endpoint to execute a command in the container.
 func (h *Runtime) Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	if h.streamingServer == nil {
+		return nil, streaming.ErrorStreamingDisabled("exec")
+	}
+	err := h.client.CheckIfContainerRunning(req.GetContainerId())
+	if err != nil {
+		return nil, err
+	}
+
+	return h.streamingServer.GetExec(req)
 }
 
 // Attach prepares a streaming endpoint to attach to a running container.

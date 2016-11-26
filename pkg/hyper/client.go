@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
+	"k8s.io/kubernetes/pkg/util/term"
 )
 
 const (
@@ -381,7 +382,7 @@ func (c *Client) ContainerExecCreate(containerId string, cmd []string, tty bool)
 }
 
 // ExecInContainer exec a command in container with specified io, tty and timeout
-func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, timeout int64) (int32, error) {
+func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size, timeout int64) (int32, error) {
 	execID, err := c.ContainerExecCreate(containerId, cmd, tty)
 	if err != nil {
 		return -1, err
@@ -405,6 +406,8 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 		return -1, fmt.Errorf("timeout should be non-negative")
 	}
 	defer cancel()
+
+	// TODO: deal with resize, need TTYResize api in hyperd
 
 	stream, err := c.client.ExecStart(ctx)
 	if err != nil {
