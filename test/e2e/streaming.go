@@ -91,6 +91,26 @@ var _ = framework.KubeDescribe("Test streaming in container", func() {
 		expectedUrl := buildExpectedExecAttachURL("exec", cID, magicCmd, false, false)
 		Expect(resp.GetUrl()).To(Equal(expectedUrl), "exec url should equal to expected")
 	})
+
+	It("test get a attach url", func() {
+		podID, cID := startLongRunningContainer(runtimeClient, imageClient)
+		defer func(podID string) {
+			By("delete pod sandbox")
+			runtimeClient.RemovePodSandbox(podID)
+		}(podID)
+
+		By("prepare attach command url in container")
+		stdin := true
+		attachReq := &kubeapi.AttachRequest{
+			ContainerId: &cID,
+			Stdin:       &stdin,
+		}
+		resp, err := runtimeClient.Attach(attachReq)
+		framework.ExpectNoError(err, "Failed to get attach url in container: %v", err)
+		framework.Logf("AttachUrl: %q", resp.GetUrl())
+		expectedUrl := buildExpectedExecAttachURL("attach", cID, nil, stdin, false)
+		Expect(resp.GetUrl()).To(Equal(expectedUrl), "attach url should equal to expected")
+	})
 })
 
 func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.ImageManagerService) (podId, containerId string) {
