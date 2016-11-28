@@ -43,7 +43,19 @@ func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.R
 
 // Attach attach to a running container.
 func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, resize <-chan term.Size) error {
-	return fmt.Errorf("Not implemented")
+	containerInfo, err := sr.client.GetContainerInfo(rawContainerID)
+	if err != nil {
+		return err
+	}
+
+	if containerInfo.Status.Phase != "running" {
+		return fmt.Errorf("Container %s is not running.", rawContainerID)
+	}
+
+	tty := containerInfo.Container.Tty
+	err = sr.client.AttachContainer(rawContainerID, stdin, stdout, stderr, tty, resize)
+
+	return err
 }
 
 // PortForward forward ports from a PodSandbox.
@@ -94,7 +106,23 @@ func (h *Runtime) Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) 
 
 // Attach prepares a streaming endpoint to attach to a running container.
 func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	if h.streamingServer == nil {
+		return nil, streaming.ErrorStreamingDisabled("attach")
+	}
+	// TODO: this is ugly, since repeat most of client CheckIfContainerRunning method
+	// should be replaced once kubernetes#36615 is merged.
+	containerID := req.GetContainerId()
+	containerInfo, err := h.client.GetContainerInfo(containerID)
+	if err != nil {
+		return nil, err
+	}
+
+	if containerInfo.Status.Phase != "running" {
+		return nil, fmt.Errorf("Container %s is not running.", containerID)
+	}
+
+	tty := containerInfo.Container.Tty
+	return h.streamingServer.GetAttach(req, tty)
 }
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.

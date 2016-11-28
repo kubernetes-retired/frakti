@@ -274,8 +274,15 @@ func (s *FraktiManager) Exec(ctx context.Context, req *kubeapi.ExecRequest) (*ku
 
 // Attach prepares a streaming endpoint to attach to a running container.
 func (s *FraktiManager) Attach(ctx context.Context, req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	glog.V(3).Infof("Attach with request %s", req.String())
 
+	resp, err := s.runtimeService.Attach(req)
+	if err != nil {
+		glog.Errorf("Attach from runtime service failed: %v", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
