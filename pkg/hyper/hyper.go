@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
 const (
@@ -37,18 +38,29 @@ const (
 
 // Runtime is the HyperContainer implementation of kubelet runtime API
 type Runtime struct {
-	client *Client
+	client          *Client
+	streamingServer streaming.Server
 }
 
 // NewHyperRuntime creates a new Runtime
-func NewHyperRuntime(hyperEndpoint string) (*Runtime, error) {
+func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config) (*Runtime, error) {
 	hyperClient, err := NewClient(hyperEndpoint, hyperConnectionTimeout)
 	if err != nil {
 		glog.Fatalf("Initialize hyper client failed: %v", err)
 		return nil, err
 	}
 
-	return &Runtime{client: hyperClient}, nil
+	streamingRuntime := &streamingRuntime{client: hyperClient}
+	var streamingServer streaming.Server
+	if streamingConfig != nil {
+		var err error
+		streamingServer, err = streaming.NewServer(*streamingConfig, streamingRuntime)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Runtime{client: hyperClient, streamingServer: streamingServer}, nil
 }
 
 // Version returns the runtime name, runtime version and runtime API version

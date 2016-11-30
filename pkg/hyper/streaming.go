@@ -21,8 +21,47 @@ import (
 	"fmt"
 	"io"
 
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
+	"k8s.io/kubernetes/pkg/util/term"
 )
+
+type streamingRuntime struct {
+	client *Client
+}
+
+// Exec execute a command in the container.
+func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+	err := sr.client.CheckIfContainerRunning(rawContainerID)
+	if err != nil {
+		return err
+	}
+	_, err = sr.client.ExecInContainer(rawContainerID, cmd, stdin, stdout, stderr, tty, resize, 0)
+	return err
+}
+
+// Attach attach to a running container.
+func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, resize <-chan term.Size) error {
+	containerInfo, err := sr.client.GetContainerInfo(rawContainerID)
+	if err != nil {
+		return err
+	}
+
+	if containerInfo.Status.Phase != "running" {
+		return fmt.Errorf("Container %s is not running.", rawContainerID)
+	}
+
+	tty := containerInfo.Container.Tty
+	err = sr.client.AttachContainer(rawContainerID, stdin, stdout, stderr, tty, resize)
+
+	return err
+}
+
+// PortForward forward ports from a PodSandbox.
+func (sr *streamingRuntime) PortForward(podSandboxID string, port int32, stream io.ReadWriteCloser) error {
+	return fmt.Errorf("Not implemented")
+}
 
 // ExecSync runs a command in a container synchronously.
 func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (stdout, stderr []byte, exitCode int32, err error) {
@@ -38,10 +77,11 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 	}
 
 	exitCode, err = h.client.ExecInContainer(rawContainerID, cmd,
-		nil, // doesn't need stdin here
+		nil, // don't need stdin here
 		ioutils.WriteCloserWrapper(&stdoutBuffer),
 		ioutils.WriteCloserWrapper(&stderrBuffer),
-		false, // doesn't need tty in ExecSync
+		false, // don't need tty in ExecSync
+		nil,   // don't need resize
 		timeout)
 
 	if err != nil {
@@ -51,17 +91,41 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 	return stdoutBuffer.Bytes(), stderrBuffer.Bytes(), exitCode, nil
 }
 
-// Exec execute a command in the container.
-func (h *Runtime) Exec(rawContainerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
-	return fmt.Errorf("Not implemented")
+// Exec prepares a streaming endpoint to execute a command in the container.
+func (h *Runtime) Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
+	if h.streamingServer == nil {
+		return nil, streaming.ErrorStreamingDisabled("exec")
+	}
+	err := h.client.CheckIfContainerRunning(req.GetContainerId())
+	if err != nil {
+		return nil, err
+	}
+
+	return h.streamingServer.GetExec(req)
 }
 
 // Attach prepares a streaming endpoint to attach to a running container.
-func (h *Runtime) Attach() error {
-	return fmt.Errorf("Not implemented")
+func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
+	if h.streamingServer == nil {
+		return nil, streaming.ErrorStreamingDisabled("attach")
+	}
+	// TODO: this is ugly, since repeat most of client CheckIfContainerRunning method
+	// should be replaced once kubernetes#36615 is merged.
+	containerID := req.GetContainerId()
+	containerInfo, err := h.client.GetContainerInfo(containerID)
+	if err != nil {
+		return nil, err
+	}
+
+	if containerInfo.Status.Phase != "running" {
+		return nil, fmt.Errorf("Container %s is not running.", containerID)
+	}
+
+	tty := containerInfo.Container.Tty
+	return h.streamingServer.GetAttach(req, tty)
 }
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
-func (h *Runtime) PortForward() error {
-	return fmt.Errorf("Not implemented")
+func (h *Runtime) PortForward(req *kubeapi.PortForwardRequest) (*kubeapi.PortForwardResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
 }

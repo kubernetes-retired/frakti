@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
+	"k8s.io/kubernetes/pkg/util/term"
 )
 
 const (
@@ -381,7 +382,7 @@ func (c *Client) ContainerExecCreate(containerId string, cmd []string, tty bool)
 }
 
 // ExecInContainer exec a command in container with specified io, tty and timeout
-func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, timeout int64) (int32, error) {
+func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size, timeout int64) (int32, error) {
 	execID, err := c.ContainerExecCreate(containerId, cmd, tty)
 	if err != nil {
 		return -1, err
@@ -405,6 +406,8 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 		return -1, fmt.Errorf("timeout should be non-negative")
 	}
 	defer cancel()
+
+	// TODO: deal with resize, need TTYResize api in hyperd
 
 	stream, err := c.client.ExecStart(ctx)
 	if err != nil {
@@ -523,5 +526,97 @@ func (c *Client) CheckIfContainerRunning(containerID string) error {
 		return fmt.Errorf("Container %s is not running.", containerID)
 	}
 
+	return nil
+}
+
+// AttachContainer attach a container with id, io stream and resize
+func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+	// TODO: deal with resize, need TTYResize api in hyperd
+
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+
+	stream, err := c.client.Attach(ctx)
+	if err != nil {
+		return err
+	}
+
+	req := &types.AttachMessage{
+		ContainerID: containerID,
+	}
+	err = stream.Send(req)
+	if err != nil {
+		return err
+	}
+
+	var recvStdoutError chan error
+	extractor := NewExtractor(tty)
+
+	if stdout != nil || stderr != nil {
+		recvStdoutError = promiseGo(func() (err error) {
+			for {
+				out, err := stream.Recv()
+				if err != nil && err != io.EOF {
+					return err
+				}
+				if out != nil && out.Data != nil {
+					so, se, ee := extractor.Extract(out.Data)
+					if ee != nil {
+						return ee
+					}
+					if len(so) > 0 && stdout != nil {
+						nw, ew := stdout.Write(so)
+						if ew != nil {
+							return ew
+						}
+						if nw != len(so) {
+							return io.ErrShortWrite
+						}
+					}
+					if len(se) > 0 && stderr != nil {
+						nw, ew := stderr.Write(se)
+						if ew != nil {
+							return ew
+						}
+						if nw != len(se) {
+							return io.ErrShortWrite
+						}
+					}
+				}
+				if err == io.EOF {
+					break
+				}
+			}
+			return nil
+		})
+	}
+
+	if stdin != nil {
+		go func() error {
+			defer stream.CloseSend()
+			buf := make([]byte, 32)
+			for {
+				nr, err := stdin.Read(buf)
+				if nr > 0 {
+					if err := stream.Send(&types.AttachMessage{Data: buf[:nr]}); err != nil {
+						return err
+					}
+				}
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}()
+	}
+
+	if stdout != nil || stderr != nil {
+		if err := <-recvStdoutError; err != nil {
+			return err
+		}
+	}
 	return nil
 }

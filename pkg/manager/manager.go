@@ -259,16 +259,30 @@ func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncReque
 	}, nil
 }
 
-// Exec execute a command in the container.
+// Exec prepares a streaming endpoint to execute a command in the container.
 func (s *FraktiManager) Exec(ctx context.Context, req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
-	// TODO: implement exec in container
-	return nil, fmt.Errorf("Not implemented")
+	glog.V(3).Infof("Exec with request %s", req.String())
+
+	resp, err := s.runtimeService.Exec(req)
+	if err != nil {
+		glog.Errorf("Exec from runtime service failed: %v", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // Attach prepares a streaming endpoint to attach to a running container.
 func (s *FraktiManager) Attach(ctx context.Context, req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	glog.V(3).Infof("Attach with request %s", req.String())
 
+	resp, err := s.runtimeService.Attach(req)
+	if err != nil {
+		glog.Errorf("Attach from runtime service failed: %v", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
