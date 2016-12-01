@@ -112,7 +112,7 @@ func (c *Client) StopPod(podID string) (int, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	resp, err := c.client.PodStop(ctx, &types.PodStopRequest{
+	resp, err := c.client.PodStop(ctx, &api.PodStopRequest{
 		PodID: podID,
 	})
 	if err != nil {
