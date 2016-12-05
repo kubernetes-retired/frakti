@@ -31,6 +31,9 @@ type streamingRuntime struct {
 	client *Client
 }
 
+// emphasize streamingRuntime should implement streaming.Runtime interface.
+var _ streaming.Runtime = &streamingRuntime{}
+
 // Exec execute a command in the container.
 func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
 	err := sr.client.CheckIfContainerRunning(rawContainerID)
@@ -42,20 +45,13 @@ func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.R
 }
 
 // Attach attach to a running container.
-func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, resize <-chan term.Size) error {
-	containerInfo, err := sr.client.GetContainerInfo(rawContainerID)
+func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+	err := sr.client.CheckIfContainerRunning(rawContainerID)
 	if err != nil {
 		return err
 	}
 
-	if containerInfo.Status.Phase != "running" {
-		return fmt.Errorf("Container %s is not running.", rawContainerID)
-	}
-
-	tty := containerInfo.Container.Tty
-	err = sr.client.AttachContainer(rawContainerID, stdin, stdout, stderr, tty, resize)
-
-	return err
+	return sr.client.AttachContainer(rawContainerID, stdin, stdout, stderr, tty, resize)
 }
 
 // PortForward forward ports from a PodSandbox.
@@ -109,20 +105,12 @@ func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, e
 	if h.streamingServer == nil {
 		return nil, streaming.ErrorStreamingDisabled("attach")
 	}
-	// TODO: this is ugly, since repeat most of client CheckIfContainerRunning method
-	// should be replaced once kubernetes#36615 is merged.
-	containerID := req.GetContainerId()
-	containerInfo, err := h.client.GetContainerInfo(containerID)
+	err := h.client.CheckIfContainerRunning(req.GetContainerId())
 	if err != nil {
 		return nil, err
 	}
 
-	if containerInfo.Status.Phase != "running" {
-		return nil, fmt.Errorf("Container %s is not running.", containerID)
-	}
-
-	tty := containerInfo.Container.Tty
-	return h.streamingServer.GetAttach(req, tty)
+	return h.streamingServer.GetAttach(req)
 }
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
