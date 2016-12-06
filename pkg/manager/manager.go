@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/runtime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
 const (
@@ -38,17 +39,20 @@ const (
 type FraktiManager struct {
 	// The grpc server.
 	server *grpc.Server
+	// The streaming server.
+	streamingServer streaming.Server
 
 	runtimeService runtime.RuntimeService
 	imageService   runtime.ImageService
 }
 
 // NewFraktiManager creates a new FraktiManager
-func NewFraktiManager(runtimeService runtime.RuntimeService, imageService runtime.ImageService) (*FraktiManager, error) {
+func NewFraktiManager(runtimeService runtime.RuntimeService, imageService runtime.ImageService, streamingServer streaming.Server) (*FraktiManager, error) {
 	s := &FraktiManager{
-		server:         grpc.NewServer(),
-		runtimeService: runtimeService,
-		imageService:   imageService,
+		server:          grpc.NewServer(),
+		runtimeService:  runtimeService,
+		imageService:    imageService,
+		streamingServer: streamingServer,
 	}
 	s.registerServer()
 
@@ -61,6 +65,14 @@ func (s *FraktiManager) Serve(addr string) error {
 
 	if err := syscall.Unlink(addr); err != nil && !os.IsNotExist(err) {
 		return err
+	}
+
+	if s.streamingServer != nil {
+		go func() {
+			if err := s.streamingServer.Start(true); err != nil {
+				glog.Fatalf("Failed to start streaming server: %v", err)
+			}
+		}()
 	}
 
 	lis, err := net.Listen("unix", addr)

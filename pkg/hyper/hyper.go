@@ -43,11 +43,11 @@ type Runtime struct {
 }
 
 // NewHyperRuntime creates a new Runtime
-func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config) (*Runtime, error) {
+func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config) (*Runtime, streaming.Server, error) {
 	hyperClient, err := NewClient(hyperEndpoint, hyperConnectionTimeout)
 	if err != nil {
 		glog.Fatalf("Initialize hyper client failed: %v", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	streamingRuntime := &streamingRuntime{client: hyperClient}
@@ -56,11 +56,11 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config) (*
 		var err error
 		streamingServer, err = streaming.NewServer(*streamingConfig, streamingRuntime)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	return &Runtime{client: hyperClient, streamingServer: streamingServer}, nil
+	return &Runtime{client: hyperClient, streamingServer: streamingServer}, streamingServer, nil
 }
 
 // Version returns the runtime name, runtime version and runtime API version
