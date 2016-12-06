@@ -51,13 +51,13 @@ func main() {
 	}
 
 	streamingConfig := getStreamingConfig()
-	hyperRuntime, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig)
+	hyperRuntime, streamingServer, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig)
 	if err != nil {
 		fmt.Println("Initialize hyper runtime failed: ", err)
 		os.Exit(1)
 	}
 
-	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime)
+	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer)
 	if err != nil {
 		fmt.Println("Initialize frakti server failed: ", err)
 		os.Exit(1)
