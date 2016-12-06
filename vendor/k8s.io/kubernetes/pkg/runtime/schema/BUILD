@@ -14,22 +14,17 @@ go_library(
     name = "go_default_library",
     srcs = [
         "generated.pb.go",
-        "intstr.go",
+        "group_version.go",
+        "interfaces.go",
     ],
     tags = ["automanaged"],
-    deps = [
-        "//pkg/genericapiserver/openapi/common:go_default_library",
-        "//vendor:github.com/go-openapi/spec",
-        "//vendor:github.com/gogo/protobuf/proto",
-        "//vendor:github.com/golang/glog",
-        "//vendor:github.com/google/gofuzz",
-    ],
+    deps = ["//vendor:github.com/gogo/protobuf/proto"],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = ["intstr_test.go"],
+    srcs = ["group_version_test.go"],
     library = "go_default_library",
     tags = ["automanaged"],
-    deps = ["//vendor:github.com/ghodss/yaml"],
+    deps = [],
 )
