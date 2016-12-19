@@ -358,3 +358,26 @@ func promiseGo(f func() error) chan error {
 	}()
 	return ch
 }
+
+// ensureContainerRunning make sure container is running by containerID, else return an error
+func ensureContainerRunning(client *Client, containerID string) error {
+	isRunning, err := isContainerRunning(client, containerID)
+	if err != nil {
+		return err
+	}
+	if !isRunning {
+		return fmt.Errorf("Container %s is not running.", containerID)
+	}
+
+	return nil
+}
+
+// isContainerRunning returns if container is running by containerID
+func isContainerRunning(client *Client, containerID string) (bool, error) {
+	containerInfo, err := client.GetContainerInfo(containerID)
+	if err != nil {
+		return false, err
+	}
+
+	return containerInfo.Status.Phase == "running", nil
+}

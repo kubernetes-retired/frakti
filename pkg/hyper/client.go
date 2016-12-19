@@ -196,7 +196,7 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 	}
 
 	// do checks about container status
-	err := c.CheckIfContainerRunning(containerID)
+	err := ensureContainerRunning(c, containerID)
 	if err != nil {
 		return err
 	}
@@ -513,20 +513,6 @@ func (c *Client) Wait(containerId, execId string, noHang bool) (int32, error) {
 	}
 
 	return resp.ExitCode, nil
-}
-
-// CheckIfContainerRunning check if container is running by containerID
-func (c *Client) CheckIfContainerRunning(containerID string) error {
-	containerInfo, err := c.GetContainerInfo(containerID)
-	if err != nil {
-		return err
-	}
-
-	if containerInfo.Status.Phase != "running" {
-		return fmt.Errorf("Container %s is not running.", containerID)
-	}
-
-	return nil
 }
 
 // AttachContainer attach a container with id, io stream and resize
