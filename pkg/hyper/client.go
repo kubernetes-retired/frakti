@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
@@ -187,6 +189,40 @@ func (c *Client) GetContainerInfo(container string) (*types.ContainerInfo, error
 	}
 
 	return cinfo.ContainerInfo, nil
+}
+
+// StartContainer starts a hyper container
+func (c *Client) StartContainer(containerID string) error {
+	isRunning, err := isContainerRunning(c, containerID)
+	if err != nil {
+		return err
+	}
+	if isRunning {
+		glog.V(3).Infof("Container %q is already running, skip", containerID)
+		return nil
+	}
+
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	_, err = c.client.ContainerStart(ctx, &types.ContainerStartRequest{ContainerId: containerID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveContainer removes a hyper container
+func (c *Client) RemoveContainer(containerID string) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	_, err := c.client.ContainerRemove(ctx, &types.ContainerRemoveRequest{ContainerId: containerID})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // StopContainer stops a hyper container
