@@ -271,8 +271,7 @@ func parseTimeString(str string) (int64, error) {
 		return t.UnixNano(), nil
 	}
 
-	layout := "2006-01-02T15:04:05Z"
-	t, err := time.Parse(layout, str)
+	t, err := time.Parse(time.RFC3339, str)
 	if err != nil {
 		return t.UnixNano(), err
 	}
