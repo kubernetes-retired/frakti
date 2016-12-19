@@ -18,7 +18,6 @@ package e2e
 
 import (
 	"fmt"
-	"time"
 
 	"k8s.io/frakti/test/e2e/framework"
 	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
@@ -146,10 +145,6 @@ func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.Ima
 	By("start container")
 	err = rc.StartContainer(containerId)
 	framework.ExpectNoError(err, "Failed to start container: %v", err)
-
-	// sleep 2s to make sure container start is ready, workaround for random failed in travis
-	// TODO: remove this
-	time.Sleep(2 * time.Second)
 
 	return podId, containerId
 }
