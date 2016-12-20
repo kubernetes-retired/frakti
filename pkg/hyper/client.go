@@ -114,6 +114,15 @@ func (c *Client) StopPod(podID string) (int, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
+	isRunning, err := isPodSandboxRunning(c, podID)
+	if err != nil {
+		return 0, "", err
+	}
+	if !isRunning {
+		glog.V(3).Infof("PodSandbox %q is already stopped, skip", podID)
+		return 0, "", nil
+	}
+
 	resp, err := c.client.PodStop(ctx, &types.PodStopRequest{
 		PodID: podID,
 	})
@@ -220,6 +229,9 @@ func (c *Client) RemoveContainer(containerID string) error {
 
 	_, err := c.client.ContainerRemove(ctx, &types.ContainerRemoveRequest{ContainerId: containerID})
 	if err != nil {
+		if strings.Contains(err.Error(), "cannot find container") {
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -232,9 +244,13 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 	}
 
 	// do checks about container status
-	err := ensureContainerRunning(c, containerID)
+	isRunning, err := isContainerRunning(c, containerID)
 	if err != nil {
 		return err
+	}
+	if !isRunning {
+		glog.V(3).Infof("Container %q is already stopped, skip", containerID)
+		return nil
 	}
 
 	ch := make(chan error, 1)

@@ -380,3 +380,13 @@ func isContainerRunning(client *Client, containerID string) (bool, error) {
 
 	return containerInfo.Status.Phase == "running", nil
 }
+
+// isPodSandboxRunning returns if pod is running
+func isPodSandboxRunning(client *Client, podID string) (bool, error) {
+	podInfo, err := client.GetPodInfo(podID)
+	if err != nil {
+		return false, err
+	}
+
+	return podInfo.Status.Phase == "Running", nil
+}
