@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
@@ -112,6 +114,15 @@ func (c *Client) StopPod(podID string) (int, string, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
+	isRunning, err := isPodSandboxRunning(c, podID)
+	if err != nil {
+		return 0, "", err
+	}
+	if !isRunning {
+		glog.V(3).Infof("PodSandbox %q is already stopped, skip", podID)
+		return 0, "", nil
+	}
+
 	resp, err := c.client.PodStop(ctx, &types.PodStopRequest{
 		PodID: podID,
 	})
@@ -189,6 +200,43 @@ func (c *Client) GetContainerInfo(container string) (*types.ContainerInfo, error
 	return cinfo.ContainerInfo, nil
 }
 
+// StartContainer starts a hyper container
+func (c *Client) StartContainer(containerID string) error {
+	isRunning, err := isContainerRunning(c, containerID)
+	if err != nil {
+		return err
+	}
+	if isRunning {
+		glog.V(3).Infof("Container %q is already running, skip", containerID)
+		return nil
+	}
+
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	_, err = c.client.ContainerStart(ctx, &types.ContainerStartRequest{ContainerId: containerID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveContainer removes a hyper container
+func (c *Client) RemoveContainer(containerID string) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	_, err := c.client.ContainerRemove(ctx, &types.ContainerRemoveRequest{ContainerId: containerID})
+	if err != nil {
+		if strings.Contains(err.Error(), "cannot find container") {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
 // StopContainer stops a hyper container
 func (c *Client) StopContainer(containerID string, timeout int64) error {
 	if timeout <= 0 {
@@ -196,9 +244,13 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 	}
 
 	// do checks about container status
-	err := c.CheckIfContainerRunning(containerID)
+	isRunning, err := isContainerRunning(c, containerID)
 	if err != nil {
 		return err
+	}
+	if !isRunning {
+		glog.V(3).Infof("Container %q is already stopped, skip", containerID)
+		return nil
 	}
 
 	ch := make(chan error, 1)
@@ -513,20 +565,6 @@ func (c *Client) Wait(containerId, execId string, noHang bool) (int32, error) {
 	}
 
 	return resp.ExitCode, nil
-}
-
-// CheckIfContainerRunning check if container is running by containerID
-func (c *Client) CheckIfContainerRunning(containerID string) error {
-	containerInfo, err := c.GetContainerInfo(containerID)
-	if err != nil {
-		return err
-	}
-
-	if containerInfo.Status.Phase != "running" {
-		return fmt.Errorf("Container %s is not running.", containerID)
-	}
-
-	return nil
 }
 
 // AttachContainer attach a container with id, io stream and resize

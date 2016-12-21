@@ -36,7 +36,7 @@ var _ streaming.Runtime = &streamingRuntime{}
 
 // Exec execute a command in the container.
 func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	err := sr.client.CheckIfContainerRunning(rawContainerID)
+	err := ensureContainerRunning(sr.client, rawContainerID)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.R
 
 // Attach attach to a running container.
 func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	err := sr.client.CheckIfContainerRunning(rawContainerID)
+	err := ensureContainerRunning(sr.client, rawContainerID)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 	)
 
 	// check if container is running
-	err = h.client.CheckIfContainerRunning(rawContainerID)
+	err = ensureContainerRunning(h.client, rawContainerID)
 	if err != nil {
 		return nil, nil, -1, err
 	}
@@ -92,7 +92,7 @@ func (h *Runtime) Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) 
 	if h.streamingServer == nil {
 		return nil, streaming.ErrorStreamingDisabled("exec")
 	}
-	err := h.client.CheckIfContainerRunning(req.GetContainerId())
+	err := ensureContainerRunning(h.client, req.GetContainerId())
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, e
 	if h.streamingServer == nil {
 		return nil, streaming.ErrorStreamingDisabled("attach")
 	}
-	err := h.client.CheckIfContainerRunning(req.GetContainerId())
+	err := ensureContainerRunning(h.client, req.GetContainerId())
 	if err != nil {
 		return nil, err
 	}

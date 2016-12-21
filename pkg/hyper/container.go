@@ -88,22 +88,9 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 
 // StartContainer starts the container.
 func (h *Runtime) StartContainer(rawContainerID string) error {
-	// Hyperd doesn't support start a standalone container yet, restart the
-	// pod to workaround this.
-	// TODO: replace this with real StartContainer after hyperd's refactoring.
-	container, err := h.client.GetContainerInfo(rawContainerID)
+	err := h.client.StartContainer(rawContainerID)
 	if err != nil {
-		glog.Errorf("Failed to get container %q: %v", rawContainerID, err)
-		return err
-	}
-	_, reason, err := h.client.StopPod(container.PodID)
-	if err != nil {
-		glog.Errorf("[StartContainer] Failed to stop pod %q with reason (%q): %v", container.PodID, reason, err)
-		return err
-	}
-	err = h.client.StartPod(container.PodID)
-	if err != nil {
-		glog.Errorf("[StartContainer] Failed to start pod %q: %v", container.PodID, err)
+		glog.Errorf("Start container %q failed: %v", rawContainerID, err)
 		return err
 	}
 
@@ -124,8 +111,12 @@ func (h *Runtime) StopContainer(rawContainerID string, timeout int64) error {
 // RemoveContainer removes the container. If the container is running, the container
 // should be force removed.
 func (h *Runtime) RemoveContainer(rawContainerID string) error {
-	// Workaround: always suppose container are deleted successfully.
-	// TODO: remove container when hyperd is ready for this.
+	err := h.client.RemoveContainer(rawContainerID)
+	if err != nil {
+		glog.Errorf("Remove container %q failed: %v", rawContainerID, err)
+		return err
+	}
+
 	return nil
 }
 
