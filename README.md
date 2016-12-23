@@ -56,6 +56,7 @@ export KUBERNETES_PROVIDER=local
 export EXPERIMENTAL_CRI=true
 export CONTAINER_RUNTIME=remote
 export CONTAINER_RUNTIME_ENDPOINT=/var/run/frakti.sock
+export IMAGE_SERVICE_ENDPOINT=/var/run/frakti.sock
 hack/local-up-cluster.sh
 ```
 
