@@ -17,6 +17,8 @@ limitations under the License.
 package e2e
 
 import (
+	"os"
+
 	"k8s.io/frakti/test/e2e/framework"
 	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
@@ -89,6 +91,42 @@ var _ = framework.KubeDescribe("Test Container", func() {
 			removeContainerOrFail(c, containerID)
 			containers := listContainerForIDOrFail(c, containerID)
 			Expect(containerFound(containers, containerID)).To(BeFalse(), "container should be removed")
+		})
+	})
+
+	Context("test container with volume", func() {
+		var podID string
+		var podConfig *runtimeapi.PodSandboxConfig
+
+		BeforeEach(func() {
+			podID, podConfig = createPodSandboxForContainer(c)
+			pullImageList(ic, []string{defaultContainerImage})
+		})
+
+		AfterEach(func() {
+			By("stop PodSandbox")
+			c.StopPodSandbox(podID)
+			By("delete PodSandbox")
+			c.RemovePodSandbox(podID)
+			By("remove default image")
+			removeImageList(ic, []string{defaultContainerImage})
+		})
+
+		It("test start container with volume", func() {
+
+			By("create host path and flag file")
+			hostPath := "/test" + podID
+			flagFile := "test.file"
+			err := os.Mkdir(hostPath, 0777)
+			framework.ExpectNoError(err, "failed to create host path %s: %v", hostPath, err)
+			_, err = os.Create(hostPath + "/" + flagFile)
+			framework.ExpectNoError(err, "failed to create volume file %s: %v", flagFile, err)
+
+			By("create container with volume")
+			containerID := createVolContainerOrFail(c, "container-with-volume-test-", podID, podConfig, hostPath, flagFile)
+
+			By("test start container with volume")
+			testStartContainer(c, containerID)
 		})
 	})
 
