@@ -161,7 +161,7 @@ var _ = framework.KubeDescribe("Test image", func() {
 		// different tags refer to the same image
 		testImageList := []string{
 			"busybox:1",
-			"busybox:1.25",
+			"busybox:1-uclibc",
 			"busybox:uclibc",
 		}
 
