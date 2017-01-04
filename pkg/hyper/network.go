@@ -72,10 +72,21 @@ func (plugin *CNINetworkPlugin) GetPodNetworkStatus(podname string) ([]*Interfac
 	return plugin.sandboxNs[podname].getNetworkStatus()
 }
 
-/*
 func (plugin *CNINetworkPlugin) TeardownPodNetwork(podname string) error {
-	return plugin.sandboxNs[podname].delNetwork()
-}*/
+	err := plugin.sandboxNs[podname].delNetwork()
+	if err != nil {
+		return err
+	}
+
+	err = plugin.sandboxNs[podname].netns.Close()
+	if err != nil {
+		return err
+	}
+
+	delete(plugin.sandboxNs, podname)
+
+	return nil
+}
 
 type sandboxNetNS struct {
 	netns  ns.NetNS
@@ -126,6 +137,42 @@ func (sns *sandboxNetNS) getNetworkStatus() ([]*InterfaceInfo, error) {
 	})
 
 	return infos, err
+}
+
+func (sns *sandboxNetNS) delNetwork() error {
+	files, err := libcni.ConfFiles(sns.netdir)
+	switch {
+	case err != nil:
+		return err
+	case len(files) == 0:
+		return fmt.Errorf("No networks found in %s", sns.netdir)
+	}
+
+	sort.Strings(files)
+
+	cninet := &libcni.CNIConfig{
+		Path: strings.Split(DefaultCNIDir, ":"),
+	}
+
+	for _, confFile := range files {
+		netconf, err := libcni.ConfFromFile(confFile)
+		if err != nil {
+			continue
+		}
+
+		rt := &libcni.RuntimeConf{
+			ContainerID: "cni",
+			NetNS:       sns.netns.Path(),
+			IfName:      DefaultInterfaceName,
+		}
+
+		err = cninet.DelNetwork(netconf, rt)
+		if err != nil {
+			continue
+		}
+	}
+
+	return nil
 }
 
 func collectionInterfaceInfo() []*InterfaceInfo {

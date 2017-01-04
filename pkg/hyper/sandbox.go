@@ -156,6 +156,11 @@ func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
 		return err
 	}
 
+	err = h.networkPlugin.TeardownPodNetwork(podSandboxID)
+	if err != nil {
+		glog.Errorf("Tear down pod %s network failed: %v", podSandboxID, err)
+	}
+
 	return nil
 }
 
