@@ -40,6 +40,7 @@ const (
 type Runtime struct {
 	client          *Client
 	streamingServer streaming.Server
+	networkPlugin   *CNINetworkPlugin
 }
 
 // NewHyperRuntime creates a new Runtime
@@ -60,7 +61,12 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config) (*
 		}
 	}
 
-	return &Runtime{client: hyperClient, streamingServer: streamingServer}, streamingServer, nil
+	networkPlugin, err := InitCNI()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &Runtime{client: hyperClient, streamingServer: streamingServer, networkPlugin: networkPlugin}, streamingServer, nil
 }
 
 // Version returns the runtime name, runtime version and runtime API version

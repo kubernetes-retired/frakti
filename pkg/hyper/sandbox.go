@@ -17,6 +17,7 @@ limitations under the License.
 package hyper
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/golang/glog"
@@ -32,6 +33,23 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
+
+	// Set up pod network ns by cni
+	err = h.networkPlugin.SetupPodNetwork(userpod.Id, "")
+	if err != nil {
+		glog.Errorf("Set Up pod %s network failed: %v", userpod.Id, err)
+		return "", err
+	}
+
+	// Get pod network ns configuration
+	ifaceInfo, err := h.networkPlugin.GetPodNetworkStatus(userpod.Id)
+	if err != nil {
+		glog.Errorf("Get network info from pod %s net ns failed: %v", userpod.Id, err)
+		return "", err
+	}
+
+	// Add network configuration of the pod netns to userpod
+	addIface2UserPod(userpod, ifaceInfo)
 
 	podID, err := h.client.CreatePod(userpod)
 	if err != nil {
@@ -49,6 +67,26 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	}
 
 	return podID, nil
+}
+
+func addIface2UserPod(userpod *types.UserPod, infos []*InterfaceInfo) {
+	seq := 0
+	ifaces := []*types.UserInterface{}
+	for _, info := range infos {
+		bridge, err := GetBridgeFromIpCompare(info.Ip)
+		if err != nil {
+			continue
+		}
+		ifaces = append(ifaces, &types.UserInterface{
+			Ifname: fmt.Sprintf("eth%d", seq),
+			Bridge: bridge,
+			Ip:     info.Ip,
+		})
+	}
+
+	if len(ifaces) != 0 {
+		userpod.Interfaces = ifaces
+	}
 }
 
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
