@@ -18,11 +18,13 @@ package hyper
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
 
 	"github.com/containernetworking/cni/pkg/ns"
+	"golang.org/x/sys/unix"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
@@ -144,11 +146,28 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 // StopPodSandbox stops the sandbox. If there are any running containers in the
 // sandbox, they should be force terminated.
 func (h *Runtime) StopPodSandbox(podSandboxID string) error {
+	// Get the pod's net ns info first
+	info, err := h.client.GetPodInfo(podSandboxID)
+	if err != nil {
+		return err
+	}
+	netNsPath := info.Spec.Labels["NETNS"]
+
 	code, cause, err := h.client.StopPod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, code, cause, err)
 		return err
 	}
+
+	// destory the network namespace
+	podNamespace := ""
+	err = h.netPlugin.TearDownPod(netNsPath, podNamespace, podSandboxID, podSandboxID)
+	if err != nil {
+		glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
+	}
+
+	unix.Unmount(netNsPath, unix.MNT_DETACH)
+	os.Remove(netNsPath)
 
 	return nil
 }
