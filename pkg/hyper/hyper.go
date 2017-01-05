@@ -23,6 +23,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 
+	"k8s.io/frakti/pkg/hyper/ocicni"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
@@ -40,6 +41,7 @@ const (
 type Runtime struct {
 	client          *Client
 	streamingServer streaming.Server
+	netPlugin       ocicni.CNIPlugin
 }
 
 // NewHyperRuntime creates a new Runtime
@@ -60,7 +62,18 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config) (*
 		}
 	}
 
-	return &Runtime{client: hyperClient, streamingServer: streamingServer}, streamingServer, nil
+	netPlugin, err := ocicni.InitCNI("")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rt := &Runtime{
+		client:          hyperClient,
+		streamingServer: streamingServer,
+		netPlugin:       netPlugin,
+	}
+
+	return rt, streamingServer, nil
 }
 
 // Version returns the runtime name, runtime version and runtime API version

@@ -17,10 +17,12 @@ limitations under the License.
 package hyper
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/golang/glog"
 
+	"github.com/containernetworking/cni/pkg/ns"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
@@ -32,6 +34,30 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
+
+	netns, err := ns.NewNS()
+	if err != nil {
+		glog.Errorf("Create Network Namespace sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+	netNsPath := netns.Path()
+
+	// Persist network namespace in pod label
+	if userpod.Labels == nil {
+		userpod.Labels = make(map[string]string)
+	}
+	userpod.Labels["NETNS"] = netNsPath
+
+	// Setup the network
+	podId := userpod.Id
+	if err = h.netPlugin.SetUpPod(netNsPath, podId); err != nil {
+		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
+	}
+
+	netNsInfo := getNetNsInfos(netns)
+
+	// Add network configuration of sandbox net ns to userpod
+	addNetNsInfos2UserPod(userpod, netNsInfo)
 
 	podID, err := h.client.CreatePod(userpod)
 	if err != nil {
@@ -49,6 +75,28 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	}
 
 	return podID, nil
+}
+
+func addNetNsInfos2UserPod(userpod *types.UserPod, info *NetNsInfos) {
+	seq := 0
+	ifaces := []*types.UserInterface{}
+	for _, iface := range info.Ifaces {
+		bridge, err := GetBridgeNameByIp(iface.Ip)
+		if err != nil {
+			continue
+		}
+		ifaces = append(ifaces, &types.UserInterface{
+			Ifname:  fmt.Sprintf("eth%d", seq),
+			Bridge:  bridge,
+			Ip:      iface.Ip,
+			Mac:     iface.Mac,
+			Gateway: iface.Gw,
+		})
+	}
+
+	if len(ifaces) != 0 {
+		userpod.Interfaces = ifaces
+	}
 }
 
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
