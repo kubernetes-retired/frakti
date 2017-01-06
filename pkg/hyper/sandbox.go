@@ -45,6 +45,9 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	netNsPath := netns.Path()
 
 	// Persist network namespace in pod label
+	if userpod.Labels == nil {
+		userpod.Labels = make(map[string]string)
+	}
 	userpod.Labels["NETNS"] = netNsPath
 
 	// Setup the network
