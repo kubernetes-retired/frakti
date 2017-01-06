@@ -1,7 +1,7 @@
 {
 	"ImportPath": "k8s.io/frakti",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v74",
+	"GodepVersion": "v75",
 	"Packages": [
 		"github.com/onsi/ginkgo/ginkgo",
 		"./..."
@@ -28,6 +28,31 @@
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.10.0-38-g3ec0642",
 			"Rev": "3ec0642a7fb6488f65b06f9040adc67e3990296a"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/libcni",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/invoke",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/ns",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/types",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/version",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
@@ -441,6 +466,18 @@
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
 			"Rev": "f1f1a805ed361a0e078bb537e4ea78cd37dcf065"
+		},
+		{
+			"ImportPath": "github.com/vishvananda/netlink",
+			"Rev": "1890b34fa39d236a20a5ab69627d3c7f91fabdb9"
+		},
+		{
+			"ImportPath": "github.com/vishvananda/netlink/nl",
+			"Rev": "1890b34fa39d236a20a5ab69627d3c7f91fabdb9"
+		},
+		{
+			"ImportPath": "github.com/vishvananda/netns",
+			"Rev": "2c9454e4fc6e2edc1a1c84e64ed3d6e662fb6991"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
