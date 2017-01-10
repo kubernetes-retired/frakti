@@ -47,7 +47,7 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 // buildUserContainer builds hyperd's UserContainer based kubelet ContainerConfig.
 func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (*types.UserContainer, error) {
 	if config.GetLinux().GetSecurityContext().GetPrivileged() {
-		return nil, fmt.Errorf("Priviledged containers are not supported in hyper")
+		return nil, fmt.Errorf("Privileged containers are not supported in hyper")
 	}
 
 	containerSpec := &types.UserContainer{
