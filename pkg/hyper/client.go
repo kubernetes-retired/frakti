@@ -37,8 +37,9 @@ const (
 	//timeout for image pulling progress report
 	defaultImagePullingStuckTimeout = 1 * time.Minute
 
-	//response code of PodRemove, when the pod can not be found.
-	E_NOT_FOUND = -2
+	// errorCodePodNotFound is the response code of PodRemove,
+	// when the pod can not be found.
+	errorCodePodNotFound = -2
 )
 
 // Client is the gRPC client for hyperd
@@ -93,20 +94,11 @@ func (c *Client) StartPod(podID string) error {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	stream, err := c.client.PodStart(ctx)
-	if err != nil {
-		return err
-	}
+	_, err := c.client.PodStart(ctx, &types.PodStartRequest{
+		PodID: podID,
+	})
 
-	if err := stream.Send(&types.PodStartMessage{PodID: podID}); err != nil {
-		return err
-	}
-
-	if _, err := stream.Recv(); err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // StopPod stops a pod.
@@ -143,7 +135,7 @@ func (c *Client) RemovePod(podID string) error {
 		&types.PodRemoveRequest{PodID: podID},
 	)
 
-	if resp.Code == E_NOT_FOUND {
+	if resp.Code == errorCodePodNotFound {
 		return nil
 	}
 
