@@ -89,7 +89,7 @@ func listContainerForIDOrFail(c internalapi.RuntimeService, containerID string) 
 	return containers
 }
 
-// runPodSandbox creates a container with the prefix of containerName.
+// createContainer creates a container with the prefix of containerName.
 func createContainer(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig) (string, error) {
 	By("create a container with name")
 	containerName := prefix + e2eframework.NewUUID()
@@ -101,9 +101,36 @@ func createContainer(c internalapi.RuntimeService, prefix string, podID string, 
 	return c.CreateContainer(podID, containerConfig, podConfig)
 }
 
+// createVolContainer creates a container with volume and the prefix of containerName.
+func createVolContainer(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig, volPath, flagFile string) (string, error) {
+	By("create a container with volume and name")
+	containerName := prefix + e2eframework.NewUUID()
+	containerConfig := &runtimeapi.ContainerConfig{
+		Metadata: buildContainerMetadata(&containerName),
+		Image:    &runtimeapi.ImageSpec{Image: &defaultContainerImage},
+		// mount host path to the same directory in container, and check if flag file exists
+		Command: []string{"sh", "-c", "while [ -f " + volPath + "/" + flagFile + " ]; do sleep 1; done;"},
+		Mounts: []*runtimeapi.Mount{
+			{
+				HostPath:      &volPath,
+				ContainerPath: &volPath,
+			},
+		},
+	}
+	return c.CreateContainer(podID, containerConfig, podConfig)
+}
+
 // createContainerOrFail creates a container with the prefix of containerName and fails if it gets error.
 func createContainerOrFail(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig) string {
 	containerID, err := createContainer(c, prefix, podID, podConfig)
+	e2eframework.ExpectNoError(err, "Failed to create container: %v", err)
+	e2eframework.Logf("Created container %s\n", containerID)
+	return containerID
+}
+
+// createVolContainerOrFail creates a container with volume and the prefix of containerName and fails if it gets error.
+func createVolContainerOrFail(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig, hostPath, flagFile string) string {
+	containerID, err := createVolContainer(c, prefix, podID, podConfig, hostPath, flagFile)
 	e2eframework.ExpectNoError(err, "Failed to create container: %v", err)
 	e2eframework.Logf("Created container %s\n", containerID)
 	return containerID

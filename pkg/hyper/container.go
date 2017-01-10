@@ -18,12 +18,18 @@ package hyper
 
 import (
 	"fmt"
+	"math/rand"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+)
+
+const (
+	volDriver = "vfs"
 )
 
 // CreateContainer creates a new container in specified PodSandbox
@@ -60,18 +66,28 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 		Labels:     buildLabelsWithAnnotations(config.Labels, config.Annotations),
 	}
 
+	// make volumes
 	// TODO: support adding device in upstream hyperd when creating container.
+	volumes := make([]*types.UserVolumeReference, len(config.Mounts))
+	for i, m := range config.Mounts {
+		hostPath := m.GetHostPath()
+		_, volName := filepath.Split(hostPath)
+		volDetail := &types.UserVolume{
+			Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
+			// kuberuntime will set HostPath to the abs path of volume directory on host
+			Source: hostPath,
+			Format: volDriver,
+		}
+		volumes[i] = &types.UserVolumeReference{
+			// use the generated volume name above
+			Volume:   volDetail.Name,
+			Path:     m.GetContainerPath(),
+			ReadOnly: m.GetReadonly(),
+			Detail:   volDetail,
+		}
+	}
 
-	// TODO: support volume mounts in upstream hyperd.
-	// volumes := make([]*types.UserVolumeReference, len(config.Mounts))
-	// for idx, v := range config.Mounts {
-	// 	volumes[idx] = &types.UserVolumeReference{
-	// 		Volume:   v.GetHostPath(),
-	// 		Path:     v.GetContainerPath(),
-	// 		ReadOnly: v.GetReadonly(),
-	// 	}
-	// }
-	containerSpec.Volumes = []*types.UserVolumeReference{}
+	containerSpec.Volumes = volumes
 
 	// make environments
 	environments := make([]*types.EnvironmentVar, len(config.Envs))
