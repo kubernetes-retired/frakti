@@ -67,6 +67,7 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	}
 
 	// make volumes
+	// TODO: support adding device in upstream hyperd when creating container.
 	volumes := make([]*types.UserVolumeReference, len(config.Mounts))
 	for i, m := range config.Mounts {
 		hostPath := m.GetHostPath()
