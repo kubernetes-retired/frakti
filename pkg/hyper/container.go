@@ -40,7 +40,6 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 		return "", err
 	}
 
-	// TODO: support container-level log_path in upstream hyperd when creating container.
 	containerID, err := h.client.CreateContainer(podSandboxID, containerSpec)
 	if err != nil {
 		glog.Errorf("Create container %s in pod %s failed: %v", config.Metadata.GetName(), podSandboxID, err)
@@ -64,6 +63,7 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 		Command:    config.GetArgs(),
 		Entrypoint: config.GetCommand(),
 		Labels:     buildLabelsWithAnnotations(config.Labels, config.Annotations),
+		LogPath:    filepath.Join(sandboxConfig.GetLogDirectory(), config.GetLogPath()),
 	}
 
 	// make volumes
