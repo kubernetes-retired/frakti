@@ -20,8 +20,8 @@ set -o pipefail
 FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
 HYPERD_API_ROOT="${FRAKTI_ROOT}/pkg/hyper/types"
 
-if [[ -z "$(which protoc)" || "$(protoc --version)" != "libprotoc 3.0."* ]]; then
-  echo "Generating protobuf requires protoc 3.0.0-beta1 or newer. Please download and"
+if [[ -z "$(which protoc)" || "$(protoc --version)" != "libprotoc 3."* ]]; then
+  echo "Generating protobuf requires protoc 3.0 or newer. Please download and"
   echo "install the platform appropriate Protobuf package for your OS: "
   echo
   echo "  try `hack/install-protoc.sh`"
