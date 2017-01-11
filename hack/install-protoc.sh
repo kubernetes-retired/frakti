@@ -22,8 +22,8 @@ fi
 
 # Install protoc
 cd /tmp
-curl -sSL https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-linux-x86_64.zip -o protoc-3.0.0-linux-x86_64.zip
-unzip protoc-3.0.0-linux-x86_64.zip
+curl -sSL https://github.com/google/protobuf/releases/download/v3.1.0/protoc-3.1.0-linux-x86_64.zip -o protoc-3.1.0-linux-x86_64.zip
+unzip protoc-3.1.0-linux-x86_64.zip
 sudo mv bin/protoc /usr/bin/protoc
 
 echo "protoc installed success."
