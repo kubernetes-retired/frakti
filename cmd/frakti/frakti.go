@@ -40,6 +40,10 @@ var (
 		"The port for the streaming server to serve on, e.g. 22521")
 	streamingServerAddress = flag.String("streaming-server-addr", "0.0.0.0",
 		"The IP address for the streaming server to serve on, e.g. 0.0.0.0")
+	cniNetDir = flag.String("cni-net-dir", "/etc/cni/net.d",
+		"The directory for putting cni configuration file")
+	cniPluginDir = flag.String("cni-plugin-dir", "/opt/cni/bin",
+		"The directory for putting cni plugin binary file")
 )
 
 func main() {
@@ -51,7 +55,7 @@ func main() {
 	}
 
 	streamingConfig := getStreamingConfig()
-	hyperRuntime, streamingServer, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig)
+	hyperRuntime, streamingServer, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig, *cniNetDir, *cniPluginDir)
 	if err != nil {
 		fmt.Println("Initialize hyper runtime failed: ", err)
 		os.Exit(1)
