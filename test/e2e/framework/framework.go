@@ -17,9 +17,6 @@ limitations under the License.
 package framework
 
 import (
-	"reflect"
-	"strings"
-
 	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
 
 	. "github.com/onsi/ginkgo"
@@ -37,9 +34,6 @@ type Framework struct {
 	// we install a Cleanup action before each test and clear it after.  If we
 	// should abort, the AfterSuite hook should run all Cleanup actions.
 	cleanupHandle CleanupActionHandle
-
-	// configuration for framework's client
-	options FrameworkOptions
 }
 
 type FraktiClient struct {
@@ -52,25 +46,15 @@ type TestDataSummary interface {
 	PrintJSON() string
 }
 
-type FrameworkOptions struct {
-	ClientQPS   float32
-	ClientBurst int
-}
-
 // NewFramework makes a new framework and sets up a BeforeEach/AfterEach for
 // you (you can write additional before/after each functions).
 func NewDefaultFramework(baseName string) *Framework {
-	options := FrameworkOptions{
-		ClientQPS:   20,
-		ClientBurst: 50,
-	}
-	return NewFramework(baseName, options, nil)
+	return NewFramework(baseName, nil)
 }
 
-func NewFramework(baseName string, options FrameworkOptions, client *FraktiClient) *Framework {
+func NewFramework(baseName string, client *FraktiClient) *Framework {
 	f := &Framework{
 		BaseName: baseName,
-		options:  options,
 		Client:   client,
 	}
 
@@ -93,36 +77,11 @@ func (f *Framework) BeforeEach() {
 
 }
 
-// AfterEach clean resourses and print summaries
+// AfterEach clean resources
 func (f *Framework) AfterEach() {
 	RemoveCleanupAction(f.cleanupHandle)
 
-	defer func() {
-		// Paranoia-- prevent reuse!
-		f.Client = nil
-	}()
-
-	summaries := make([]TestDataSummary, 0)
-
-	// TODO: add summaries
-
-	outputTypes := strings.Split(TestContext.OutputPrintType, ",")
-	for _, printType := range outputTypes {
-		switch printType {
-		case "hr":
-			for i := range summaries {
-				Logf(summaries[i].PrintHumanReadable())
-			}
-		case "json":
-			for i := range summaries {
-				typeName := reflect.TypeOf(summaries[i]).String()
-				Logf("%v JSON\n%v", typeName[strings.LastIndex(typeName, ".")+1:], summaries[i].PrintJSON())
-				Logf("Finished")
-			}
-		default:
-			Logf("Unknown output type: %v. Skipping.", printType)
-		}
-	}
+	f.Client = nil
 }
 
 func KubeDescribe(text string, body func()) bool {
