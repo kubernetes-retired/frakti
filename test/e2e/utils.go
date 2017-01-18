@@ -17,6 +17,10 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+
 	e2eframework "k8s.io/frakti/test/e2e/framework"
 	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
@@ -31,6 +35,7 @@ var (
 	defaultAttempt              uint32 = 2
 	defaultContainerImage       string = "busybox:latest"
 	defaultStopContainerTimeout int64  = 60
+	defaultLogContext           string = "hello world"
 )
 
 // buildPodSandboxMetadata builds default PodSandboxMetadata with podSandboxName.
@@ -58,10 +63,27 @@ func createPodSandboxForContainer(c internalapi.RuntimeService) (string, *runtim
 	podConfig := &runtimeapi.PodSandboxConfig{
 		Metadata: buildPodSandboxMetadata(&podName),
 	}
+	return createPodSandboxOrFail(c, podConfig), podConfig
+}
+
+//
+func createPodSandboxWithLogDirectory(c internalapi.RuntimeService) (string, *runtimeapi.PodSandboxConfig) {
+	By("create a PodSandbox with log directory")
+	podName := "PodSandbox-with-log-directory-" + e2eframework.NewUUID()
+	dir := fmt.Sprintf("/var/log/pods/%s/", podName)
+	podConfig := &runtimeapi.PodSandboxConfig{
+		Metadata:     buildPodSandboxMetadata(&podName),
+		LogDirectory: &dir,
+	}
+	return createPodSandboxOrFail(c, podConfig), podConfig
+}
+
+// createPodSandboxOrFail creates a PodSandbox and fails if it gets error.
+func createPodSandboxOrFail(c internalapi.RuntimeService, podConfig *runtimeapi.PodSandboxConfig) string {
 	podID, err := c.RunPodSandbox(podConfig)
 	e2eframework.ExpectNoError(err, "Failed to create PodSandbox: %v", err)
 	e2eframework.Logf("Created PodSandbox %s\n", podID)
-	return podID, podConfig
+	return podID
 }
 
 // listPodSanboxforID lists PodSandbox for podID.
@@ -120,6 +142,21 @@ func createVolContainer(c internalapi.RuntimeService, prefix string, podID strin
 	return c.CreateContainer(podID, containerConfig, podConfig)
 }
 
+// createLogContainer creates a container with log and the prefix of containerName.
+func createLogContainer(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig) (string, string, error) {
+	By("create a container with log and name")
+	containerName := prefix + e2eframework.NewUUID()
+	path := fmt.Sprintf("%s.log", containerName)
+	containerConfig := &runtimeapi.ContainerConfig{
+		Metadata: buildContainerMetadata(&containerName),
+		Image:    &runtimeapi.ImageSpec{Image: &defaultContainerImage},
+		Command:  []string{"echo", "hello world"},
+		LogPath:  &path,
+	}
+	containerID, err := c.CreateContainer(podID, containerConfig, podConfig)
+	return *containerConfig.LogPath, containerID, err
+}
+
 // createContainerOrFail creates a container with the prefix of containerName and fails if it gets error.
 func createContainerOrFail(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig) string {
 	containerID, err := createContainer(c, prefix, podID, podConfig)
@@ -134,6 +171,14 @@ func createVolContainerOrFail(c internalapi.RuntimeService, prefix string, podID
 	e2eframework.ExpectNoError(err, "Failed to create container: %v", err)
 	e2eframework.Logf("Created container %s\n", containerID)
 	return containerID
+}
+
+// createLogContainerOrFail creates a container with log and the prefix of containerName and fails if it gets error.
+func createLogContainerOrFail(c internalapi.RuntimeService, prefix string, podID string, podConfig *runtimeapi.PodSandboxConfig) (string, string) {
+	logPath, containerID, err := createLogContainer(c, prefix, podID, podConfig)
+	e2eframework.ExpectNoError(err, "Failed to create container: %v", err)
+	e2eframework.Logf("Created container %s\n", containerID)
+	return logPath, containerID
 }
 
 // testCreateContainer creates a container in the pod which ID is podID and make sure it be ready.
@@ -220,4 +265,18 @@ func containerFound(containers []*runtimeapi.Container, containerID string) bool
 
 	}
 	return false
+}
+
+func checkLog(podConfig *runtimeapi.PodSandboxConfig, logPath string, expectedContext string) {
+	path := *podConfig.LogDirectory + logPath
+	f, err := os.Open(path)
+	e2eframework.ExpectNoError(err, "Failed to open log file: %v", err)
+	e2eframework.Logf("Open log file %s\n", path)
+	defer f.Close()
+
+	logContext, err := ioutil.ReadAll(f)
+	e2eframework.ExpectNoError(err, "Failed to read log file: %v", err)
+	e2eframework.Logf("Log file context is %s\n", logContext)
+
+	Expect(string(logContext)).To(ContainSubstring(expectedContext), "Log context should be %s", expectedContext)
 }
