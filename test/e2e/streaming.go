@@ -128,7 +128,7 @@ func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.Ima
 	imageSpec := &kubeapi.ImageSpec{
 		Image: &latestTestImageRef,
 	}
-	err = ic.PullImage(imageSpec, nil)
+	_, err = ic.PullImage(imageSpec, nil)
 	framework.ExpectNoError(err, "Failed to pull image: %v", err)
 
 	By("create container in pod")
