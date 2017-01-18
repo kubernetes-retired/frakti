@@ -59,16 +59,22 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 }
 
 // PullImage pulls the image with authentication config.
-func (h *Runtime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthConfig) error {
+func (h *Runtime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthConfig) (string, error) {
 	repo, tag := parseRepositoryTag(image.GetImage())
 	auth := getHyperAuthConfig(authConfig)
 	err := h.client.PullImage(repo, tag, auth, nil)
 	if err != nil {
 		glog.Errorf("Pull image %q failed: %v", image.GetImage(), err)
-		return err
+		return "", err
 	}
 
-	return nil
+	imageInfo, err := h.client.GetImageInfo(repo, tag)
+	if err != nil {
+		glog.Errorf("Get image info for %q failed: %v", image.GetImage(), err)
+		return "", err
+	}
+
+	return imageInfo.Id, nil
 }
 
 // RemoveImage removes the image.
