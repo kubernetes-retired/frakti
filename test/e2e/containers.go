@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"os"
+	"time"
 
 	"k8s.io/frakti/test/e2e/framework"
 	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
@@ -37,6 +38,7 @@ var _ = framework.KubeDescribe("Test Container", func() {
 		c = f.Client.FraktiRuntimeService
 		ic = f.Client.FraktiImageService
 	})
+
 	Context("test basic operations on container", func() {
 		var podID string
 		var podConfig *runtimeapi.PodSandboxConfig
@@ -113,7 +115,6 @@ var _ = framework.KubeDescribe("Test Container", func() {
 		})
 
 		It("test start container with volume", func() {
-
 			By("create host path and flag file")
 			hostPath := "/test" + podID
 			flagFile := "test.file"
@@ -130,4 +131,40 @@ var _ = framework.KubeDescribe("Test Container", func() {
 		})
 	})
 
+	Context("test log", func() {
+		var podID string
+		var podConfig *runtimeapi.PodSandboxConfig
+
+		BeforeEach(func() {
+			podID, podConfig = createPodSandboxWithLogDirectory(c)
+			pullImageList(ic, []string{defaultContainerImage})
+		})
+
+		AfterEach(func() {
+			By("stop PodSandbox")
+			c.StopPodSandbox(podID)
+			By("delete PodSandbox")
+			c.RemovePodSandbox(podID)
+			By("remove default image")
+			removeImageList(ic, []string{defaultContainerImage})
+		})
+
+		It("test start container with log", func() {
+			By("create container with log")
+			logPath, containerID := createLogContainerOrFail(c, "container-with-log-test-", podID, podConfig)
+
+			By("start container with log")
+			testStartContainer(c, containerID)
+
+			// sleep one second here to wait container started.
+			time.Sleep(1 * time.Second)
+
+			By("check the log context")
+			expectedLogMessage := &logMessage{
+				log:    []byte(defaultLog + "\n"),
+				stream: stdoutType,
+			}
+			verifyLogContents(podConfig, logPath, expectedLogMessage)
+		})
+	})
 })

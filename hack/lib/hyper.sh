@@ -60,10 +60,7 @@ frakti::hyper::build_hyperstart() {
 
 frakti::hyper::build_hyperd() {
   local hyperd_root=${GO_HYPERHQ_PATH}/hyperd
-  local runv_root=${GO_HYPERHQ_PATH}/runv
 
-  frakti::log::info "clone runv repo"
-  git clone https://github.com/hyperhq/runv ${runv_root}
   frakti::log::info "clone hyperd repo"
   git clone https://github.com/hyperhq/hyperd ${hyperd_root}
 
@@ -94,7 +91,7 @@ frakti::hyper::export_related_path() {
   HYPER_KERNEL_PATH="${GO_HYPERHQ_PATH}/hyperstart/build/kernel"
   HYPER_INITRD_PATH="${GO_HYPERHQ_PATH}/hyperstart/build/hyper-initrd.img"
 
-  # hyperd binary path 
+  # hyperd binary path
   HYPERD_BINARY_PATH="${GO_HYPERHQ_PATH}/hyperd/hyperd"
 }
 
