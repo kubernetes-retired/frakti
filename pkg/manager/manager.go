@@ -354,13 +354,15 @@ func (s *FraktiManager) ImageStatus(ctx context.Context, req *kubeapi.ImageStatu
 func (s *FraktiManager) PullImage(ctx context.Context, req *kubeapi.PullImageRequest) (*kubeapi.PullImageResponse, error) {
 	glog.V(3).Infof("PullImage with request %s", req.String())
 
-	err := s.imageService.PullImage(req.Image, req.Auth)
+	imageRef, err := s.imageService.PullImage(req.Image, req.Auth)
 	if err != nil {
 		glog.Errorf("PullImage from image service failed: %v", err)
 		return nil, err
 	}
 
-	return &kubeapi.PullImageResponse{}, nil
+	return &kubeapi.PullImageResponse{
+		ImageRef: &imageRef,
+	}, nil
 }
 
 // RemoveImage removes the image.

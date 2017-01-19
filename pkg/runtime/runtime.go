@@ -74,7 +74,7 @@ type ImageService interface {
 	// ImageStatus returns the status of the image.
 	ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error)
 	// PullImage pulls an image with the authentication config.
-	PullImage(image *kubeapi.ImageSpec, auth *kubeapi.AuthConfig) error
+	PullImage(image *kubeapi.ImageSpec, auth *kubeapi.AuthConfig) (string, error)
 	// RemoveImage removes the image.
 	// It should return success if the image has already been removed.
 	RemoveImage(image *kubeapi.ImageSpec) error

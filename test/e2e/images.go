@@ -41,7 +41,7 @@ var (
 
 func testPublicImage(client internalapi.ImageManagerService, image string) {
 	By(fmt.Sprintf("pull image %s", image))
-	err := client.PullImage(&kubeapi.ImageSpec{
+	_, err := client.PullImage(&kubeapi.ImageSpec{
 		Image: &image,
 	}, nil)
 	framework.ExpectNoError(err, "Failed to pull image: %v", err)
@@ -76,7 +76,7 @@ func testPublicImage(client internalapi.ImageManagerService, image string) {
 func pullImageList(client internalapi.ImageManagerService, imageList []string) {
 	for _, imageRef := range imageList {
 		By(fmt.Sprintf("pull image %s", imageRef))
-		err := client.PullImage(&kubeapi.ImageSpec{
+		_, err := client.PullImage(&kubeapi.ImageSpec{
 			Image: &imageRef,
 		}, nil)
 		framework.ExpectNoError(err, "Failed to pull image: %v", err)
@@ -126,7 +126,7 @@ var _ = framework.KubeDescribe("Test image", func() {
 		}
 
 		By(fmt.Sprintf("pull image %s", imageName))
-		err := c.PullImage(&imageSpec, nil)
+		_, err := c.PullImage(&imageSpec, nil)
 		framework.ExpectNoError(err, "Failed to pull image: %v", err)
 
 		defer c.RemoveImage(&imageSpec)

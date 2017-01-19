@@ -24,15 +24,15 @@ import (
 	"strings"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/api/resource"
-	metav1 "k8s.io/kubernetes/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/selection"
-	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/sets"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -485,20 +485,6 @@ const (
 	// will fail to launch.
 	UnsafeSysctlsPodAnnotationKey string = "security.alpha.kubernetes.io/unsafe-sysctls"
 )
-
-// GetAffinityFromPod gets the json serialized affinity data from Pod.Annotations
-// and converts it to the Affinity type in api.
-func GetAffinityFromPodAnnotations(annotations map[string]string) (*Affinity, error) {
-	if len(annotations) > 0 && annotations[AffinityAnnotationKey] != "" {
-		var affinity Affinity
-		err := json.Unmarshal([]byte(annotations[AffinityAnnotationKey]), &affinity)
-		if err != nil {
-			return nil, err
-		}
-		return &affinity, nil
-	}
-	return nil, nil
-}
 
 // GetTolerationsFromPodAnnotations gets the json serialized tolerations data from Pod.Annotations
 // and converts it to the []Toleration type in api.
