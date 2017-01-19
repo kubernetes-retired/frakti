@@ -30,6 +30,31 @@
 			"Rev": "51fe59aca108dc5680109e7b2051cbdcfa5a253c"
 		},
 		{
+			"ImportPath": "github.com/containernetworking/cni/libcni",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/invoke",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/ns",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/types",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/version",
+			"Comment": "v0.3.0-140-g98ff61a",
+			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
@@ -440,6 +465,18 @@
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
 			"Rev": "ded73eae5db7e7a0ef6f55aace87a2873c5d2b74"
+		},
+		{
+			"ImportPath": "github.com/vishvananda/netlink",
+			"Rev": "1890b34fa39d236a20a5ab69627d3c7f91fabdb9"
+		},
+		{
+			"ImportPath": "github.com/vishvananda/netlink/nl",
+			"Rev": "1890b34fa39d236a20a5ab69627d3c7f91fabdb9"
+		},
+		{
+			"ImportPath": "github.com/vishvananda/netns",
+			"Rev": "2c9454e4fc6e2edc1a1c84e64ed3d6e662fb6991"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

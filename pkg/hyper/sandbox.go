@@ -17,10 +17,14 @@ limitations under the License.
 package hyper
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
 
+	"github.com/containernetworking/cni/pkg/ns"
+	"golang.org/x/sys/unix"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
@@ -32,6 +36,30 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
+
+	netns, err := ns.NewNS()
+	if err != nil {
+		glog.Errorf("Create Network Namespace sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+	netNsPath := netns.Path()
+
+	// Persist network namespace in pod label
+	if userpod.Labels == nil {
+		userpod.Labels = make(map[string]string)
+	}
+	userpod.Labels["NETNS"] = netNsPath
+
+	// Setup the network
+	podId := userpod.Id
+	if err = h.netPlugin.SetUpPod(netNsPath, podId); err != nil {
+		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
+	}
+
+	netNsInfo := getNetNsInfos(netns)
+
+	// Add network configuration of sandbox net ns to userpod
+	addNetNsInfos2UserPod(userpod, netNsInfo)
 
 	podID, err := h.client.CreatePod(userpod)
 	if err != nil {
@@ -49,6 +77,31 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	}
 
 	return podID, nil
+}
+
+// TODO: only bridge plugin now, support other plugins in the future
+func addNetNsInfos2UserPod(userpod *types.UserPod, info *NetNsInfos) {
+	seq := 0
+	ifaces := []*types.UserInterface{}
+	for _, iface := range info.Interfaces {
+		// TODO: get cni bridge through IP compare is not satisfactory
+		// use a better way to replace it in the future
+		bridge, err := GetBridgeNameByIp(iface.Ip)
+		if err != nil {
+			continue
+		}
+		ifaces = append(ifaces, &types.UserInterface{
+			Ifname:  fmt.Sprintf("eth%d", seq),
+			Bridge:  bridge,
+			Ip:      iface.Ip,
+			Mac:     iface.Mac,
+			Gateway: iface.Gateway,
+		})
+	}
+
+	if len(ifaces) != 0 {
+		userpod.Interfaces = ifaces
+	}
 }
 
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
@@ -100,11 +153,27 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 // StopPodSandbox stops the sandbox. If there are any running containers in the
 // sandbox, they should be force terminated.
 func (h *Runtime) StopPodSandbox(podSandboxID string) error {
+	// Get the pod's net ns info first
+	info, err := h.client.GetPodInfo(podSandboxID)
+	if err != nil {
+		return err
+	}
+	netNsPath := info.Spec.Labels["NETNS"]
+
 	code, cause, err := h.client.StopPod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, code, cause, err)
 		return err
 	}
+
+	// destory the network namespace
+	err = h.netPlugin.TearDownPod(netNsPath, podSandboxID)
+	if err != nil {
+		glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
+	}
+
+	unix.Unmount(netNsPath, unix.MNT_DETACH)
+	os.Remove(netNsPath)
 
 	return nil
 }
