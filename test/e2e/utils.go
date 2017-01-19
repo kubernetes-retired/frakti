@@ -17,9 +17,11 @@ limitations under the License.
 package e2e
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/docker/docker/pkg/jsonlog"
 	"k8s.io/frakti/test/e2e/framework"
@@ -36,8 +38,35 @@ var (
 	defaultAttempt              uint32 = 2
 	defaultContainerImage       string = "busybox:latest"
 	defaultStopContainerTimeout int64  = 60
-	defaultLogContext           string = "hello world"
+	defaultLog                  string = "hello world"
 )
+
+// streamType is the type of the stream.
+type streamType string
+
+const (
+	stderrType streamType = "stderr"
+	stdoutType streamType = "stdout"
+
+	// timeFormat is the time format used in the log.
+	timeFormat = time.RFC3339Nano
+	// blockSize is the block size used in tail.
+	blockSize = 1024
+)
+
+var (
+	// eol is the end-of-line sign in the log.
+	eol = []byte{'\n'}
+	// delimiter is the delimiter for timestamp and streamtype in log line.
+	delimiter = []byte{' '}
+)
+
+// logMessage is the internal log type.
+type logMessage struct {
+	timestamp time.Time
+	stream    streamType
+	log       []byte
+}
 
 // buildPodSandboxMetadata builds default PodSandboxMetadata with podSandboxName.
 func buildPodSandboxMetadata(podSandboxName *string) *runtimeapi.PodSandboxMetadata {
@@ -151,7 +180,7 @@ func createLogContainer(c internalapi.RuntimeService, prefix string, podID strin
 	containerConfig := &runtimeapi.ContainerConfig{
 		Metadata: buildContainerMetadata(&containerName),
 		Image:    &runtimeapi.ImageSpec{Image: &defaultContainerImage},
-		Command:  []string{"echo", "hello world"},
+		Command:  []string{"echo", defaultLog},
 		LogPath:  &path,
 	}
 	containerID, err := c.CreateContainer(podID, containerConfig, podConfig)
@@ -268,17 +297,37 @@ func containerFound(containers []*runtimeapi.Container, containerID string) bool
 	return false
 }
 
+// parseDockerJSONLog parses logs in Docker JSON log format. Docker JSON log format
+// example:
+//   {"log":"content 1","stream":"stdout","time":"2016-10-20T18:39:20.57606443Z"}
+//   {"log":"content 2","stream":"stderr","time":"2016-10-20T18:39:20.57606444Z"}
+func parseDockerJSONLog(log []byte, msg *logMessage) {
+	var l jsonlog.JSONLog
+
+	err := json.Unmarshal(log, &l)
+	framework.ExpectNoError(err, "failed with %v to unmarshal log %q", err, l)
+
+	msg.timestamp = l.Created
+	msg.stream = streamType(l.Stream)
+	msg.log = []byte(l.Log)
+}
+
 // verifyLogContents verifies the contents of container log.
-func verifyLogContents(podConfig *runtimeapi.PodSandboxConfig, logPath string, expectedContext string) {
+func verifyLogContents(podConfig *runtimeapi.PodSandboxConfig, logPath string, expectedLogMessage *logMessage) {
 	path := *podConfig.LogDirectory + logPath
 	f, err := os.Open(path)
 	framework.ExpectNoError(err, "Failed to open log file: %v", err)
 	framework.Logf("Open log file %s\n", path)
 	defer f.Close()
 
-	logContext, err := ioutil.ReadAll(f)
+	log, err := ioutil.ReadAll(f)
 	framework.ExpectNoError(err, "Failed to read log file: %v", err)
-	framework.Logf("Log file context is %s\n", logContext)
+	framework.Logf("Log file context is %s\n", log)
 
-	Expect(string(logContext)).To(ContainSubstring(expectedContext), "Log context should be %s", expectedContext)
+	var msg logMessage
+	parseDockerJSONLog(log, &msg)
+	framework.Logf("Parse json log succeed")
+
+	Expect(string(msg.log)).To(Equal(string(expectedLogMessage.log)), "Log should be %s", expectedLogMessage.log)
+	Expect(string(msg.stream)).To(Equal(string(expectedLogMessage.stream)), "Stream should be %s", string(expectedLogMessage.stream))
 }

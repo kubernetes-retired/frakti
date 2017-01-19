@@ -38,6 +38,7 @@ var _ = framework.KubeDescribe("Test Container", func() {
 		c = f.Client.FraktiRuntimeService
 		ic = f.Client.FraktiImageService
 	})
+
 	Context("test basic operations on container", func() {
 		var podID string
 		var podConfig *runtimeapi.PodSandboxConfig
@@ -159,7 +160,11 @@ var _ = framework.KubeDescribe("Test Container", func() {
 			time.Sleep(1 * time.Second)
 
 			By("check the log context")
-			verifyLogContents(podConfig, logPath, defaultLogContext)
+			expectedLogMessage := &logMessage{
+				log:    []byte(defaultLog + "\n"),
+				stream: stdoutType,
+			}
+			verifyLogContents(podConfig, logPath, expectedLogMessage)
 		})
 	})
 })
