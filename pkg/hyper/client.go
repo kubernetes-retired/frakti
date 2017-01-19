@@ -268,16 +268,33 @@ func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	req := types.ImageListRequest{Filter: fmt.Sprintf("%s:%s", image, tag)}
+	// check if tag is digest
+	repoSep := ":"
+	if strings.Index(tag, ":") > 0 {
+		repoSep = "@"
+	}
+
+	// TODO: use filter to get the image.
+	req := types.ImageListRequest{}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
-	if len(imageList.ImageList) == 0 {
-		return nil, fmt.Errorf("image %q not found", image)
+	fullImageName := fmt.Sprintf("%s%s%s", image, repoSep, tag)
+	for _, image := range imageList.ImageList {
+		for _, i := range image.RepoDigests {
+			if i == fullImageName {
+				return image, nil
+			}
+		}
+		for _, i := range image.RepoTags {
+			if i == fullImageName {
+				return image, nil
+			}
+		}
 	}
 
-	return imageList.ImageList[0], nil
+	return nil, fmt.Errorf("image %q with tag %q not found", image, tag)
 }
 
 // GetImages gets a list of images

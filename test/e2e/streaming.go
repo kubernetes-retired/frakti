@@ -17,7 +17,6 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
 	"time"
 
 	"k8s.io/frakti/test/e2e/framework"
@@ -88,8 +87,7 @@ var _ = framework.KubeDescribe("Test streaming in container", func() {
 		resp, err := runtimeClient.Exec(execReq)
 		framework.ExpectNoError(err, "Failed to get exec url in container: %v", err)
 		framework.Logf("ExecUrl: %q", resp.GetUrl())
-		expectedUrl := buildExpectedExecAttachURL("exec", cID, magicCmd, false, false)
-		Expect(resp.GetUrl()).To(Equal(expectedUrl), "exec url should equal to expected")
+		Expect(len(resp.GetUrl())).NotTo(Equal(0), "exec url should not be null")
 	})
 
 	It("test get a attach url", func() {
@@ -108,8 +106,7 @@ var _ = framework.KubeDescribe("Test streaming in container", func() {
 		resp, err := runtimeClient.Attach(attachReq)
 		framework.ExpectNoError(err, "Failed to get attach url in container: %v", err)
 		framework.Logf("AttachUrl: %q", resp.GetUrl())
-		expectedUrl := buildExpectedExecAttachURL("attach", cID, nil, stdin, false)
-		Expect(resp.GetUrl()).To(Equal(expectedUrl), "attach url should equal to expected")
+		Expect(len(resp.GetUrl())).NotTo(Equal(0), "attach url should not be null")
 	})
 })
 
@@ -152,39 +149,4 @@ func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.Ima
 	time.Sleep(2 * time.Second)
 
 	return podId, containerId
-}
-
-func buildExpectedExecAttachURL(method, containerID string, cmd []string, stdin, tty bool) string {
-	query := ""
-	// build cmd
-	for i, c := range cmd {
-		if i == 0 {
-			query += "?"
-		} else {
-			query += "&"
-		}
-		query += fmt.Sprintf("command=%s", c)
-	}
-	if len(cmd) == 0 {
-		query += "?"
-	} else {
-		query += "&"
-	}
-	// build io setting
-	if !tty {
-		query += "error=1&"
-	}
-	if stdin {
-		query += "input=1&"
-	}
-	// stdout is set default
-	query += "output=1&"
-	if tty {
-		query += "tty=1&"
-	}
-	// remove traval '&'
-	query = query[:len(query)-1]
-
-	// TODO: http schema and address should generate from frakti config
-	return fmt.Sprintf("http://0.0.0.0:22521/%s/%s%s", method, containerID, query)
 }
