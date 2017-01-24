@@ -67,6 +67,11 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		return "", err
 	}
 
+	// Create sandbox checkpoint
+	if err = h.checkpointHandler.CreateCheckpoint(podID, constructPodSandboxCheckpoint(config, netNsPath)); err != nil {
+		return podID, err
+	}
+
 	err = h.client.StartPod(podID)
 	if err != nil {
 		glog.Errorf("Start pod %q failed: %v", podID, err)
@@ -154,11 +159,20 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 // sandbox, they should be force terminated.
 func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	// Get the pod's net ns info first
-	info, err := h.client.GetPodInfo(podSandboxID)
-	if err != nil {
-		return err
+	var netNsPath string
+
+	status, statusErr := h.PodSandboxStatus(podSandboxID)
+	if statusErr == nil {
+		labels := status.GetLabels()
+		netNsPath, _ = labels["NETNS"]
+	} else {
+		checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
+		if err != nil {
+			glog.Errorf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
+			return fmt.Errorf("Failed to get sandbox status: %v", statusErr)
+		}
+		netNsPath = checkpoint.NetNsPath
 	}
-	netNsPath := info.Spec.Labels["NETNS"]
 
 	code, cause, err := h.client.StopPod(podSandboxID)
 	if err != nil {
@@ -184,6 +198,11 @@ func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
 	err := h.client.RemovePod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Remove pod %s failed: %v", podSandboxID, err)
+		return err
+	}
+
+	if err := h.checkpointHandler.RemoveCheckpoint(podSandboxID); err != nil {
+		glog.Errorf("Remove checkpoint of pod %s failed: %v", podSandboxID, err)
 		return err
 	}
 
@@ -241,15 +260,11 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 		return nil, err
 	}
 
+	// using map as set
+	sandboxIDs := make(map[string]bool)
 	items := make([]*kubeapi.PodSandbox, 0, len(pods))
 	for _, pod := range pods {
 		state := toPodSandboxState(pod.Status)
-
-		podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodName)
-		if err != nil {
-			glog.V(3).Infof("ParseSandboxName for %q failed (%v), assuming it is not managed by frakti", pod.PodName, err)
-			continue
-		}
 
 		if filter != nil {
 			if filter.Id != nil && pod.PodID != filter.GetId() {
@@ -264,25 +279,95 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 				continue
 			}
 		}
-
-		podSandboxMetadata := &kubeapi.PodSandboxMetadata{
-			Name:      &podName,
-			Uid:       &podUID,
-			Namespace: &podNamespace,
-			Attempt:   &attempt,
+		converted, err := podResultToKubeAPISandbox(pod)
+		if err != nil {
+			continue
 		}
+		sandboxIDs[converted.GetId()] = true
+		items = append(items, converted)
+	}
 
-		createdAtNano := pod.CreatedAt * secondToNano
-		items = append(items, &kubeapi.PodSandbox{
-			Id:        &pod.PodID,
-			Metadata:  podSandboxMetadata,
-			Labels:    pod.Labels,
-			State:     &state,
-			CreatedAt: &createdAtNano,
-		})
+	// Include sandbox that could only be found with its checkpoint if no filter is applied
+	// These PodSandbox will only include PodSandboxID, Name, Namespace.
+	// These PodSandbox will be in PodSandboxState_SANDBOX_NOTREADY state.
+	if filter == nil {
+		checkpoints := h.checkpointHandler.ListCheckpoints()
+		for _, id := range checkpoints {
+			if _, ok := sandboxIDs[id]; !ok {
+				checkpoint, err := h.checkpointHandler.GetCheckpoint(id)
+				if err != nil {
+					glog.Errorf("Failed to get checkpoint for sandbox %q: %v", id, err)
+					continue
+				}
+				items = append(items, checkpointToKubeAPISandbox(id, checkpoint))
+			}
+		}
 	}
 
 	sortByCreatedAt(items)
 
 	return items, nil
+}
+
+func constructPodSandboxCheckpoint(config *kubeapi.PodSandboxConfig, netnspath string) *PodSandboxCheckpoint {
+	checkpoint := NewPodSandboxCheckpoint(config.GetMetadata().GetNamespace(), config.GetMetadata().GetName())
+	checkpoint.NetNsPath = netnspath
+	for _, pm := range config.GetPortMappings() {
+		proto := toCheckpointProtocol(pm.GetProtocol())
+		checkpoint.Data.PortMappings = append(checkpoint.Data.PortMappings, &PortMapping{
+			HostPort:      pm.HostPort,
+			ContainerPort: pm.ContainerPort,
+			Protocol:      &proto,
+		})
+	}
+	return checkpoint
+}
+
+func toCheckpointProtocol(protocol kubeapi.Protocol) Protocol {
+	switch protocol {
+	case kubeapi.Protocol_TCP:
+		return ProtocolTCP
+	case kubeapi.Protocol_UDP:
+		return ProtocolUDP
+	}
+	glog.Warningf("Unknown protocol %q: defaulting to TCP", protocol)
+	return ProtocolTCP
+}
+
+func podResultToKubeAPISandbox(pod *types.PodListResult) (*kubeapi.PodSandbox, error) {
+	state := toPodSandboxState(pod.Status)
+	podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodName)
+	if err != nil {
+		glog.V(3).Infof("ParseSandboxName for %q failed (%v), assuming it is not managed by frakti", pod.PodName, err)
+		return nil, err
+	}
+
+	podSandboxMetadata := &kubeapi.PodSandboxMetadata{
+		Name:      &podName,
+		Uid:       &podUID,
+		Namespace: &podNamespace,
+		Attempt:   &attempt,
+	}
+
+	createdAtNano := pod.CreatedAt * secondToNano
+	return &kubeapi.PodSandbox{
+		Id:        &pod.PodID,
+		Metadata:  podSandboxMetadata,
+		Labels:    pod.Labels,
+		State:     &state,
+		CreatedAt: &createdAtNano,
+	}, nil
+
+}
+
+func checkpointToKubeAPISandbox(id string, checkpoint *PodSandboxCheckpoint) *kubeapi.PodSandbox {
+	state := kubeapi.PodSandboxState_SANDBOX_NOTREADY
+	return &kubeapi.PodSandbox{
+		Id: &id,
+		Metadata: &kubeapi.PodSandboxMetadata{
+			Name:      &checkpoint.Name,
+			Namespace: &checkpoint.Namespace,
+		},
+		State: &state,
+	}
 }
