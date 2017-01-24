@@ -39,9 +39,10 @@ const (
 
 // Runtime is the HyperContainer implementation of kubelet runtime API
 type Runtime struct {
-	client          *Client
-	streamingServer streaming.Server
-	netPlugin       ocicni.CNIPlugin
+	client            *Client
+	streamingServer   streaming.Server
+	netPlugin         ocicni.CNIPlugin
+	checkpointHandler CheckpointHandler
 }
 
 // NewHyperRuntime creates a new Runtime
@@ -68,9 +69,10 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cn
 	}
 
 	rt := &Runtime{
-		client:          hyperClient,
-		streamingServer: streamingServer,
-		netPlugin:       netPlugin,
+		client:            hyperClient,
+		streamingServer:   streamingServer,
+		netPlugin:         netPlugin,
+		checkpointHandler: NewPersistentCheckpointHandler(),
 	}
 
 	return rt, streamingServer, nil
