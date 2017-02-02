@@ -42,10 +42,7 @@ EOF
 systemctl restart hyperd
 ```
 
-Setup CNI networking
-
-Follow the steps below in order to setup networking in your pods using the CNI
-bridge plugin. 
+Setup CNI networking using bridge plugin
 
 ```sh
 $ go get -d github.com/containernetworking/cni
