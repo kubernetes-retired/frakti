@@ -92,20 +92,20 @@ func (h *Runtime) Version() (string, string, string, error) {
 // Status returns the status of the runtime.
 func (h *Runtime) Status() (*kubeapi.RuntimeStatus, error) {
 	runtimeReady := &kubeapi.RuntimeCondition{
-		Type:   proto.String(kubeapi.RuntimeReady),
-		Status: proto.Bool(true),
+		Type:   *proto.String(kubeapi.RuntimeReady),
+		Status: *proto.Bool(true),
 	}
 	// Always set networkReady for now.
 	// TODO: get real network status when network plugin is enabled.
 	networkReady := &kubeapi.RuntimeCondition{
-		Type:   proto.String(kubeapi.NetworkReady),
-		Status: proto.Bool(true),
+		Type:   *proto.String(kubeapi.NetworkReady),
+		Status: *proto.Bool(true),
 	}
 	conditions := []*kubeapi.RuntimeCondition{runtimeReady, networkReady}
 	if _, _, err := h.client.GetVersion(); err != nil {
-		runtimeReady.Status = proto.Bool(false)
-		runtimeReady.Reason = proto.String("HyperDaemonNotReady")
-		runtimeReady.Message = proto.String(fmt.Sprintf("hyper: failed to get hyper version: %v", err))
+		runtimeReady.Status = *proto.Bool(false)
+		runtimeReady.Reason = *proto.String("HyperDaemonNotReady")
+		runtimeReady.Message = *proto.String(fmt.Sprintf("hyper: failed to get hyper version: %v", err))
 	}
 
 	return &kubeapi.RuntimeStatus{Conditions: conditions}, nil

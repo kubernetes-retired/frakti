@@ -100,10 +100,10 @@ func (s *FraktiManager) Version(ctx context.Context, req *kubeapi.VersionRequest
 
 	kubeletAPIVersion := runtimeAPIVersion
 	return &kubeapi.VersionResponse{
-		Version:           &kubeletAPIVersion,
-		RuntimeName:       &runtimeName,
-		RuntimeVersion:    &version,
-		RuntimeApiVersion: &apiVersion,
+		Version:           kubeletAPIVersion,
+		RuntimeName:       runtimeName,
+		RuntimeVersion:    version,
+		RuntimeApiVersion: apiVersion,
 	}, nil
 }
 
@@ -117,14 +117,14 @@ func (s *FraktiManager) RunPodSandbox(ctx context.Context, req *kubeapi.RunPodSa
 		return nil, err
 	}
 
-	return &kubeapi.RunPodSandboxResponse{PodSandboxId: &podID}, nil
+	return &kubeapi.RunPodSandboxResponse{PodSandboxId: podID}, nil
 }
 
 // StopPodSandbox stops the sandbox.
 func (s *FraktiManager) StopPodSandbox(ctx context.Context, req *kubeapi.StopPodSandboxRequest) (*kubeapi.StopPodSandboxResponse, error) {
 	glog.V(3).Infof("StopPodSandbox with request %s", req.String())
 
-	err := s.runtimeService.StopPodSandbox(req.GetPodSandboxId())
+	err := s.runtimeService.StopPodSandbox(req.PodSandboxId)
 	if err != nil {
 		glog.Errorf("StopPodSandbox from runtime service failed: %v", err)
 		return nil, err
@@ -137,7 +137,7 @@ func (s *FraktiManager) StopPodSandbox(ctx context.Context, req *kubeapi.StopPod
 func (s *FraktiManager) RemovePodSandbox(ctx context.Context, req *kubeapi.RemovePodSandboxRequest) (*kubeapi.RemovePodSandboxResponse, error) {
 	glog.V(3).Infof("DeletePodSandbox with request %s", req.String())
 
-	err := s.runtimeService.DeletePodSandbox(req.GetPodSandboxId())
+	err := s.runtimeService.DeletePodSandbox(req.PodSandboxId)
 	if err != nil {
 		glog.Errorf("DeletePodSandbox from runtime service failed: %v", err)
 		return nil, err
@@ -150,7 +150,7 @@ func (s *FraktiManager) RemovePodSandbox(ctx context.Context, req *kubeapi.Remov
 func (s *FraktiManager) PodSandboxStatus(ctx context.Context, req *kubeapi.PodSandboxStatusRequest) (*kubeapi.PodSandboxStatusResponse, error) {
 	glog.V(3).Infof("PodSandboxStatus with request %s", req.String())
 
-	podStatus, err := s.runtimeService.PodSandboxStatus(req.GetPodSandboxId())
+	podStatus, err := s.runtimeService.PodSandboxStatus(req.PodSandboxId)
 	if err != nil {
 		glog.Errorf("PodSandboxStatus from runtime service failed: %v", err)
 		return nil, err
@@ -176,20 +176,20 @@ func (s *FraktiManager) ListPodSandbox(ctx context.Context, req *kubeapi.ListPod
 func (s *FraktiManager) CreateContainer(ctx context.Context, req *kubeapi.CreateContainerRequest) (*kubeapi.CreateContainerResponse, error) {
 	glog.V(3).Infof("CreateContainer with request %s", req.String())
 
-	containerID, err := s.runtimeService.CreateContainer(req.GetPodSandboxId(), req.Config, req.SandboxConfig)
+	containerID, err := s.runtimeService.CreateContainer(req.PodSandboxId, req.Config, req.SandboxConfig)
 	if err != nil {
 		glog.Errorf("CreateContainer from runtime service failed: %v", err)
 		return nil, err
 	}
 
-	return &kubeapi.CreateContainerResponse{ContainerId: &containerID}, nil
+	return &kubeapi.CreateContainerResponse{ContainerId: containerID}, nil
 }
 
 // StartContainer starts the container.
 func (s *FraktiManager) StartContainer(ctx context.Context, req *kubeapi.StartContainerRequest) (*kubeapi.StartContainerResponse, error) {
 	glog.V(3).Infof("StartContainer with request %s", req.String())
 
-	err := s.runtimeService.StartContainer(req.GetContainerId())
+	err := s.runtimeService.StartContainer(req.ContainerId)
 	if err != nil {
 		glog.Errorf("StartContainer from runtime service failed: %v", err)
 		return nil, err
@@ -202,7 +202,7 @@ func (s *FraktiManager) StartContainer(ctx context.Context, req *kubeapi.StartCo
 func (s *FraktiManager) StopContainer(ctx context.Context, req *kubeapi.StopContainerRequest) (*kubeapi.StopContainerResponse, error) {
 	glog.V(3).Infof("StopContainer with request %s", req.String())
 
-	err := s.runtimeService.StopContainer(req.GetContainerId(), req.GetTimeout())
+	err := s.runtimeService.StopContainer(req.ContainerId, req.Timeout)
 	if err != nil {
 		glog.Errorf("StopContainer from runtime service failed: %v", err)
 		return nil, err
@@ -215,7 +215,7 @@ func (s *FraktiManager) StopContainer(ctx context.Context, req *kubeapi.StopCont
 func (s *FraktiManager) RemoveContainer(ctx context.Context, req *kubeapi.RemoveContainerRequest) (*kubeapi.RemoveContainerResponse, error) {
 	glog.V(3).Infof("RemoveContainer with request %s", req.String())
 
-	err := s.runtimeService.RemoveContainer(req.GetContainerId())
+	err := s.runtimeService.RemoveContainer(req.ContainerId)
 	if err != nil {
 		glog.Errorf("RemoveContainer from runtime service failed: %v", err)
 		return nil, err
@@ -243,7 +243,7 @@ func (s *FraktiManager) ListContainers(ctx context.Context, req *kubeapi.ListCon
 func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.ContainerStatusRequest) (*kubeapi.ContainerStatusResponse, error) {
 	glog.V(3).Infof("ContainerStatus with request %s", req.String())
 
-	kubeStatus, err := s.runtimeService.ContainerStatus(req.GetContainerId())
+	kubeStatus, err := s.runtimeService.ContainerStatus(req.ContainerId)
 	if err != nil {
 		glog.Errorf("ContainerStatus from runtime service failed: %v", err)
 		return nil, err
@@ -258,7 +258,7 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncRequest) (*kubeapi.ExecSyncResponse, error) {
 	glog.V(3).Infof("ExecSync with request %s", req.String())
 
-	stdout, stderr, exitCode, err := s.runtimeService.ExecSync(req.GetContainerId(), req.GetCmd(), req.GetTimeout())
+	stdout, stderr, exitCode, err := s.runtimeService.ExecSync(req.ContainerId, req.Cmd, req.Timeout)
 	if err != nil {
 		glog.Errorf("ExecSync from runtime service failed: %v", err)
 		return nil, err
@@ -267,7 +267,7 @@ func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncReque
 	return &kubeapi.ExecSyncResponse{
 		Stdout:   stdout,
 		Stderr:   stderr,
-		ExitCode: &exitCode,
+		ExitCode: exitCode,
 	}, nil
 }
 
@@ -361,7 +361,7 @@ func (s *FraktiManager) PullImage(ctx context.Context, req *kubeapi.PullImageReq
 	}
 
 	return &kubeapi.PullImageResponse{
-		ImageRef: &imageRef,
+		ImageRef: imageRef,
 	}, nil
 }
 

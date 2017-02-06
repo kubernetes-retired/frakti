@@ -42,7 +42,7 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 
 	containerID, err := h.client.CreateContainer(podSandboxID, containerSpec)
 	if err != nil {
-		glog.Errorf("Create container %s in pod %s failed: %v", config.Metadata.GetName(), podSandboxID, err)
+		glog.Errorf("Create container %s in pod %s failed: %v", config.Metadata.Name, podSandboxID, err)
 		return "", err
 	}
 
@@ -51,26 +51,26 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 
 // buildUserContainer builds hyperd's UserContainer based kubelet ContainerConfig.
 func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (*types.UserContainer, error) {
-	if config.GetLinux().GetSecurityContext().GetPrivileged() {
+	if config.GetLinux().GetSecurityContext().Privileged {
 		return nil, fmt.Errorf("Privileged containers are not supported in hyper")
 	}
 
 	containerSpec := &types.UserContainer{
 		Name:       buildContainerName(sandboxConfig, config),
-		Image:      config.Image.GetImage(),
-		Workdir:    config.GetWorkingDir(),
-		Tty:        config.GetTty(),
-		Command:    config.GetArgs(),
-		Entrypoint: config.GetCommand(),
+		Image:      config.GetImage().Image,
+		Workdir:    config.WorkingDir,
+		Tty:        config.Tty,
+		Command:    config.Args,
+		Entrypoint: config.Command,
 		Labels:     buildLabelsWithAnnotations(config.Labels, config.Annotations),
-		LogPath:    filepath.Join(sandboxConfig.GetLogDirectory(), config.GetLogPath()),
+		LogPath:    filepath.Join(sandboxConfig.LogDirectory, config.LogPath),
 	}
 
 	// make volumes
 	// TODO: support adding device in upstream hyperd when creating container.
 	volumes := make([]*types.UserVolumeReference, len(config.Mounts))
 	for i, m := range config.Mounts {
-		hostPath := m.GetHostPath()
+		hostPath := m.HostPath
 		_, volName := filepath.Split(hostPath)
 		volDetail := &types.UserVolume{
 			Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
@@ -81,8 +81,8 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 		volumes[i] = &types.UserVolumeReference{
 			// use the generated volume name above
 			Volume:   volDetail.Name,
-			Path:     m.GetContainerPath(),
-			ReadOnly: m.GetReadonly(),
+			Path:     m.ContainerPath,
+			ReadOnly: m.Readonly,
 			Detail:   volDetail,
 		}
 	}
@@ -93,8 +93,8 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	environments := make([]*types.EnvironmentVar, len(config.Envs))
 	for idx, env := range config.Envs {
 		environments[idx] = &types.EnvironmentVar{
-			Env:   env.GetKey(),
-			Value: env.GetValue(),
+			Env:   env.Key,
+			Value: env.Value,
 		}
 	}
 	containerSpec.Envs = environments
@@ -156,15 +156,15 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 		}
 
 		if filter != nil {
-			if filter.Id != nil && c.ContainerID != filter.GetId() {
+			if filter.Id != "" && c.ContainerID != filter.Id {
 				continue
 			}
 
-			if filter.PodSandboxId != nil && c.PodID != filter.GetPodSandboxId() {
+			if filter.PodSandboxId != "" && c.PodID != filter.PodSandboxId {
 				continue
 			}
 
-			if filter.State != nil && state != filter.GetState() {
+			if filter.State != nil && state != filter.GetState().State {
 				continue
 			}
 		}
@@ -185,19 +185,19 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 		}
 
 		containerMetadata := &kubeapi.ContainerMetadata{
-			Name:    &containerName,
-			Attempt: &attempt,
+			Name:    containerName,
+			Attempt: attempt,
 		}
 
 		createdAtNano := info.CreatedAt * secondToNano
 		containers = append(containers, &kubeapi.Container{
-			Id:           &c.ContainerID,
-			PodSandboxId: &c.PodID,
-			CreatedAt:    &createdAtNano,
+			Id:           c.ContainerID,
+			PodSandboxId: c.PodID,
+			CreatedAt:    createdAtNano,
 			Metadata:     containerMetadata,
-			Image:        &kubeapi.ImageSpec{Image: &info.Container.Image},
-			ImageRef:     &info.Container.ImageID,
-			State:        &state,
+			Image:        &kubeapi.ImageSpec{Image: info.Container.Image},
+			ImageRef:     info.Container.ImageID,
+			State:        state,
 			Labels:       kubeletLabels,
 			Annotations:  annotations,
 		})
@@ -231,32 +231,32 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 	}
 
 	containerMetadata := &kubeapi.ContainerMetadata{
-		Name:    &containerName,
-		Attempt: &attempt,
+		Name:    containerName,
+		Attempt: attempt,
 	}
 
 	createdAtNano := status.CreatedAt * secondToNano
 	kubeStatus := &kubeapi.ContainerStatus{
-		Id:          &status.Container.ContainerID,
-		Image:       &kubeapi.ImageSpec{Image: &status.Container.Image},
-		ImageRef:    &status.Container.ImageID,
+		Id:          status.Container.ContainerID,
+		Image:       &kubeapi.ImageSpec{Image: status.Container.Image},
+		ImageRef:    status.Container.ImageID,
 		Metadata:    containerMetadata,
-		State:       &state,
+		State:       state,
 		Labels:      kubeletLabels,
 		Annotations: annotations,
-		CreatedAt:   &createdAtNano,
+		CreatedAt:   createdAtNano,
 	}
 
 	mounts := make([]*kubeapi.Mount, len(status.Container.VolumeMounts))
 	for idx, mnt := range status.Container.VolumeMounts {
 		mounts[idx] = &kubeapi.Mount{
-			ContainerPath: &mnt.MountPath,
-			Readonly:      &mnt.ReadOnly,
+			ContainerPath: mnt.MountPath,
+			Readonly:      mnt.ReadOnly,
 		}
 
 		for _, v := range podInfo.Spec.Volumes {
 			if v.Name == mnt.Name {
-				mounts[idx].HostPath = &v.Source
+				mounts[idx].HostPath = v.Source
 			}
 		}
 	}
@@ -269,7 +269,7 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 			glog.Errorf("Hyper: can't parse startedAt %s", status.Status.Running.StartedAt)
 			return nil, err
 		}
-		kubeStatus.StartedAt = &startedAt
+		kubeStatus.StartedAt = startedAt
 	case "failed", "succeeded":
 		startedAt, err := parseTimeString(status.Status.Terminated.StartedAt)
 		if err != nil {
@@ -282,12 +282,12 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 			return nil, err
 		}
 
-		kubeStatus.StartedAt = &startedAt
-		kubeStatus.FinishedAt = &finishedAt
-		kubeStatus.Reason = &status.Status.Terminated.Reason
-		kubeStatus.ExitCode = &status.Status.Terminated.ExitCode
+		kubeStatus.StartedAt = startedAt
+		kubeStatus.FinishedAt = finishedAt
+		kubeStatus.Reason = status.Status.Terminated.Reason
+		kubeStatus.ExitCode = status.Status.Terminated.ExitCode
 	default:
-		kubeStatus.Reason = &status.Status.Waiting.Reason
+		kubeStatus.Reason = status.Status.Waiting.Reason
 	}
 
 	return kubeStatus, nil

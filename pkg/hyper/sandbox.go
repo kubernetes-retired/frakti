@@ -128,7 +128,7 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 		err                          error
 	)
 
-	cgroupParent := config.Linux.GetCgroupParent()
+	cgroupParent := config.GetLinux().CgroupParent
 	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, BestEffort) {
 		cpuNumber, err = getCpuLimitFromCgroup(cgroupParent)
 		if err != nil {
@@ -149,7 +149,7 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 
 	spec := &types.UserPod{
 		Id:       buildSandboxName(config),
-		Hostname: config.GetHostname(),
+		Hostname: config.Hostname,
 		Labels:   buildLabelsWithAnnotations(config.Labels, config.Annotations),
 		Resource: &types.UserResource{
 			Vcpu:   cpuNumber,
@@ -241,21 +241,21 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 	}
 
 	podSandboxMetadata := &kubeapi.PodSandboxMetadata{
-		Name:      &podName,
-		Uid:       &podUID,
-		Namespace: &podNamespace,
-		Attempt:   &attempt,
+		Name:      podName,
+		Uid:       podUID,
+		Namespace: podNamespace,
+		Attempt:   attempt,
 	}
 
 	annotations := getAnnotationsFromLabels(info.Spec.Labels)
 	kubeletLabels := getKubeletLabels(info.Spec.Labels)
 	createdAtNano := info.CreatedAt * secondToNano
 	podStatus := &kubeapi.PodSandboxStatus{
-		Id:          &podSandboxID,
+		Id:          podSandboxID,
 		Metadata:    podSandboxMetadata,
-		State:       &state,
-		Network:     &kubeapi.PodSandboxNetworkStatus{Ip: &podIP},
-		CreatedAt:   &createdAtNano,
+		State:       state,
+		Network:     &kubeapi.PodSandboxNetworkStatus{Ip: podIP},
+		CreatedAt:   createdAtNano,
 		Labels:      kubeletLabels,
 		Annotations: annotations,
 	}
@@ -278,11 +278,11 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 		state := toPodSandboxState(pod.Status)
 
 		if filter != nil {
-			if filter.Id != nil && pod.PodID != filter.GetId() {
+			if filter.Id != "" && pod.PodID != filter.Id {
 				continue
 			}
 
-			if filter.State != nil && state != filter.GetState() {
+			if filter.State != nil && state != filter.GetState().State {
 				continue
 			}
 
@@ -294,7 +294,7 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 		if err != nil {
 			continue
 		}
-		sandboxIDs[converted.GetId()] = true
+		sandboxIDs[converted.Id] = true
 		items = append(items, converted)
 	}
 
@@ -321,13 +321,13 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 }
 
 func constructPodSandboxCheckpoint(config *kubeapi.PodSandboxConfig, netnspath string) *PodSandboxCheckpoint {
-	checkpoint := NewPodSandboxCheckpoint(config.GetMetadata().GetNamespace(), config.GetMetadata().GetName())
+	checkpoint := NewPodSandboxCheckpoint(config.GetMetadata().Namespace, config.GetMetadata().Name)
 	checkpoint.NetNsPath = netnspath
 	for _, pm := range config.GetPortMappings() {
-		proto := toCheckpointProtocol(pm.GetProtocol())
+		proto := toCheckpointProtocol(pm.Protocol)
 		checkpoint.Data.PortMappings = append(checkpoint.Data.PortMappings, &PortMapping{
-			HostPort:      pm.HostPort,
-			ContainerPort: pm.ContainerPort,
+			HostPort:      &pm.HostPort,
+			ContainerPort: &pm.ContainerPort,
 			Protocol:      &proto,
 		})
 	}
@@ -354,19 +354,19 @@ func podResultToKubeAPISandbox(pod *types.PodListResult) (*kubeapi.PodSandbox, e
 	}
 
 	podSandboxMetadata := &kubeapi.PodSandboxMetadata{
-		Name:      &podName,
-		Uid:       &podUID,
-		Namespace: &podNamespace,
-		Attempt:   &attempt,
+		Name:      podName,
+		Uid:       podUID,
+		Namespace: podNamespace,
+		Attempt:   attempt,
 	}
 
 	createdAtNano := pod.CreatedAt * secondToNano
 	return &kubeapi.PodSandbox{
-		Id:        &pod.PodID,
+		Id:        pod.PodID,
 		Metadata:  podSandboxMetadata,
 		Labels:    pod.Labels,
-		State:     &state,
-		CreatedAt: &createdAtNano,
+		State:     state,
+		CreatedAt: createdAtNano,
 	}, nil
 
 }
@@ -374,11 +374,11 @@ func podResultToKubeAPISandbox(pod *types.PodListResult) (*kubeapi.PodSandbox, e
 func checkpointToKubeAPISandbox(id string, checkpoint *PodSandboxCheckpoint) *kubeapi.PodSandbox {
 	state := kubeapi.PodSandboxState_SANDBOX_NOTREADY
 	return &kubeapi.PodSandbox{
-		Id: &id,
+		Id: id,
 		Metadata: &kubeapi.PodSandboxMetadata{
-			Name:      &checkpoint.Name,
-			Namespace: &checkpoint.Namespace,
+			Name:      checkpoint.Name,
+			Namespace: checkpoint.Namespace,
 		},
-		State: &state,
+		State: state,
 	}
 }

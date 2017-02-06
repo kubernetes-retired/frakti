@@ -81,11 +81,11 @@ func getHyperAuthConfig(auth *kubeapi.AuthConfig) *types.AuthConfig {
 	}
 
 	return &types.AuthConfig{
-		Username:      auth.GetUsername(),
-		Password:      auth.GetPassword(),
-		Auth:          auth.GetAuth(),
-		Registrytoken: auth.GetRegistryToken(),
-		Serveraddress: auth.GetServerAddress(),
+		Username:      auth.Username,
+		Password:      auth.Password,
+		Auth:          auth.Auth,
+		Registrytoken: auth.RegistryToken,
+		Serveraddress: auth.ServerAddress,
 	}
 }
 
@@ -126,9 +126,9 @@ func buildKubeGenericName(sandboxConfig *kubeapi.PodSandboxConfig, containerName
 	stableName := fmt.Sprintf("%s_%s_%s_%s_%s",
 		kubePrefix,
 		containerName,
-		sandboxConfig.Metadata.GetName(),
-		sandboxConfig.Metadata.GetNamespace(),
-		sandboxConfig.Metadata.GetUid(),
+		sandboxConfig.GetMetadata().Name,
+		sandboxConfig.GetMetadata().Namespace,
+		sandboxConfig.GetMetadata().Uid,
 	)
 	UID := fmt.Sprintf("%08x", rand.Uint32())
 	return fmt.Sprintf("%s_%s", stableName, UID)
@@ -136,7 +136,7 @@ func buildKubeGenericName(sandboxConfig *kubeapi.PodSandboxConfig, containerName
 
 // buildSandboxName creates a name which can be reversed to identify sandbox full name.
 func buildSandboxName(sandboxConfig *kubeapi.PodSandboxConfig) string {
-	sandboxName := fmt.Sprintf("%s.%d", kubeSandboxNamePrefix, sandboxConfig.Metadata.GetAttempt())
+	sandboxName := fmt.Sprintf("%s.%d", kubeSandboxNamePrefix, sandboxConfig.GetMetadata().Attempt)
 	return buildKubeGenericName(sandboxConfig, sandboxName)
 }
 
@@ -153,7 +153,7 @@ func parseSandboxName(name string) (string, string, string, uint32, error) {
 // buildContainerName creates a name which can be reversed to identify container name.
 // This function returns stable name, unique name and an unique id.
 func buildContainerName(sandboxConfig *kubeapi.PodSandboxConfig, containerConfig *kubeapi.ContainerConfig) string {
-	containerName := fmt.Sprintf("%s.%d", containerConfig.Metadata.GetName(), containerConfig.Metadata.GetAttempt())
+	containerName := fmt.Sprintf("%s.%d", containerConfig.GetMetadata().Name, containerConfig.GetMetadata().Attempt)
 	return buildKubeGenericName(sandboxConfig, containerName)
 }
 
@@ -250,7 +250,7 @@ func (s sandboxByCreated) Len() int {
 
 // Less is a method for Sort to compute while one is less between two items of s.
 func (s sandboxByCreated) Less(i, j int) bool {
-	return *s[i].CreatedAt > *s[j].CreatedAt
+	return s[i].CreatedAt > s[j].CreatedAt
 }
 
 // Swap is a method for Sort to swap the items in s.

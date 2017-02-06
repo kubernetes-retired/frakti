@@ -72,10 +72,11 @@ func main() {
 
 func getStreamingConfig() *streaming.Config {
 	config := &streaming.Config{
-		Addr:                  fmt.Sprintf("%s:%s", *streamingServerAddress, *streamingServerPort),
-		StreamIdleTimeout:     streaming.DefaultConfig.StreamIdleTimeout,
-		StreamCreationTimeout: streaming.DefaultConfig.StreamCreationTimeout,
-		SupportedProtocols:    streaming.DefaultConfig.SupportedProtocols,
+		Addr:                            fmt.Sprintf("%s:%s", *streamingServerAddress, *streamingServerPort),
+		StreamIdleTimeout:               streaming.DefaultConfig.StreamIdleTimeout,
+		StreamCreationTimeout:           streaming.DefaultConfig.StreamCreationTimeout,
+		SupportedRemoteCommandProtocols: streaming.DefaultConfig.SupportedRemoteCommandProtocols,
+		SupportedPortForwardProtocols:   streaming.DefaultConfig.SupportedPortForwardProtocols,
 		// TODO: add TLSConfig
 	}
 	return config
