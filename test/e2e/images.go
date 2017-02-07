@@ -42,7 +42,7 @@ var (
 func testPublicImage(client internalapi.ImageManagerService, image string) {
 	By(fmt.Sprintf("pull image %s", image))
 	_, err := client.PullImage(&kubeapi.ImageSpec{
-		Image: &image,
+		Image: image,
 	}, nil)
 	framework.ExpectNoError(err, "Failed to pull image: %v", err)
 
@@ -50,7 +50,7 @@ func testPublicImage(client internalapi.ImageManagerService, image string) {
 		image = image + ":latest"
 	}
 	imageSpec := kubeapi.ImageSpec{
-		Image: &image,
+		Image: image,
 	}
 	By("get image list")
 	imageList, err := client.ListImages(&kubeapi.ImageFilter{
@@ -77,7 +77,7 @@ func pullImageList(client internalapi.ImageManagerService, imageList []string) {
 	for _, imageRef := range imageList {
 		By(fmt.Sprintf("pull image %s", imageRef))
 		_, err := client.PullImage(&kubeapi.ImageSpec{
-			Image: &imageRef,
+			Image: imageRef,
 		}, nil)
 		framework.ExpectNoError(err, "Failed to pull image: %v", err)
 	}
@@ -87,7 +87,7 @@ func removeImageList(client internalapi.ImageManagerService, imageList []string)
 	for _, imageRef := range imageList {
 		By(fmt.Sprintf("remove image %s", imageRef))
 		err := client.RemoveImage(&kubeapi.ImageSpec{
-			Image: &imageRef,
+			Image: imageRef,
 		})
 		framework.ExpectNoError(err, "Failed to remove image: %v", err)
 	}
@@ -122,7 +122,7 @@ var _ = framework.KubeDescribe("Test image", func() {
 	It("image status get image fileds should not be empty", func() {
 		imageName := latestTestImageRef
 		imageSpec := kubeapi.ImageSpec{
-			Image: &imageName,
+			Image: imageName,
 		}
 
 		By(fmt.Sprintf("pull image %s", imageName))

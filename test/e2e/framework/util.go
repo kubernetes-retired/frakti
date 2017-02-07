@@ -94,7 +94,7 @@ func ExpectNoError(err error, explain ...interface{}) {
 
 // podReady returns whether podsandbox state is ready.
 func PodReady(status *kubeapi.PodSandboxStatus) bool {
-	if *status.State == kubeapi.PodSandboxState_SANDBOX_READY {
+	if status.State == kubeapi.PodSandboxState_SANDBOX_READY {
 		return true
 	}
 	return false
@@ -102,7 +102,7 @@ func PodReady(status *kubeapi.PodSandboxStatus) bool {
 
 //podFound returns whether podsandbox is found
 func PodFound(podsandboxs []*kubeapi.PodSandbox, podId string) bool {
-	if len(podsandboxs) == 1 && podsandboxs[0].GetId() == podId {
+	if len(podsandboxs) == 1 && podsandboxs[0].Id == podId {
 		return true
 	}
 	return false
@@ -127,7 +127,7 @@ func ClearAllImages(client internalapi.ImageManagerService) {
 			for _, rd := range image.RepoDigests {
 				repoDigest := rd
 				err = client.RemoveImage(&kubeapi.ImageSpec{
-					Image: &repoDigest,
+					Image: repoDigest,
 				})
 				ExpectNoError(err, "Failed to remove image: %v", err)
 			}
@@ -136,7 +136,7 @@ func ClearAllImages(client internalapi.ImageManagerService) {
 		for _, rt := range image.RepoTags {
 			repoTag := rt
 			err = client.RemoveImage(&kubeapi.ImageSpec{
-				Image: &repoTag,
+				Image: repoTag,
 			})
 			ExpectNoError(err, "Failed to remove image: %v", err)
 		}

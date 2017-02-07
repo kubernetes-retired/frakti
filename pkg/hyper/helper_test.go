@@ -29,10 +29,10 @@ func TestBuildSandboxName(t *testing.T) {
 	podNamespace := "bar"
 	sandboxConfig := &kubeapi.PodSandboxConfig{
 		Metadata: &kubeapi.PodSandboxMetadata{
-			Uid:       &podUID,
-			Name:      &podName,
-			Namespace: &podNamespace,
-			Attempt:   &attempt,
+			Uid:       podUID,
+			Name:      podName,
+			Namespace: podNamespace,
+			Attempt:   attempt,
 		},
 	}
 
@@ -63,15 +63,15 @@ func TestBuildContainerName(t *testing.T) {
 	containerName := "foo1"
 	sandboxConfig := &kubeapi.PodSandboxConfig{
 		Metadata: &kubeapi.PodSandboxMetadata{
-			Uid:       &podUID,
-			Name:      &podName,
-			Namespace: &podNamespace,
+			Uid:       podUID,
+			Name:      podName,
+			Namespace: podNamespace,
 		},
 	}
 	containerConfig := &kubeapi.ContainerConfig{
 		Metadata: &kubeapi.ContainerMetadata{
-			Attempt: &attempt,
-			Name:    &containerName,
+			Attempt: attempt,
+			Name:    containerName,
 		},
 	}
 

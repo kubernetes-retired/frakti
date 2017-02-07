@@ -69,20 +69,20 @@ type logMessage struct {
 }
 
 // buildPodSandboxMetadata builds default PodSandboxMetadata with podSandboxName.
-func buildPodSandboxMetadata(podSandboxName *string) *runtimeapi.PodSandboxMetadata {
+func buildPodSandboxMetadata(podSandboxName string) *runtimeapi.PodSandboxMetadata {
 	return &runtimeapi.PodSandboxMetadata{
 		Name:      podSandboxName,
-		Uid:       &defaultUid,
-		Namespace: &defaultNamespace,
-		Attempt:   &defaultAttempt,
+		Uid:       defaultUid,
+		Namespace: defaultNamespace,
+		Attempt:   defaultAttempt,
 	}
 }
 
 // buildContainerMetadata builds default PodSandboxMetadata with containerName.
-func buildContainerMetadata(containerName *string) *runtimeapi.ContainerMetadata {
+func buildContainerMetadata(containerName string) *runtimeapi.ContainerMetadata {
 	return &runtimeapi.ContainerMetadata{
 		Name:    containerName,
-		Attempt: &defaultAttempt,
+		Attempt: defaultAttempt,
 	}
 }
 
@@ -91,7 +91,7 @@ func createPodSandboxForContainer(c internalapi.RuntimeService) (string, *runtim
 	By("create a PodSandbox for creating containers")
 	podName := "PodSandbox-for-create-container-" + framework.NewUUID()
 	podConfig := &runtimeapi.PodSandboxConfig{
-		Metadata: buildPodSandboxMetadata(&podName),
+		Metadata: buildPodSandboxMetadata(podName),
 	}
 	return createPodSandboxOrFail(c, podConfig), podConfig
 }
@@ -102,8 +102,8 @@ func createPodSandboxWithLogDirectory(c internalapi.RuntimeService) (string, *ru
 	podName := "PodSandbox-with-log-directory-" + framework.NewUUID()
 	dir := fmt.Sprintf("/var/log/pods/%s/", podName)
 	podConfig := &runtimeapi.PodSandboxConfig{
-		Metadata:     buildPodSandboxMetadata(&podName),
-		LogDirectory: &dir,
+		Metadata:     buildPodSandboxMetadata(podName),
+		LogDirectory: dir,
 	}
 	return createPodSandboxOrFail(c, podConfig), podConfig
 }
@@ -120,7 +120,7 @@ func createPodSandboxOrFail(c internalapi.RuntimeService, podConfig *runtimeapi.
 func listPodSanboxForID(c internalapi.RuntimeService, podID string) ([]*runtimeapi.PodSandbox, error) {
 	By("list PodSandbox for podID")
 	filter := &runtimeapi.PodSandboxFilter{
-		Id: &podID,
+		Id: podID,
 	}
 	return c.ListPodSandbox(filter)
 }
@@ -129,7 +129,7 @@ func listPodSanboxForID(c internalapi.RuntimeService, podID string) ([]*runtimea
 func listContainerForID(c internalapi.RuntimeService, containerID string) ([]*runtimeapi.Container, error) {
 	By("list containers for containerID")
 	filter := &runtimeapi.ContainerFilter{
-		Id: &containerID,
+		Id: containerID,
 	}
 	return c.ListContainers(filter)
 }
@@ -146,8 +146,8 @@ func createContainer(c internalapi.RuntimeService, prefix string, podID string, 
 	By("create a container with name")
 	containerName := prefix + framework.NewUUID()
 	containerConfig := &runtimeapi.ContainerConfig{
-		Metadata: buildContainerMetadata(&containerName),
-		Image:    &runtimeapi.ImageSpec{Image: &defaultContainerImage},
+		Metadata: buildContainerMetadata(containerName),
+		Image:    &runtimeapi.ImageSpec{Image: defaultContainerImage},
 		Command:  []string{"sh", "-c", "top"},
 	}
 	return c.CreateContainer(podID, containerConfig, podConfig)
@@ -158,14 +158,14 @@ func createVolContainer(c internalapi.RuntimeService, prefix string, podID strin
 	By("create a container with volume and name")
 	containerName := prefix + framework.NewUUID()
 	containerConfig := &runtimeapi.ContainerConfig{
-		Metadata: buildContainerMetadata(&containerName),
-		Image:    &runtimeapi.ImageSpec{Image: &defaultContainerImage},
+		Metadata: buildContainerMetadata(containerName),
+		Image:    &runtimeapi.ImageSpec{Image: defaultContainerImage},
 		// mount host path to the same directory in container, and check if flag file exists
 		Command: []string{"sh", "-c", "while [ -f " + volPath + "/" + flagFile + " ]; do sleep 1; done;"},
 		Mounts: []*runtimeapi.Mount{
 			{
-				HostPath:      &volPath,
-				ContainerPath: &volPath,
+				HostPath:      volPath,
+				ContainerPath: volPath,
 			},
 		},
 	}
@@ -178,13 +178,13 @@ func createLogContainer(c internalapi.RuntimeService, prefix string, podID strin
 	containerName := prefix + framework.NewUUID()
 	path := fmt.Sprintf("%s.log", containerName)
 	containerConfig := &runtimeapi.ContainerConfig{
-		Metadata: buildContainerMetadata(&containerName),
-		Image:    &runtimeapi.ImageSpec{Image: &defaultContainerImage},
+		Metadata: buildContainerMetadata(containerName),
+		Image:    &runtimeapi.ImageSpec{Image: defaultContainerImage},
 		Command:  []string{"echo", defaultLog},
-		LogPath:  &path,
+		LogPath:  path,
 	}
 	containerID, err := c.CreateContainer(podID, containerConfig, podConfig)
-	return *containerConfig.LogPath, containerID, err
+	return containerConfig.LogPath, containerID, err
 }
 
 // createContainerOrFail creates a container with the prefix of containerName and fails if it gets error.
@@ -259,7 +259,7 @@ func testStopContainer(c internalapi.RuntimeService, containerID string) {
 // verifyContainerStatus verifies whether status for given containerID matches.
 func verifyContainerStatus(c internalapi.RuntimeService, containerID string, expectedStatus runtimeapi.ContainerState, stateName string) {
 	status := getContainerStatusOrFail(c, containerID)
-	Expect(*status.State).To(Equal(expectedStatus), "Container state should be %s", stateName)
+	Expect(status.State).To(Equal(expectedStatus), "Container state should be %s", stateName)
 }
 
 // getPodSandboxStatusOrFail gets ContainerState for containerID and fails if it gets error.
@@ -290,7 +290,7 @@ func getContainerStatus(c internalapi.RuntimeService, containerID string) (*runt
 
 // containerFound returns whether containers is found.
 func containerFound(containers []*runtimeapi.Container, containerID string) bool {
-	if len(containers) == 1 && containers[0].GetId() == containerID {
+	if len(containers) == 1 && containers[0].Id == containerID {
 		return true
 
 	}
@@ -314,7 +314,7 @@ func parseDockerJSONLog(log []byte, msg *logMessage) {
 
 // verifyLogContents verifies the contents of container log.
 func verifyLogContents(podConfig *runtimeapi.PodSandboxConfig, logPath string, expectedLogMessage *logMessage) {
-	path := *podConfig.LogDirectory + logPath
+	path := podConfig.LogDirectory + logPath
 	f, err := os.Open(path)
 	framework.ExpectNoError(err, "Failed to open log file: %v", err)
 	framework.Logf("Open log file %s\n", path)

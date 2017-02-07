@@ -127,8 +127,11 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 		cpuNumber, memoryinMegabytes int32
 		err                          error
 	)
+	var cgroupParent string
+	if linuxConfig := config.GetLinux(); linuxConfig != nil {
+		cgroupParent = linuxConfig.CgroupParent
+	}
 
-	cgroupParent := config.GetLinux().CgroupParent
 	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, BestEffort) {
 		cpuNumber, err = getCpuLimitFromCgroup(cgroupParent)
 		if err != nil {
