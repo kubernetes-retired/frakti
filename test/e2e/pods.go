@@ -37,10 +37,9 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 	It("test create simple podsandbox", func() {
 		name := "create-simple-sandbox-" + framework.NewUUID()
 		By("create a podSandbox with name")
+		metadata := buildPodSandboxMetadata(name)
 		config := &kubeapi.PodSandboxConfig{
-			Metadata: &kubeapi.PodSandboxMetadata{
-				Name: &name,
-			},
+			Metadata: metadata,
 		}
 		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
@@ -59,10 +58,9 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 		name := "create-simple-sandbox-for-stop" + framework.NewUUID()
 
 		By("create a podSandbox with name")
+		metadata := buildPodSandboxMetadata(name)
 		config := &kubeapi.PodSandboxConfig{
-			Metadata: &kubeapi.PodSandboxMetadata{
-				Name: &name,
-			},
+			Metadata: metadata,
 		}
 		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
@@ -91,10 +89,9 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 	It("test remove podsandbox", func() {
 		name := "create-simple-sandbox-for-remove" + framework.NewUUID()
 		By("create a podSandbox with name")
+		metadata := buildPodSandboxMetadata(name)
 		config := &kubeapi.PodSandboxConfig{
-			Metadata: &kubeapi.PodSandboxMetadata{
-				Name: &name,
-			},
+			Metadata: metadata,
 		}
 		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
@@ -112,7 +109,7 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 
 		By("list podSandbox with podId")
 		filter := &kubeapi.PodSandboxFilter{
-			Id: &podId,
+			Id: podId,
 		}
 		podsandboxs, err := c.ListPodSandbox(filter)
 		framework.ExpectNoError(err, "Failed to list podsandbox %s status: %v", podId, err)
@@ -122,10 +119,9 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 	It("test list podsandbox", func() {
 		name := "create-simple-sandbox-for-list" + framework.NewUUID()
 		By("create a podSandbox with name")
+		metadata := buildPodSandboxMetadata(name)
 		config := &kubeapi.PodSandboxConfig{
-			Metadata: &kubeapi.PodSandboxMetadata{
-				Name: &name,
-			},
+			Metadata: metadata,
 		}
 		podId, err := c.RunPodSandbox(config)
 		framework.ExpectNoError(err, "Failed to create podsandbox: %v", err)
@@ -141,7 +137,7 @@ var _ = framework.KubeDescribe("Test PodSandbox", func() {
 
 		By("list podSandbox with podId")
 		filter := &kubeapi.PodSandboxFilter{
-			Id: &podId,
+			Id: podId,
 		}
 		podsandboxs, err := c.ListPodSandbox(filter)
 		framework.ExpectNoError(err, "Failed to list podsandbox %s status: %v", podId, err)

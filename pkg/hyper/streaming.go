@@ -92,7 +92,7 @@ func (h *Runtime) Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) 
 	if h.streamingServer == nil {
 		return nil, streaming.ErrorStreamingDisabled("exec")
 	}
-	err := ensureContainerRunning(h.client, req.GetContainerId())
+	err := ensureContainerRunning(h.client, req.ContainerId)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, e
 	if h.streamingServer == nil {
 		return nil, streaming.ErrorStreamingDisabled("attach")
 	}
-	err := ensureContainerRunning(h.client, req.GetContainerId())
+	err := ensureContainerRunning(h.client, req.ContainerId)
 	if err != nil {
 		return nil, err
 	}

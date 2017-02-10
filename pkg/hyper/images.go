@@ -34,7 +34,7 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 	var results []*kubeapi.Image
 	for _, img := range images {
 		if filter != nil {
-			filter := filter.Image.GetImage()
+			filter := filter.GetImage().Image
 			// Use 'latest' tag if not specified explicitly
 			if !strings.Contains(filter, ":") {
 				filter = filter + ":latest"
@@ -47,10 +47,10 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 
 		imageSize := uint64(img.VirtualSize)
 		results = append(results, &kubeapi.Image{
-			Id:          &img.Id,
+			Id:          img.Id,
 			RepoTags:    img.RepoTags,
 			RepoDigests: img.RepoDigests,
-			Size_:       &imageSize,
+			Size_:       imageSize,
 		})
 	}
 
@@ -60,17 +60,17 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 
 // PullImage pulls the image with authentication config.
 func (h *Runtime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthConfig) (string, error) {
-	repo, tag := parseRepositoryTag(image.GetImage())
+	repo, tag := parseRepositoryTag(image.Image)
 	auth := getHyperAuthConfig(authConfig)
 	err := h.client.PullImage(repo, tag, auth, nil)
 	if err != nil {
-		glog.Errorf("Pull image %q failed: %v", image.GetImage(), err)
+		glog.Errorf("Pull image %q failed: %v", image.Image, err)
 		return "", err
 	}
 
 	imageInfo, err := h.client.GetImageInfo(repo, tag)
 	if err != nil {
-		glog.Errorf("Get image info for %q failed: %v", image.GetImage(), err)
+		glog.Errorf("Get image info for %q failed: %v", image.Image, err)
 		return "", err
 	}
 
@@ -79,10 +79,10 @@ func (h *Runtime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthCo
 
 // RemoveImage removes the image.
 func (h *Runtime) RemoveImage(image *kubeapi.ImageSpec) error {
-	repo, tag := parseRepositoryTag(image.GetImage())
+	repo, tag := parseRepositoryTag(image.Image)
 	err := h.client.RemoveImage(repo, tag)
 	if err != nil {
-		glog.Errorf("Remove image %q failed: %v", image.GetImage(), err)
+		glog.Errorf("Remove image %q failed: %v", image.Image, err)
 		return err
 	}
 
@@ -91,21 +91,21 @@ func (h *Runtime) RemoveImage(image *kubeapi.ImageSpec) error {
 
 // ImageStatus returns the status of the image.
 func (h *Runtime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) {
-	repo, tag := parseRepositoryTag(image.GetImage())
+	repo, tag := parseRepositoryTag(image.Image)
 	imageInfo, err := h.client.GetImageInfo(repo, tag)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return nil, nil
 		}
-		glog.Errorf("Get image info for %q failed: %v", image.GetImage(), err)
+		glog.Errorf("Get image info for %q failed: %v", image.Image, err)
 		return nil, err
 	}
 
 	imageSize := uint64(imageInfo.VirtualSize)
 	return &kubeapi.Image{
-		Id:          &imageInfo.Id,
+		Id:          imageInfo.Id,
 		RepoTags:    imageInfo.RepoTags,
 		RepoDigests: imageInfo.RepoDigests,
-		Size_:       &imageSize,
+		Size_:       imageSize,
 	}, nil
 }

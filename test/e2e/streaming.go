@@ -81,13 +81,13 @@ var _ = framework.KubeDescribe("Test streaming in container", func() {
 		By("prepare exec command url in container")
 		magicCmd := []string{"blablabla"}
 		execReq := &kubeapi.ExecRequest{
-			ContainerId: &cID,
+			ContainerId: cID,
 			Cmd:         magicCmd,
 		}
 		resp, err := runtimeClient.Exec(execReq)
 		framework.ExpectNoError(err, "Failed to get exec url in container: %v", err)
-		framework.Logf("ExecUrl: %q", resp.GetUrl())
-		Expect(len(resp.GetUrl())).NotTo(Equal(0), "exec url should not be null")
+		framework.Logf("ExecUrl: %q", resp.Url)
+		Expect(len(resp.Url)).NotTo(Equal(0), "exec url should not be null")
 	})
 
 	It("test get a attach url", func() {
@@ -100,13 +100,13 @@ var _ = framework.KubeDescribe("Test streaming in container", func() {
 		By("prepare attach command url in container")
 		stdin := true
 		attachReq := &kubeapi.AttachRequest{
-			ContainerId: &cID,
-			Stdin:       &stdin,
+			ContainerId: cID,
+			Stdin:       stdin,
 		}
 		resp, err := runtimeClient.Attach(attachReq)
 		framework.ExpectNoError(err, "Failed to get attach url in container: %v", err)
-		framework.Logf("AttachUrl: %q", resp.GetUrl())
-		Expect(len(resp.GetUrl())).NotTo(Equal(0), "attach url should not be null")
+		framework.Logf("AttachUrl: %q", resp.Url)
+		Expect(len(resp.Url)).NotTo(Equal(0), "attach url should not be null")
 	})
 })
 
@@ -115,7 +115,7 @@ func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.Ima
 	By("create a podSandbox")
 	podConfig := &kubeapi.PodSandboxConfig{
 		Metadata: &kubeapi.PodSandboxMetadata{
-			Name: &podName,
+			Name: podName,
 		},
 	}
 	podId, err := rc.RunPodSandbox(podConfig)
@@ -123,7 +123,7 @@ func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.Ima
 
 	By("pull necessary image")
 	imageSpec := &kubeapi.ImageSpec{
-		Image: &latestTestImageRef,
+		Image: latestTestImageRef,
 	}
 	_, err = ic.PullImage(imageSpec, nil)
 	framework.ExpectNoError(err, "Failed to pull image: %v", err)
@@ -132,7 +132,7 @@ func startLongRunningContainer(rc internalapi.RuntimeService, ic internalapi.Ima
 	containerName := "simple-container-" + framework.NewUUID()
 	containerConfig := &kubeapi.ContainerConfig{
 		Metadata: &kubeapi.ContainerMetadata{
-			Name: &containerName,
+			Name: containerName,
 		},
 		Image:   imageSpec,
 		Command: []string{"sh", "-c", "top"},

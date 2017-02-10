@@ -80,7 +80,12 @@ type Config struct {
 	// The streaming protocols the server supports (understands and permits).  See
 	// k8s.io/kubernetes/pkg/kubelet/server/remotecommand/constants.go for available protocols.
 	// Only used for SPDY streaming.
-	SupportedProtocols []string
+	SupportedRemoteCommandProtocols []string
+
+	// The streaming protocols the server supports (understands and permits).  See
+	// k8s.io/kubernetes/pkg/kubelet/server/portforward/constants.go for available protocols.
+	// Only used for SPDY streaming.
+	SupportedPortForwardProtocols []string
 
 	// The config for serving over TLS. If nil, TLS will not be used.
 	TLSConfig *tls.Config
@@ -89,9 +94,10 @@ type Config struct {
 // DefaultConfig provides default values for server Config. The DefaultConfig is partial, so
 // some fields like Addr must still be provided.
 var DefaultConfig = Config{
-	StreamIdleTimeout:     4 * time.Hour,
-	StreamCreationTimeout: remotecommand.DefaultStreamCreationTimeout,
-	SupportedProtocols:    remotecommand.SupportedStreamingProtocols,
+	StreamIdleTimeout:               4 * time.Hour,
+	StreamCreationTimeout:           remotecommand.DefaultStreamCreationTimeout,
+	SupportedRemoteCommandProtocols: remotecommand.SupportedStreamingProtocols,
+	SupportedPortForwardProtocols:   portforward.SupportedProtocols,
 }
 
 // TODO(timstclair): Add auth(n/z) interface & handling.
@@ -146,7 +152,7 @@ type server struct {
 }
 
 func (s *server) GetExec(req *runtimeapi.ExecRequest) (*runtimeapi.ExecResponse, error) {
-	if req.GetContainerId() == "" {
+	if req.ContainerId == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing required container_id")
 	}
 	token, err := s.cache.Insert(req)
@@ -159,7 +165,7 @@ func (s *server) GetExec(req *runtimeapi.ExecRequest) (*runtimeapi.ExecResponse,
 }
 
 func (s *server) GetAttach(req *runtimeapi.AttachRequest) (*runtimeapi.AttachResponse, error) {
-	if req.GetContainerId() == "" {
+	if req.ContainerId == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing required container_id")
 	}
 	token, err := s.cache.Insert(req)
@@ -172,7 +178,7 @@ func (s *server) GetAttach(req *runtimeapi.AttachRequest) (*runtimeapi.AttachRes
 }
 
 func (s *server) GetPortForward(req *runtimeapi.PortForwardRequest) (*runtimeapi.PortForwardResponse, error) {
-	if req.GetPodSandboxId() == "" {
+	if req.PodSandboxId == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing required pod_sandbox_id")
 	}
 	token, err := s.cache.Insert(req)
@@ -211,11 +217,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.handler.ServeHTTP(w, r)
 }
 
-func (s *server) buildURL(method, token string) *string {
-	loc := s.config.BaseURL.ResolveReference(&url.URL{
+func (s *server) buildURL(method, token string) string {
+	return s.config.BaseURL.ResolveReference(&url.URL{
 		Path: path.Join(method, token),
 	}).String()
-	return &loc
 }
 
 func (s *server) serveExec(req *restful.Request, resp *restful.Response) {
@@ -232,10 +237,10 @@ func (s *server) serveExec(req *restful.Request, resp *restful.Response) {
 	}
 
 	streamOpts := &remotecommand.Options{
-		Stdin:  exec.GetStdin(),
+		Stdin:  exec.Stdin,
 		Stdout: true,
-		Stderr: !exec.GetTty(),
-		TTY:    exec.GetTty(),
+		Stderr: !exec.Tty,
+		TTY:    exec.Tty,
 	}
 
 	remotecommand.ServeExec(
@@ -244,12 +249,12 @@ func (s *server) serveExec(req *restful.Request, resp *restful.Response) {
 		s.runtime,
 		"", // unused: podName
 		"", // unusued: podUID
-		exec.GetContainerId(),
-		exec.GetCmd(),
+		exec.ContainerId,
+		exec.Cmd,
 		streamOpts,
 		s.config.StreamIdleTimeout,
 		s.config.StreamCreationTimeout,
-		s.config.SupportedProtocols)
+		s.config.SupportedRemoteCommandProtocols)
 }
 
 func (s *server) serveAttach(req *restful.Request, resp *restful.Response) {
@@ -266,10 +271,10 @@ func (s *server) serveAttach(req *restful.Request, resp *restful.Response) {
 	}
 
 	streamOpts := &remotecommand.Options{
-		Stdin:  attach.GetStdin(),
+		Stdin:  attach.Stdin,
 		Stdout: true,
-		Stderr: !attach.GetTty(),
-		TTY:    attach.GetTty(),
+		Stderr: !attach.Tty,
+		TTY:    attach.Tty,
 	}
 	remotecommand.ServeAttach(
 		resp.ResponseWriter,
@@ -277,11 +282,11 @@ func (s *server) serveAttach(req *restful.Request, resp *restful.Response) {
 		s.runtime,
 		"", // unused: podName
 		"", // unusued: podUID
-		attach.GetContainerId(),
+		attach.ContainerId,
 		streamOpts,
 		s.config.StreamIdleTimeout,
 		s.config.StreamCreationTimeout,
-		s.config.SupportedProtocols)
+		s.config.SupportedRemoteCommandProtocols)
 }
 
 func (s *server) servePortForward(req *restful.Request, resp *restful.Response) {
@@ -297,14 +302,22 @@ func (s *server) servePortForward(req *restful.Request, resp *restful.Response) 
 		return
 	}
 
+	portForwardOptions, err := portforward.NewV4Options(req.Request)
+	if err != nil {
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+
 	portforward.ServePortForward(
 		resp.ResponseWriter,
 		req.Request,
 		s.runtime,
-		pf.GetPodSandboxId(),
+		pf.PodSandboxId,
 		"", // unused: podUID
+		portForwardOptions,
 		s.config.StreamIdleTimeout,
-		s.config.StreamCreationTimeout)
+		s.config.StreamCreationTimeout,
+		s.config.SupportedPortForwardProtocols)
 }
 
 // criAdapter wraps the Runtime functions to conform to the remotecommand interfaces.
@@ -325,6 +338,6 @@ func (a *criAdapter) AttachContainer(podName string, podUID types.UID, container
 	return a.Attach(container, in, out, err, tty, resize)
 }
 
-func (a *criAdapter) PortForward(podName string, podUID types.UID, port uint16, stream io.ReadWriteCloser) error {
-	return a.Runtime.PortForward(podName, int32(port), stream)
+func (a *criAdapter) PortForward(podName string, podUID types.UID, port int32, stream io.ReadWriteCloser) error {
+	return a.Runtime.PortForward(podName, port, stream)
 }
