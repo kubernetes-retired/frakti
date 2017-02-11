@@ -85,6 +85,45 @@ function install_remote_hyperd() {
   wget -qO- http://hypercontainer.io/install | bash
 }
 
+function configure_cni() {
+  # get cni repo
+  go get -d github.com/containernetworking/cni/...
+  cd $GOPATH/src/github.com/containernetworking/cni
+
+  # create network configure file
+  sudo mkdir -p /etc/cni/net.d
+
+  sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conf <<-EOF
+{
+    "cniVersion": "0.3.0",
+    "name": "mynet",
+    "type": "bridge",
+    "bridge": "cni0",
+    "isGateway": true,
+    "ipMasq": true,
+    "ipam": {
+        "type": "host-local",
+        "subnet": "10.10.0.0/16",
+        "routes": [
+            { "dst": "0.0.0.0/0"  }
+        ]
+    }
+}
+EOF'
+
+  sudo sh -c 'cat >/etc/cni/net.d/99-loopback.conf <<-EOF
+{
+    "cniVersion": "0.3.0",
+    "type": "loopback"
+}
+EOF'
+
+  # build cni plugins and copy to specified folder
+  ./build
+  sudo mkdir -p /opt/cni/bin
+  sudo cp bin/* /opt/cni/bin/
+}
+
 FRAKTI_LISTEN_ADDR=${FRAKTI_LISTEN_ADDR:-/var/run/frakti.sock}
 HYPERD_PORT=${HYPERD_PORT:-22318}
 HYPERD_HOME=${HYPERD_HOME:-/var/lib/hyper}
@@ -102,6 +141,8 @@ HYPER_STORAGE_DRIVER=${HYPER_STORAGE_DRIVER:-overlay}
 
 runTests() {
   start_hyperd
+
+  configure_cni
 
   start_frakti
 

@@ -107,6 +107,12 @@ func PodFound(podsandboxs []*kubeapi.PodSandbox, podId string) bool {
 	}
 	return false
 }
+func CniWork(podNetworkStatus *kubeapi.PodSandboxNetworkStatus) bool {
+	if podNetworkStatus.Ip != "" {
+		return true
+	}
+	return false
+}
 
 func NewUUID() string {
 	uuidLock.Lock()
