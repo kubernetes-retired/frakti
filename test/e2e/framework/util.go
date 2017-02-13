@@ -18,6 +18,7 @@ package framework
 
 import (
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -36,6 +37,9 @@ var (
 
 	// lastUUID record last generated uuid from NewUUID()
 	lastUUID uuid.UUID
+
+	//default network for cni configure
+	DefaultNet string = "10.10.0.0/16"
 )
 
 func LoadDefaultClient() (*FraktiClient, error) {
@@ -104,6 +108,21 @@ func PodReady(status *kubeapi.PodSandboxStatus) bool {
 func PodFound(podsandboxs []*kubeapi.PodSandbox, podId string) bool {
 	if len(podsandboxs) == 1 && podsandboxs[0].Id == podId {
 		return true
+	}
+	return false
+}
+func CniWork(podNetworkStatus *kubeapi.PodSandboxNetworkStatus) bool {
+	if podNetworkStatus.Ip != "" {
+		podIPMask := podNetworkStatus.Ip + "/16"
+		_, podNet, err := net.ParseCIDR(podIPMask)
+		if err != nil {
+			return false
+		}
+		_, defaultNet, _ := net.ParseCIDR(DefaultNet)
+		if string(podNet.IP) == string(defaultNet.IP) {
+			return true
+		}
+		return false
 	}
 	return false
 }
