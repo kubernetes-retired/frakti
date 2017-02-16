@@ -52,14 +52,26 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 
 	// Setup the network
 	podId := userpod.Id
-	if err = h.netPlugin.SetUpPod(netNsPath, podId); err != nil {
+	result, err := h.netPlugin.SetUpPod(netNsPath, podId)
+	if err != nil {
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 	}
 
-	netNsInfo := getNetNsInfos(netns)
+	// set down all network interfaces in net ns
+	err = setDownLinksInNs(netns)
+	if err != nil {
+		glog.Errorf("Set down network interfaces in net ns for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
 
-	// Add network configuration of sandbox net ns to userpod
-	addNetNsInfos2UserPod(userpod, netNsInfo)
+	var networkInfo *NetworkInfo
+	if result != nil {
+		networkInfo = convertCNIResult2NetworkInfo(result)
+	}
+	if networkInfo != nil {
+		// Add network configuration of sandbox net ns to userpod
+		addNetworkInterfaceForPod(userpod, networkInfo)
+	}
 
 	podID, err := h.client.CreatePod(userpod)
 	if err != nil {
@@ -96,28 +108,15 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 }
 
 // TODO: only bridge plugin now, support other plugins in the future
-func addNetNsInfos2UserPod(userpod *types.UserPod, info *NetNsInfos) {
-	seq := 0
-	ifaces := []*types.UserInterface{}
-	for _, iface := range info.Interfaces {
-		// TODO: get cni bridge through IP compare is not satisfactory
-		// use a better way to replace it in the future
-		bridge, err := GetBridgeNameByIp(iface.Ip)
-		if err != nil {
-			continue
-		}
-		ifaces = append(ifaces, &types.UserInterface{
-			Ifname:  fmt.Sprintf("eth%d", seq),
-			Bridge:  bridge,
-			Ip:      iface.Ip,
-			Mac:     iface.Mac,
-			Gateway: iface.Gateway,
-		})
-	}
-
-	if len(ifaces) != 0 {
-		userpod.Interfaces = ifaces
-	}
+func addNetworkInterfaceForPod(userpod *types.UserPod, info *NetworkInfo) {
+	ifaces := append([]*types.UserInterface{}, &types.UserInterface{
+		Ifname:  info.IfName,
+		Bridge:  info.BridgeName,
+		Ip:      info.Ip,
+		Mac:     info.Mac,
+		Gateway: info.Gateway,
+	})
+	userpod.Interfaces = ifaces
 }
 
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
