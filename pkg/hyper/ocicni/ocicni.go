@@ -29,8 +29,6 @@ import (
 )
 
 type cniNetworkPlugin struct {
-	loNetwork *cniNetwork
-
 	sync.RWMutex
 	defaultNetwork *cniNetwork
 
@@ -73,7 +71,6 @@ func InitCNI(netDir string, pluginDirs ...string) (CNIPlugin, error) {
 func probeNetworkPluginsWithVendorCNIDirPrefix(netDir string, pluginDirs []string, vendorCNIDirPrefix string) *cniNetworkPlugin {
 	plugin := &cniNetworkPlugin{
 		defaultNetwork:     nil,
-		loNetwork:          getLoNetwork(pluginDirs, vendorCNIDirPrefix),
 		netDir:             netDir,
 		pluginDirs:         pluginDirs,
 		vendorCNIDirPrefix: vendorCNIDirPrefix,
@@ -124,34 +121,6 @@ func vendorCNIDir(prefix, pluginType string) string {
 	return fmt.Sprintf(VendorCNIDirTemplate, prefix, pluginType)
 }
 
-func getLoNetwork(pluginDirs []string, vendorDirPrefix string) *cniNetwork {
-	if len(pluginDirs) == 0 {
-		pluginDirs = []string{DefaultCNIDir}
-	}
-
-	loConfig, err := libcni.ConfFromBytes([]byte(`{
-  "cniVersion": "0.1.0",
-  "name": "cni-loopback",
-  "type": "loopback"
-}`))
-	if err != nil {
-		// The hardcoded config above should always be valid and unit tests will
-		// catch this
-		panic(err)
-	}
-	vendorDir := vendorCNIDir(vendorDirPrefix, loConfig.Network.Type)
-	cninet := &libcni.CNIConfig{
-		Path: append(pluginDirs, vendorDir),
-	}
-	loNetwork := &cniNetwork{
-		name:          "lo",
-		NetworkConfig: loConfig,
-		CNIConfig:     cninet,
-	}
-
-	return loNetwork
-}
-
 func (plugin *cniNetworkPlugin) syncNetworkConfig() {
 	network, err := getDefaultCNINetwork(plugin.netDir, plugin.pluginDirs, plugin.vendorCNIDirPrefix)
 	if err != nil {
@@ -189,14 +158,7 @@ func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) erro
 		return err
 	}
 
-	_, err := plugin.loNetwork.addToNetwork(podNetnsPath, podID)
-	if err != nil {
-		glog.Errorf("Error while adding to cni lo network: %s", err)
-		return err
-	}
-	glog.V(4).Infof("Pod: %s, PodNetnsPath: %s, Adding lo network to cni", podID, podNetnsPath)
-
-	_, err = plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID)
+	_, err := plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID)
 	if err != nil {
 		glog.Errorf("Error while adding to cni network: %s", err)
 		return err
