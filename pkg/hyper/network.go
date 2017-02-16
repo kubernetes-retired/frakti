@@ -17,140 +17,73 @@ limitations under the License.
 package hyper
 
 import (
-	"fmt"
-	"net"
-
 	"github.com/golang/glog"
 
 	"github.com/containernetworking/cni/pkg/ns"
+	cnitypes "github.com/containernetworking/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/vishvananda/netlink"
 )
 
-type NetNsInfos struct {
-	Interfaces []*InterfaceInfo
+// The network information needed to create HyperContainer
+// network device from CNI Result
+type NetworkInfo struct {
+	IfName     string
+	Mac        string
+	Ip         string
+	Gateway    string
+	BridgeName string
 }
 
-type InterfaceInfo struct {
-	Ip      string
-	Gateway string
-	Mac     string
+func convertCNIResult2NetworkInfo(result cnitypes.Result) *NetworkInfo {
+	ret := &NetworkInfo{}
+
+	r, err := current.GetResult(result)
+	if err != nil {
+		glog.Errorf("Convert CNI Result failed: %v", err)
+		return nil
+	}
+
+	// only handle bridge plugin now
+	// TODO: support other plugins in the future
+	for _, iface := range r.Interfaces {
+		if iface.Sandbox != "" {
+			// interface information in net ns
+			ret.IfName = iface.Name
+			ret.Mac = iface.Mac
+			continue
+		}
+		l, err := netlink.LinkByName(iface.Name)
+		if err != nil {
+			continue
+		}
+		if _, ok := l.(*netlink.Bridge); ok {
+			// find the bridge name
+			ret.BridgeName = iface.Name
+		}
+	}
+	ret.Ip = r.IPs[0].Address.String()
+	ret.Gateway = r.IPs[0].Gateway.String()
+
+	return ret
 }
 
-func getNetNsInfos(netns ns.NetNS) *NetNsInfos {
-	result := &NetNsInfos{}
+func setDownLinksInNs(netns ns.NetNS) error {
+	err := netns.Do(func(_ ns.NetNS) error {
+		links, err := netlink.LinkList()
+		if err != nil {
+			return err
+		}
 
-	var infos []*InterfaceInfo
-	netns.Do(func(_ ns.NetNS) error {
-		infos = collectInterfaceInfos()
+		for _, link := range links {
+			netlink.LinkSetDown(link)
+		}
+
 		return nil
 	})
-	if len(infos) != 0 {
-		result.Interfaces = infos
-	}
-
-	return result
-}
-
-func collectInterfaceInfos() []*InterfaceInfo {
-	infos := []*InterfaceInfo{}
-
-	links, err := netlink.LinkList()
 	if err != nil {
-		return infos
+		return err
 	}
 
-	for _, link := range links {
-		if link.Type() == "lo" {
-			// only omit "lo" here
-			continue
-		}
-
-		name := link.Attrs().Name
-
-		mac := link.Attrs().HardwareAddr.String()
-
-		// TODO: IPv6
-		addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
-		if err != nil {
-			glog.Errorf("Get address list of link %s failed: %v", name, err)
-			continue
-		}
-
-		gateway := ""
-		// TODO: IPv6
-		routes, err := netlink.RouteList(link, netlink.FAMILY_V4)
-		if err != nil {
-			glog.Errorf("Get route list of link %s failed: %v", name, err)
-			continue
-		}
-		for _, route := range routes {
-			// routes lost, retrieve them in the future
-			if route.Gw != nil && route.Dst == nil {
-				// only need default gateway right now
-				gateway = route.Gw.String()
-				break
-			}
-		}
-
-		for _, addr := range addrs {
-			info := &InterfaceInfo{
-				Ip:      addr.IPNet.String(),
-				Gateway: gateway,
-				Mac:     mac,
-			}
-			infos = append(infos, info)
-		}
-
-		// set link down, tap device take over it
-		netlink.LinkSetDown(link)
-	}
-
-	return infos
-}
-
-func GetBridgeNameByIp(ip string) (string, error) {
-	links, err := netlink.LinkList()
-	if err != nil {
-		return "", err
-	}
-
-	for _, link := range links {
-		if link.Type() != "bridge" {
-			continue
-		}
-
-		// TODO: IPv6
-		addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
-		if err != nil {
-			continue
-		}
-
-		for _, addr := range addrs {
-			bridgeIp := addr.IPNet.String()
-			if isSameNetwork(bridgeIp, ip) {
-				return link.Attrs().Name, nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("cannot find bridge which ip %s belong to", ip)
-}
-
-// compare IP1 with IP2, return true if they belong to same network
-func isSameNetwork(ip1 string, ip2 string) bool {
-	_, ipnet1, err := net.ParseCIDR(ip1)
-	if err != nil {
-		return false
-	}
-
-	_, ipnet2, err := net.ParseCIDR(ip2)
-	if err != nil {
-		return false
-	}
-
-	if ipnet1.String() == ipnet2.String() {
-		return true
-	}
-
-	return false
+	return nil
 }

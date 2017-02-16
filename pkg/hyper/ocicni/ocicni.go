@@ -28,6 +28,8 @@ import (
 	"github.com/golang/glog"
 )
 
+// TODO: upgrade CNI Plugin to its stable realease
+// when v0.5.0 is released
 type cniNetworkPlugin struct {
 	sync.RWMutex
 	defaultNetwork *cniNetwork
@@ -89,7 +91,7 @@ func getDefaultCNINetwork(netDir string, pluginDirs []string, vendorCNIDirPrefix
 		pluginDirs = []string{DefaultCNIDir}
 	}
 
-	files, err := libcni.ConfFiles(netDir)
+	files, err := libcni.ConfFiles(netDir, []string{".conf", ".json"})
 	switch {
 	case err != nil:
 		return nil, err
@@ -153,19 +155,19 @@ func (plugin *cniNetworkPlugin) Name() string {
 	return CNIPluginName
 }
 
-func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) error {
+func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error) {
 	if err := plugin.checkInitialized(); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err := plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID)
+	res, err := plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID)
 	if err != nil {
 		glog.Errorf("Error while adding to cni network: %s", err)
-		return err
+		return nil, err
 	}
 	glog.V(4).Infof("Pod: %s, PodNetnsPath: %s, Adding default network to cni", podID, podNetnsPath)
 
-	return err
+	return res, nil
 }
 
 func (plugin *cniNetworkPlugin) TearDownPod(podNetnsPath string, podID string) error {
@@ -176,7 +178,7 @@ func (plugin *cniNetworkPlugin) TearDownPod(podNetnsPath string, podID string) e
 	return plugin.getDefaultNetwork().deleteFromNetwork(podNetnsPath, podID)
 }
 
-func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (*cnitypes.Result, error) {
+func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (cnitypes.Result, error) {
 	rt, err := buildCNIRuntimeConf(podNetnsPath, podID)
 	if err != nil {
 		glog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
