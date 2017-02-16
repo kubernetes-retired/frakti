@@ -16,6 +16,10 @@ limitations under the License.
 
 package ocicni
 
+import (
+	cnitypes "github.com/containernetworking/cni/pkg/types"
+)
+
 type cniNoOp struct {
 }
 
@@ -23,8 +27,8 @@ func (noop *cniNoOp) Name() string {
 	return "CNINoOp"
 }
 
-func (noop *cniNoOp) SetUpPod(podNetnsPath string, podID string) error {
-	return nil
+func (noop *cniNoOp) SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error) {
+	return nil, nil
 }
 
 func (noop *cniNoOp) TearDownPod(podNetnsPath string, podID string) error {

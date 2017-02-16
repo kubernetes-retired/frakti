@@ -16,6 +16,10 @@ limitations under the License.
 
 package ocicni
 
+import (
+	cnitypes "github.com/containernetworking/cni/pkg/types"
+)
+
 const (
 	DefaultInterfaceName = "eth0"
 	CNIPluginName        = "cni"
@@ -30,7 +34,7 @@ type CNIPlugin interface {
 	Name() string
 
 	// SetUpPod is the method called when the pod is created
-	SetUpPod(podNetnsPath string, podID string) error
+	SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error)
 
 	// TearDownPod is the method called before pod stopped
 	TearDownPod(podNetnsPath string, podID string) error
