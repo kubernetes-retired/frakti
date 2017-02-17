@@ -31,28 +31,38 @@
 		},
 		{
 			"ImportPath": "github.com/containernetworking/cni/libcni",
-			"Comment": "v0.3.0-140-g98ff61a",
-			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
 		},
 		{
 			"ImportPath": "github.com/containernetworking/cni/pkg/invoke",
-			"Comment": "v0.3.0-140-g98ff61a",
-			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
 		},
 		{
 			"ImportPath": "github.com/containernetworking/cni/pkg/ns",
-			"Comment": "v0.3.0-140-g98ff61a",
-			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
 		},
 		{
 			"ImportPath": "github.com/containernetworking/cni/pkg/types",
-			"Comment": "v0.3.0-140-g98ff61a",
-			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/types/020",
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
+		},
+		{
+			"ImportPath": "github.com/containernetworking/cni/pkg/types/current",
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
 		},
 		{
 			"ImportPath": "github.com/containernetworking/cni/pkg/version",
-			"Comment": "v0.3.0-140-g98ff61a",
-			"Rev": "98ff61aac32dcf2eb3044a0d5e5f1814837b3c75"
+			"Comment": "v0.4.0-28-g6f3b0ab",
+			"Rev": "6f3b0abcc7d4ba4bee93fd7a5c64d6a06ea162c2"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
