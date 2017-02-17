@@ -15,6 +15,7 @@
 package libcni
 
 import (
+	"os"
 	"strings"
 
 	"github.com/containernetworking/cni/pkg/invoke"
@@ -34,8 +35,18 @@ type NetworkConfig struct {
 	Bytes   []byte
 }
 
+type NetworkConfigList struct {
+	Name       string
+	CNIVersion string
+	Plugins    []*NetworkConfig
+	Bytes      []byte
+}
+
 type CNI interface {
-	AddNetwork(net *NetworkConfig, rt *RuntimeConf) (*types.Result, error)
+	AddNetworkList(net *NetworkConfigList, rt *RuntimeConf) (types.Result, error)
+	DelNetworkList(net *NetworkConfigList, rt *RuntimeConf) error
+
+	AddNetwork(net *NetworkConfig, rt *RuntimeConf) (types.Result, error)
 	DelNetwork(net *NetworkConfig, rt *RuntimeConf) error
 }
 
@@ -46,8 +57,78 @@ type CNIConfig struct {
 // CNIConfig implements the CNI interface
 var _ CNI = &CNIConfig{}
 
+func buildOneConfig(list *NetworkConfigList, orig *NetworkConfig, prevResult types.Result) (*NetworkConfig, error) {
+	var err error
+
+	// Ensure every config uses the same name and version
+	orig, err = InjectConf(orig, "name", list.Name)
+	if err != nil {
+		return nil, err
+	}
+	orig, err = InjectConf(orig, "cniVersion", list.CNIVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add previous plugin result
+	if prevResult != nil {
+		orig, err = InjectConf(orig, "prevResult", prevResult)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return orig, nil
+}
+
+// AddNetworkList executes a sequence of plugins with the ADD command
+func (c *CNIConfig) AddNetworkList(list *NetworkConfigList, rt *RuntimeConf) (types.Result, error) {
+	var prevResult types.Result
+	for _, net := range list.Plugins {
+		pluginPath, err := invoke.FindInPath(net.Network.Type, c.Path)
+		if err != nil {
+			return nil, err
+		}
+
+		newConf, err := buildOneConfig(list, net, prevResult)
+		if err != nil {
+			return nil, err
+		}
+
+		prevResult, err = invoke.ExecPluginWithResult(pluginPath, newConf.Bytes, c.args("ADD", rt))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return prevResult, nil
+}
+
+// DelNetworkList executes a sequence of plugins with the DEL command
+func (c *CNIConfig) DelNetworkList(list *NetworkConfigList, rt *RuntimeConf) error {
+	for i := len(list.Plugins) - 1; i >= 0; i-- {
+		net := list.Plugins[i]
+
+		pluginPath, err := invoke.FindInPath(net.Network.Type, c.Path)
+		if err != nil {
+			return err
+		}
+
+		newConf, err := buildOneConfig(list, net, nil)
+		if err != nil {
+			return err
+		}
+
+		if err := invoke.ExecPluginWithoutResult(pluginPath, newConf.Bytes, c.args("DEL", rt)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // AddNetwork executes the plugin with the ADD command
-func (c *CNIConfig) AddNetwork(net *NetworkConfig, rt *RuntimeConf) (*types.Result, error) {
+func (c *CNIConfig) AddNetwork(net *NetworkConfig, rt *RuntimeConf) (types.Result, error) {
 	pluginPath, err := invoke.FindInPath(net.Network.Type, c.Path)
 	if err != nil {
 		return nil, err
@@ -85,6 +166,6 @@ func (c *CNIConfig) args(action string, rt *RuntimeConf) *invoke.Args {
 		NetNS:       rt.NetNS,
 		PluginArgs:  rt.Args,
 		IfName:      rt.IfName,
-		Path:        strings.Join(c.Path, ":"),
+		Path:        strings.Join(c.Path, string(os.PathListSeparator)),
 	}
 }
