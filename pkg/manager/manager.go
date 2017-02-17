@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -28,6 +29,7 @@ import (
 	"k8s.io/frakti/pkg/runtime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
+	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )
 
 const (
@@ -92,19 +94,13 @@ func (s *FraktiManager) registerServer() {
 
 // Version returns the runtime name, runtime version and runtime API version.
 func (s *FraktiManager) Version(ctx context.Context, req *kubeapi.VersionRequest) (*kubeapi.VersionResponse, error) {
-	runtimeName, version, apiVersion, err := s.runtimeService.Version()
+	resp, err := s.runtimeService.Version(runtimeAPIVersion)
 	if err != nil {
 		glog.Errorf("Get version from runtime service failed: %v", err)
 		return nil, err
 	}
 
-	kubeletAPIVersion := runtimeAPIVersion
-	return &kubeapi.VersionResponse{
-		Version:           kubeletAPIVersion,
-		RuntimeName:       runtimeName,
-		RuntimeVersion:    version,
-		RuntimeApiVersion: apiVersion,
-	}, nil
+	return resp, nil
 }
 
 // RunPodSandbox creates and start a hyper Pod.
@@ -258,10 +254,15 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncRequest) (*kubeapi.ExecSyncResponse, error) {
 	glog.V(3).Infof("ExecSync with request %s", req.String())
 
-	stdout, stderr, exitCode, err := s.runtimeService.ExecSync(req.ContainerId, req.Cmd, req.Timeout)
+	stdout, stderr, err := s.runtimeService.ExecSync(req.ContainerId, req.Cmd, time.Duration(req.Timeout)*time.Second)
+	var exitCode int32
 	if err != nil {
-		glog.Errorf("ExecSync from runtime service failed: %v", err)
-		return nil, err
+		exitError, ok := err.(utilexec.ExitError)
+		if !ok {
+			glog.Errorf("ExecSync from runtime service failed: %v", err)
+			return nil, err
+		}
+		exitCode = int32(exitError.ExitStatus())
 	}
 
 	return &kubeapi.ExecSyncResponse{

@@ -27,6 +27,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
+	utilexec "k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/term"
 )
 
@@ -443,10 +444,10 @@ func (c *Client) ContainerExecCreate(containerId string, cmd []string, tty bool)
 }
 
 // ExecInContainer exec a command in container with specified io, tty and timeout
-func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size, timeout int64) (int32, error) {
+func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size, timeout time.Duration) error {
 	execID, err := c.ContainerExecCreate(containerId, cmd, tty)
 	if err != nil {
-		return -1, err
+		return err
 	}
 
 	req := types.ExecStartRequest{
@@ -460,11 +461,11 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 	)
 
 	if timeout > 0 {
-		ctx, cancel = getContextWithTimeout(time.Duration(timeout) * time.Second)
+		ctx, cancel = getContextWithTimeout(timeout)
 	} else if timeout == 0 {
 		ctx, cancel = getContextWithCancel()
 	} else {
-		return -1, fmt.Errorf("timeout should be non-negative")
+		return fmt.Errorf("timeout should be non-negative")
 	}
 	defer cancel()
 
@@ -472,10 +473,10 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 
 	stream, err := c.client.ExecStart(ctx)
 	if err != nil {
-		return -1, err
+		return err
 	}
 	if err := stream.Send(&req); err != nil {
-		return -1, err
+		return err
 	}
 
 	var recvStdoutError chan error
@@ -544,17 +545,17 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 
 	if stdout != nil || stderr != nil {
 		if err := <-recvStdoutError; err != nil {
-			return -1, err
+			return err
 		}
 	}
 
 	// get exit code
 	exitCode, err := c.Wait(containerId, execID, false)
 	if err != nil {
-		return -1, err
+		return err
 	}
 
-	return exitCode, nil
+	return utilexec.CodeExitError{Err: nil, Code: int(exitCode)}
 }
 
 // Wait gets exit code by containerID and execID

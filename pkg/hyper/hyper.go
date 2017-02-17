@@ -78,14 +78,19 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cn
 }
 
 // Version returns the runtime name, runtime version and runtime API version
-func (h *Runtime) Version() (string, string, string, error) {
+func (h *Runtime) Version(kubeApiVersion string) (*kubeapi.VersionResponse, error) {
 	version, apiVersion, err := h.client.GetVersion()
 	if err != nil {
 		glog.Errorf("Get hyper version failed: %v", err)
-		return "", "", "", err
+		return nil, err
 	}
 
-	return hyperRuntimeName, version, apiVersion, nil
+	return &kubeapi.VersionResponse{
+		Version:           kubeApiVersion,
+		RuntimeName:       hyperRuntimeName,
+		RuntimeVersion:    version,
+		RuntimeApiVersion: apiVersion,
+	}, nil
 }
 
 // Status returns the status of the runtime.
