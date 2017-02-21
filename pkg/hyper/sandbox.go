@@ -90,7 +90,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		if removeError := h.client.RemovePod(podID); removeError != nil {
 			glog.Warningf("Remove pod %q failed: %v", removeError)
 		}
-		// destory the network namespace
+		// destroy the network namespace
 		if tearError := h.netPlugin.TearDownPod(netNsPath, podID); tearError != nil {
 			glog.Errorf("Destroy pod %s network namespace failed: %v", podID, tearError)
 		}
@@ -193,7 +193,7 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 		return err
 	}
 
-	// destory the network namespace
+	// destroy the network namespace
 	err = h.netPlugin.TearDownPod(netNsPath, podSandboxID)
 	if err != nil {
 		glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
