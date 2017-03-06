@@ -391,13 +391,11 @@ func (c *Client) RemoveImage(image, tag string) error {
 }
 
 // GetContainerList gets a list of containers
-func (c *Client) GetContainerList(auxiliary bool) ([]*types.ContainerListResult, error) {
+func (c *Client) GetContainerList() ([]*types.ContainerListResult, error) {
 	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
 	defer cancel()
 
-	req := types.ContainerListRequest{
-		Auxiliary: auxiliary,
-	}
+	req := types.ContainerListRequest{}
 	containerList, err := c.client.ContainerList(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -665,5 +663,92 @@ func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, st
 			return err
 		}
 	}
+	return nil
+}
+
+// ExecInSandbox exec a command in sandbox with specified io, tty and timeout
+func (c *Client) ExecInSandbox(sandboxID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, timeout time.Duration) error {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	if timeout > 0 {
+		ctx, cancel = getContextWithTimeout(timeout)
+	} else if timeout == 0 {
+		ctx, cancel = getContextWithCancel()
+	} else {
+		return fmt.Errorf("timeout should be non-negative")
+	}
+	defer cancel()
+
+	stream, err := c.client.ExecVM(ctx)
+	if err != nil {
+		return err
+	}
+	if err = stream.Send(&types.ExecVMRequest{
+		PodID:   sandboxID,
+		Command: cmd,
+	}); err != nil {
+		return err
+	}
+
+	var recvStdoutError chan error
+	if stdout != nil || stderr != nil {
+		recvStdoutError = promiseGo(func() (err error) {
+			for {
+				out, err := stream.Recv()
+				if out != nil {
+					if len(out.Stdout) > 0 && stdout != nil {
+						nw, ew := stdout.Write(out.Stdout)
+						if ew != nil {
+							return ew
+						}
+						if nw != len(out.Stdout) {
+							return io.ErrShortWrite
+						}
+					}
+				}
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+
+	if stdin != nil {
+		go func() error {
+			defer stream.CloseSend()
+			buf := make([]byte, 32)
+			for {
+				nr, err := stdin.Read(buf)
+				if nr > 0 {
+					if err = stream.Send(&types.ExecVMRequest{
+						Stdin: buf[:nr],
+					}); err != nil {
+						return err
+					}
+				}
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}()
+	}
+
+	if stdout != nil || stderr != nil {
+		if err = <-recvStdoutError; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/golang/glog"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
@@ -56,7 +57,17 @@ func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdou
 
 // PortForward forward ports from a PodSandbox.
 func (sr *streamingRuntime) PortForward(podSandboxID string, port int32, stream io.ReadWriteCloser) error {
-	return fmt.Errorf("Not implemented")
+	running, err := isPodSandboxRunning(sr.client, podSandboxID)
+	if err != nil {
+		glog.Errorf("isPodSandboxRunning for sandbox %q: %v", podSandboxID, err)
+		return err
+	}
+	if !running {
+		return fmt.Errorf("sandbox %s is not running", podSandboxID)
+	}
+
+	cmds := []string{"/sbin/socat", "-", fmt.Sprintf("TCP4:127.0.0.1:%d", port)}
+	return sr.client.ExecInSandbox(podSandboxID, cmds, stream, stream, stream, false, 0)
 }
 
 // ExecSync runs a command in a container synchronously.
@@ -111,5 +122,18 @@ func (h *Runtime) Attach(req *kubeapi.AttachRequest) (*kubeapi.AttachResponse, e
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
 func (h *Runtime) PortForward(req *kubeapi.PortForwardRequest) (*kubeapi.PortForwardResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	if h.streamingServer == nil {
+		return nil, streaming.ErrorStreamingDisabled("portforward")
+	}
+
+	running, err := isPodSandboxRunning(h.client, req.PodSandboxId)
+	if err != nil {
+		glog.Errorf("isPodSandboxRunning for sandbox %q: %v", req.PodSandboxId, err)
+		return nil, err
+	}
+	if !running {
+		return nil, fmt.Errorf("sandbox %s is not running", req.PodSandboxId)
+	}
+
+	return h.streamingServer.GetPortForward(req)
 }
