@@ -280,7 +280,6 @@ message PodListResponse {
 message ContainerListRequest {
   string podID    = 1;
   string vmID     = 2;
-  bool auxiliary  = 3;
 }
 
 message ContainerListResult {
@@ -400,11 +399,6 @@ message UserContainer {
   UserUser user                         = 13;
   map<string, string> labels            = 14;
   string id                             = 15;
-  enum ContainerType {
-    REGULAR = 0;
-    SERVICE = 99;
-  }
-  ContainerType type                    = 16;
   string StopSignal                     = 17;
   repeated Ulimit ulimits               = 18;
   string logPath                        = 19;
@@ -570,6 +564,25 @@ message ExecStartRequest{
 message ExecStartResponse{
     bytes stdout = 1;
 }
+
+message ExecVMRequest{
+    string podID            = 1;
+    repeated string command = 2;
+    bytes  stdin            = 3;
+}
+
+message ExecVMResponse{
+    bytes stdout   = 1;
+    int32 exitCode = 2;
+}
+
+message ExecSignalRequest{
+    string containerID      = 1;
+    string execID           = 2;
+    int64  signal           = 3;
+}
+
+message ExecSignalResponse{}
 
 message PodStartRequest {
   string podID = 1;
@@ -759,6 +772,14 @@ message PingResponse {
   string hyperdStats = 1;
 }
 
+message ContainerSignalRequest {
+    string podID       = 1;
+    string containerID = 2;
+    int64  signal      = 3;
+}
+
+message ContainerSignalResponse{}
+
 // PublicAPI defines the public APIs which are handled over TCP sockets.
 service PublicAPI {
     // PodList gets a list of pods
@@ -773,12 +794,14 @@ service PublicAPI {
     rpc PodStart(PodStartRequest) returns (PodStartResponse) {}
     // PodStop stops a pod
     rpc PodStop(PodStopRequest) returns (PodStopResponse) {}
-    // PodSignal sends a singal to all containers of specified pod
+    // PodSignal sends a signal to all containers of specified pod
     rpc PodSignal(PodSignalRequest) returns (PodSignalResponse) {}
     // PodPause pauses a pod
     rpc PodPause(PodPauseRequest) returns (PodPauseResponse) {}
     // PodUnpause unpauses a pod
     rpc PodUnpause(PodUnpauseRequest) returns (PodUnpauseResponse) {}
+    // ExecVM executes a command outside of any containers.
+    rpc ExecVM(stream ExecVMRequest) returns (stream ExecVMResponse) {}
 
     // ContainerList gets a list of containers
     rpc ContainerList(ContainerListRequest) returns (ContainerListResponse) {}
@@ -806,7 +829,8 @@ service PublicAPI {
     // ContainerRename renames a container
     rpc ContainerRename(ContainerRenameRequest) returns (ContainerRenameResponse) {}
     // TODO: ContainerCommit commits the changes of the specified container
-    // TODO: ContainerSignal sends a singla to specified container
+    // ContainerSignal sends a signal to specified container
+    rpc ContainerSignal(ContainerSignalRequest) returns (ContainerSignalResponse) {}
     // TODO: ContainerLabels updates labels of the specified container
     // ContainerStop stops the specified container
     rpc ContainerStop(ContainerStopRequest) returns (ContainerStopResponse) {}
@@ -816,6 +840,8 @@ service PublicAPI {
     rpc ExecCreate(ExecCreateRequest) returns (ExecCreateResponse) {}
     // ExecStart starts exec
     rpc ExecStart(stream ExecStartRequest) returns (stream ExecStartResponse) {}
+    // ExecSignal sends a signal to specified exec in specified container
+    rpc ExecSignal(ExecSignalRequest) returns (ExecSignalResponse) {}
     // Attach attaches to the specified container
     rpc Attach(stream AttachMessage) returns (stream AttachMessage) {}
     // Wait gets the exit code of the specified container
