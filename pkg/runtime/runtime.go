@@ -16,13 +16,17 @@ limitations under the License.
 
 package runtime
 
-import kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+import (
+	"time"
+
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+)
 
 // RuntimeService interface should be implemented by a container runtime.
 // The methods should be thread-safe.
 type RuntimeService interface {
 	// Version returns the runtime name, runtime version and runtime API version
-	Version() (string, string, string, error)
+	Version(apiVersion string) (*kubeapi.VersionResponse, error)
 	// Status returns the status of the runtime.
 	Status() (*kubeapi.RuntimeStatus, error)
 	// RunPodSandbox creates and start a pod-level sandbox.
@@ -54,7 +58,7 @@ type RuntimeService interface {
 	ContainerStatus(rawContainerID string) (*kubeapi.ContainerStatus, error)
 
 	// ExecSync runs a command in a container synchronously.
-	ExecSync(rawContainerID string, cmd []string, timeout int64) ([]byte, []byte, int32, error)
+	ExecSync(rawContainerID string, cmd []string, timeout time.Duration) ([]byte, []byte, error)
 	// Exec prepares a streaming endpoint to execute a command in the container.
 	Exec(req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error)
 	// Attach prepares a streaming endpoint to attach to a running container.

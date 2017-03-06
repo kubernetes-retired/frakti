@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"time"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
@@ -40,8 +41,7 @@ func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.R
 	if err != nil {
 		return err
 	}
-	_, err = sr.client.ExecInContainer(rawContainerID, cmd, stdin, stdout, stderr, tty, resize, 0)
-	return err
+	return sr.client.ExecInContainer(rawContainerID, cmd, stdin, stdout, stderr, tty, resize, 0)
 }
 
 // Attach attach to a running container.
@@ -60,7 +60,7 @@ func (sr *streamingRuntime) PortForward(podSandboxID string, port int32, stream 
 }
 
 // ExecSync runs a command in a container synchronously.
-func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (stdout, stderr []byte, exitCode int32, err error) {
+func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout time.Duration) (stdout, stderr []byte, err error) {
 	var (
 		stdoutBuffer bytes.Buffer
 		stderrBuffer bytes.Buffer
@@ -69,10 +69,10 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 	// check if container is running
 	err = ensureContainerRunning(h.client, rawContainerID)
 	if err != nil {
-		return nil, nil, -1, err
+		return nil, nil, err
 	}
 
-	exitCode, err = h.client.ExecInContainer(rawContainerID, cmd,
+	err = h.client.ExecInContainer(rawContainerID, cmd,
 		nil, // don't need stdin here
 		ioutils.WriteCloserWrapper(&stdoutBuffer),
 		ioutils.WriteCloserWrapper(&stderrBuffer),
@@ -80,11 +80,7 @@ func (h *Runtime) ExecSync(rawContainerID string, cmd []string, timeout int64) (
 		nil,   // don't need resize
 		timeout)
 
-	if err != nil {
-		return nil, nil, -1, err
-	}
-
-	return stdoutBuffer.Bytes(), stderrBuffer.Bytes(), exitCode, nil
+	return stdoutBuffer.Bytes(), stderrBuffer.Bytes(), err
 }
 
 // Exec prepares a streaming endpoint to execute a command in the container.
