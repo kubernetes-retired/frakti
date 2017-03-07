@@ -35,9 +35,9 @@ type RuntimeService interface {
 	// sandbox, they should be force terminated.
 	// It should return success if the sandbox has already been deleted.
 	StopPodSandbox(podSandboxID string) error
-	// DeletePodSandbox deletes the sandbox. If there are running containers in the
+	// RemovePodSandbox deletes the sandbox. If there are running containers in the
 	// sandbox, they should be forcibly deleted.
-	DeletePodSandbox(podSandboxID string) error
+	RemovePodSandbox(podSandboxID string) error
 	// PodSandboxStatus returns the Status of the PodSandbox.
 	PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStatus, error)
 	// ListPodSandbox returns a list of Sandbox.
@@ -68,6 +68,9 @@ type RuntimeService interface {
 
 	// UpdateRuntimeConfig updates runtime configuration if specified
 	UpdateRuntimeConfig(runtimeConfig *kubeapi.RuntimeConfig) error
+
+	// ServiceName method is used to log out with service's name
+	ServiceName() string
 }
 
 // ImageService interface should be implemented by a container image manager.
@@ -82,4 +85,7 @@ type ImageService interface {
 	// RemoveImage removes the image.
 	// It should return success if the image has already been removed.
 	RemoveImage(image *kubeapi.ImageSpec) error
+
+	// ServiceName method is used to log out with service's name
+	ServiceName() string
 }
