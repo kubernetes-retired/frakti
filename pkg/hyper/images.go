@@ -33,7 +33,7 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 
 	var results []*kubeapi.Image
 	for _, img := range images {
-		if filter != nil {
+		if filter != nil && filter.GetImage().Image != "" {
 			filter := filter.GetImage().Image
 			// Use 'latest' tag if not specified explicitly
 			if !strings.Contains(filter, ":") {
