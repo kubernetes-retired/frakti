@@ -17,7 +17,6 @@ limitations under the License.
 package manager
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"syscall"
@@ -300,11 +299,19 @@ func (s *FraktiManager) Attach(ctx context.Context, req *kubeapi.AttachRequest) 
 
 // PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
 func (s *FraktiManager) PortForward(ctx context.Context, req *kubeapi.PortForwardRequest) (*kubeapi.PortForwardResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	glog.V(3).Infof("PortForward with request %s", req.String())
+	resp, err := s.runtimeService.PortForward(req)
+	if err != nil {
+		glog.Errorf("PortForward from runtime service failed: %v", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // UpdateRuntimeConfig updates runtime configuration if specified
 func (s *FraktiManager) UpdateRuntimeConfig(ctx context.Context, req *kubeapi.UpdateRuntimeConfigRequest) (*kubeapi.UpdateRuntimeConfigResponse, error) {
+	glog.V(3).Infof("UpdateRuntimeConfig with request %s", req.String())
 	err := s.runtimeService.UpdateRuntimeConfig(req.GetRuntimeConfig())
 	if err != nil {
 		return nil, err

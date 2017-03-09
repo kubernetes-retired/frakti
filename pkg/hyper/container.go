@@ -143,7 +143,7 @@ func (h *Runtime) RemoveContainer(rawContainerID string) error {
 
 // ListContainers lists all containers by filters.
 func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Container, error) {
-	containerList, err := h.client.GetContainerList(false)
+	containerList, err := h.client.GetContainerList()
 	if err != nil {
 		glog.Errorf("Get container list failed: %v", err)
 		return nil, err
