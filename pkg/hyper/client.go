@@ -521,7 +521,7 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 	if stdin != nil {
 		go func() error {
 			defer stream.CloseSend()
-			buf := make([]byte, 32)
+			buf := make([]byte, 1024)
 			for {
 				nr, err := stdin.Read(buf)
 				if nr > 0 {
@@ -639,7 +639,7 @@ func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, st
 	if stdin != nil {
 		go func() error {
 			defer stream.CloseSend()
-			buf := make([]byte, 32)
+			buf := make([]byte, 1024)
 			for {
 				nr, err := stdin.Read(buf)
 				if nr > 0 {
@@ -723,7 +723,7 @@ func (c *Client) ExecInSandbox(sandboxID string, cmd []string, stdin io.Reader, 
 	if stdin != nil {
 		go func() error {
 			defer stream.CloseSend()
-			buf := make([]byte, 32)
+			buf := make([]byte, 1024)
 			for {
 				nr, err := stdin.Read(buf)
 				if nr > 0 {
