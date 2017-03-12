@@ -37,7 +37,7 @@ var (
 // object, or an error if the object doesn't follow the conventions
 // that would allow this.
 // TODO: should take a meta.Interface see http://issue.k8s.io/7127
-func GetReference(scheme *runtime.Scheme, obj runtime.Object) (*ObjectReference, error) {
+func GetReference(obj runtime.Object) (*ObjectReference, error) {
 	if obj == nil {
 		return nil, ErrNilObject
 	}
@@ -53,7 +53,7 @@ func GetReference(scheme *runtime.Scheme, obj runtime.Object) (*ObjectReference,
 	kind := gvk.Kind
 	if len(kind) == 0 {
 		// TODO: this is wrong
-		gvks, _, err := scheme.ObjectKinds(obj)
+		gvks, _, err := Scheme.ObjectKinds(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -111,8 +111,8 @@ func GetReference(scheme *runtime.Scheme, obj runtime.Object) (*ObjectReference,
 }
 
 // GetPartialReference is exactly like GetReference, but allows you to set the FieldPath.
-func GetPartialReference(scheme *runtime.Scheme, obj runtime.Object, fieldPath string) (*ObjectReference, error) {
-	ref, err := GetReference(scheme, obj)
+func GetPartialReference(obj runtime.Object, fieldPath string) (*ObjectReference, error) {
+	ref, err := GetReference(obj)
 	if err != nil {
 		return nil, err
 	}
