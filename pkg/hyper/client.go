@@ -27,6 +27,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
+	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/term"
 )
@@ -440,6 +441,22 @@ func (c *Client) ContainerExecCreate(containerId string, cmd []string, tty bool)
 	return resp.ExecID, nil
 }
 
+// TTYResize resizes the tty of the specified container
+func (c *Client) TTYResize(containerID, execID string, height, width int32) error {
+	ctx, cancel := getContextWithTimeout(hyperContextTimeout)
+	defer cancel()
+
+	req := &types.TTYResizeRequest{
+		ContainerID: containerID,
+		ExecID:      execID,
+		Height:      height,
+		Width:       width,
+	}
+	_, err := c.client.TTYResize(ctx, req)
+
+	return err
+}
+
 // ExecInContainer exec a command in container with specified io, tty and timeout
 func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size, timeout time.Duration) error {
 	execID, err := c.ContainerExecCreate(containerId, cmd, tty)
@@ -466,7 +483,11 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 	}
 	defer cancel()
 
-	// TODO: deal with resize, need TTYResize api in hyperd
+	kubecontainer.HandleResizing(resize, func(size term.Size) {
+		if err := c.TTYResize(containerId, execID, int32(size.Height), int32(size.Width)); err != nil {
+			glog.Errorf("Resize tty failed: %v", err)
+		}
+	})
 
 	stream, err := c.client.ExecStart(ctx)
 	if err != nil {
@@ -576,7 +597,11 @@ func (c *Client) Wait(containerId, execId string, noHang bool) (int32, error) {
 
 // AttachContainer attach a container with id, io stream and resize
 func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	// TODO: deal with resize, need TTYResize api in hyperd
+	kubecontainer.HandleResizing(resize, func(size term.Size) {
+		if err := c.TTYResize(containerID, "", int32(size.Height), int32(size.Width)); err != nil {
+			glog.Errorf("Resize tty failed: %v", err)
+		}
+	})
 
 	ctx, cancel := getContextWithCancel()
 	defer cancel()
