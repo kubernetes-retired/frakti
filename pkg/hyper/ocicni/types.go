@@ -34,7 +34,7 @@ type CNIPlugin interface {
 	Name() string
 
 	// SetUpPod is the method called when the pod is created
-	SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error)
+	SetUpPod(podNetnsPath string, podID string) (*cnitypes.Result, error)
 
 	// TearDownPod is the method called before pod stopped
 	TearDownPod(podNetnsPath string, podID string) error
