@@ -27,7 +27,7 @@ func (noop *cniNoOp) Name() string {
 	return "CNINoOp"
 }
 
-func (noop *cniNoOp) SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error) {
+func (noop *cniNoOp) SetUpPod(podNetnsPath string, podID string) (*cnitypes.Result, error) {
 	return nil, nil
 }
 
