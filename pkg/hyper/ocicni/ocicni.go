@@ -91,7 +91,7 @@ func getDefaultCNINetwork(netDir string, pluginDirs []string, vendorCNIDirPrefix
 		pluginDirs = []string{DefaultCNIDir}
 	}
 
-	files, err := libcni.ConfFiles(netDir, []string{".conf", ".json"})
+	files, err := libcni.ConfFiles(netDir)
 	switch {
 	case err != nil:
 		return nil, err
@@ -155,7 +155,7 @@ func (plugin *cniNetworkPlugin) Name() string {
 	return CNIPluginName
 }
 
-func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error) {
+func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) (*cnitypes.Result, error) {
 	if err := plugin.checkInitialized(); err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (plugin *cniNetworkPlugin) TearDownPod(podNetnsPath string, podID string) e
 	return plugin.getDefaultNetwork().deleteFromNetwork(podNetnsPath, podID)
 }
 
-func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (cnitypes.Result, error) {
+func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (*cnitypes.Result, error) {
 	rt, err := buildCNIRuntimeConf(podNetnsPath, podID)
 	if err != nil {
 		glog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)

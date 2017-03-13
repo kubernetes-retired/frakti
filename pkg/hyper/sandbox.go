@@ -52,10 +52,14 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 
 	// Setup the network
 	podId := userpod.Id
-	result, err := h.netPlugin.SetUpPod(netNsPath, podId)
+	_, err = h.netPlugin.SetUpPod(netNsPath, podId)
 	if err != nil {
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 	}
+
+	var networkInfo *NetworkInfo
+
+	networkInfo = networkInfoFromNs(netns)
 
 	// set down all network interfaces in net ns
 	err = setDownLinksInNs(netns)
@@ -64,10 +68,6 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		return "", err
 	}
 
-	var networkInfo *NetworkInfo
-	if result != nil {
-		networkInfo = convertCNIResult2NetworkInfo(result)
-	}
 	if networkInfo != nil {
 		// Add network configuration of sandbox net ns to userpod
 		addNetworkInterfaceForPod(userpod, networkInfo)
@@ -112,8 +112,8 @@ func addNetworkInterfaceForPod(userpod *types.UserPod, info *NetworkInfo) {
 	ifaces := append([]*types.UserInterface{}, &types.UserInterface{
 		Ifname:  info.IfName,
 		Bridge:  info.BridgeName,
-		Ip:      info.Ip,
-		Mac:     info.Mac,
+		Ip:      info.Ip.String(),
+		Mac:     info.Mac.String(),
 		Gateway: info.Gateway,
 	})
 	userpod.Interfaces = ifaces
