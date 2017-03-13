@@ -30,14 +30,18 @@ func FindInPath(plugin string, paths []string) (string, error) {
 		return "", fmt.Errorf("no paths provided")
 	}
 
+	var fullpath string
 	for _, path := range paths {
-		for _, fe := range ExecutableFileExtensions {
-			fullpath := filepath.Join(path, plugin) + fe
-			if fi, err := os.Stat(fullpath); err == nil && fi.Mode().IsRegular() {
-				return fullpath, nil
-			}
+		full := filepath.Join(path, plugin)
+		if fi, err := os.Stat(full); err == nil && fi.Mode().IsRegular() {
+			fullpath = full
+			break
 		}
 	}
 
-	return "", fmt.Errorf("failed to find plugin %q in path %s", plugin, paths)
+	if fullpath == "" {
+		return "", fmt.Errorf("failed to find plugin %q in path %s", plugin, paths)
+	}
+
+	return fullpath, nil
 }
