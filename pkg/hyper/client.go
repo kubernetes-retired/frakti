@@ -19,6 +19,7 @@ package hyper
 import (
 	"fmt"
 	"io"
+	"net"
 	"strings"
 	"time"
 
@@ -52,7 +53,11 @@ type Client struct {
 
 // NewClient creates a new hyper client
 func NewClient(server string, timeout time.Duration) (*Client, error) {
-	conn, err := grpc.Dial(server, grpc.WithInsecure())
+	conn, err := grpc.Dial(server, grpc.WithInsecure(),
+		grpc.WithTimeout(timeout),
+		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+			return net.DialTimeout("tcp", addr, timeout)
+		}))
 	if err != nil {
 		return nil, err
 	}
