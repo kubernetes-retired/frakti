@@ -84,8 +84,14 @@ type PersistentCheckpointHandler struct {
 	store CheckpointStore
 }
 
-func NewPersistentCheckpointHandler() CheckpointHandler {
-	return &PersistentCheckpointHandler{store: &FileStore{path: filepath.Join(FraktiRootDir, sandboxCheckpointDir)}}
+func NewPersistentCheckpointHandler() (CheckpointHandler, error) {
+	checkpointDir := filepath.Join(FraktiRootDir, sandboxCheckpointDir)
+	if _, err := os.Stat(checkpointDir); os.IsNotExist(err) {
+		if err = os.MkdirAll(checkpointDir, 0755); err != nil && !os.IsExist(err) {
+			return nil, err
+		}
+	}
+	return &PersistentCheckpointHandler{store: &FileStore{path: checkpointDir}}, nil
 }
 
 func (handler *PersistentCheckpointHandler) CreateCheckpoint(podSandboxID string, checkpoint *PodSandboxCheckpoint) error {
