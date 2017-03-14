@@ -1,12 +1,17 @@
 {
 	"ImportPath": "k8s.io/frakti",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v74",
+	"GodepVersion": "v75",
 	"Packages": [
 		"github.com/onsi/ginkgo/ginkgo",
 		"./..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "bitbucket.org/ww/goautoneg",
+			"Comment": "null-5",
+			"Rev": "'75cd24fc2f2c2a2088577d12123ddee5f54e0675'"
+		},
 		{
 			"ImportPath": "cloud.google.com/go/compute/metadata",
 			"Comment": "v0.1.0-115-g3b1ae45",
@@ -26,6 +31,11 @@
 			"Rev": "70b2c90b260171e829f1ebd7c17f600c11858dbe"
 		},
 		{
+			"ImportPath": "github.com/Microsoft/go-winio",
+			"Comment": "v0.1.0",
+			"Rev": "8f9387ea7efabb228a981b9c381142be7667967f"
+		},
+		{
 			"ImportPath": "github.com/PuerkitoBio/purell",
 			"Comment": "v1.0.0",
 			"Rev": "8a290539e2e8629dbc4e6bad948158f790ec31f4"
@@ -38,6 +48,133 @@
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.6.2-10-g51fe59a",
 			"Rev": "51fe59aca108dc5680109e7b2051cbdcfa5a253c"
+		},
+		{
+			"ImportPath": "github.com/abbot/go-http-auth",
+			"Rev": "c0ef4539dfab4d21c8ef20ba2924f9fc6f186d35"
+		},
+		{
+			"ImportPath": "github.com/armon/circbuf",
+			"Rev": "bbbad097214e2918d8543d5201d12bfd7bca254d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/awserr",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/awsutil",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/client",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/client/metadata",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/corehandlers",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/credentials",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/credentials/endpointcreds",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/credentials/stscreds",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/defaults",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/ec2metadata",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/endpoints",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/request",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/session",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws/signer/v4",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/query",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/query/queryutil",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/rest",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/sts",
+			"Comment": "v1.6.10",
+			"Rev": "63ce630574a5ec05ecd8e8de5cea16332a5a684d"
+		},
+		{
+			"ImportPath": "github.com/beorn7/perks/quantile",
+			"Rev": "3ac7bf7a47d159a033b107610db8a1b6575507a4"
+		},
+		{
+			"ImportPath": "github.com/blang/semver",
+			"Comment": "v3.0.1",
+			"Rev": "31b736133b98f26d5e078ec9eb591666edfd091f"
 		},
 		{
 			"ImportPath": "github.com/containernetworking/cni/libcni",
@@ -80,6 +217,21 @@
 			"Rev": "5644a2f50e2d2d5ba0b474bc5bc55fea1925936d"
 		},
 		{
+			"ImportPath": "github.com/coreos/go-systemd/dbus",
+			"Comment": "v8-2-g4484981",
+			"Rev": "4484981625c1a6a2ecb40a390fcb6a9bcfee76e3"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-systemd/util",
+			"Comment": "v8-2-g4484981",
+			"Rev": "4484981625c1a6a2ecb40a390fcb6a9bcfee76e3"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/dlopen",
+			"Comment": "v2-8-gfa29b1d",
+			"Rev": "fa29b1d70f0beaddd4c7021607cc3c3be8ce94b8"
+		},
+		{
 			"ImportPath": "github.com/coreos/pkg/health",
 			"Comment": "v2-8-gfa29b1d",
 			"Rev": "fa29b1d70f0beaddd4c7021607cc3c3be8ce94b8"
@@ -93,6 +245,11 @@
 			"ImportPath": "github.com/coreos/pkg/timeutil",
 			"Comment": "v2-8-gfa29b1d",
 			"Rev": "fa29b1d70f0beaddd4c7021607cc3c3be8ce94b8"
+		},
+		{
+			"ImportPath": "github.com/coreos/rkt/api/v1alpha",
+			"Comment": "v1.11.0-59-ga83419b",
+			"Rev": "a83419be28ac626876f94a28b4df2dbc9eac7448"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
@@ -114,7 +271,27 @@
 			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
 		},
 		{
+			"ImportPath": "github.com/docker/docker/pkg/jsonmessage",
+			"Comment": "v1.11.2",
+			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/longpath",
+			"Comment": "v1.11.2",
+			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/mount",
+			"Comment": "v1.11.2",
+			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
 			"ImportPath": "github.com/docker/docker/pkg/stdcopy",
+			"Comment": "v1.11.2",
+			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/symlink",
 			"Comment": "v1.11.2",
 			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
 		},
@@ -132,6 +309,86 @@
 			"ImportPath": "github.com/docker/docker/pkg/term/windows",
 			"Comment": "v1.11.2",
 			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/client",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/client/transport",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/client/transport/cancellable",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/blkiodev",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/container",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/filters",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/network",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/reference",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/registry",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/strslice",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/time",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/engine-api/types/versions",
+			"Comment": "v0.3.1-78-gdea108d",
+			"Rev": "dea108d3aa0c67d7162a3fd8aa65f38a430019fd"
+		},
+		{
+			"ImportPath": "github.com/docker/go-connections/nat",
+			"Comment": "v0.2.0-2-gf549a93",
+			"Rev": "f549a9393d05688dff0992ef3efd8bbe6c628aeb"
+		},
+		{
+			"ImportPath": "github.com/docker/go-connections/sockets",
+			"Comment": "v0.2.0-2-gf549a93",
+			"Rev": "f549a9393d05688dff0992ef3efd8bbe6c628aeb"
+		},
+		{
+			"ImportPath": "github.com/docker/go-connections/tlsconfig",
+			"Comment": "v0.2.0-2-gf549a93",
+			"Rev": "f549a9393d05688dff0992ef3efd8bbe6c628aeb"
 		},
 		{
 			"ImportPath": "github.com/docker/go-units",
@@ -166,6 +423,11 @@
 			"Rev": "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
 		},
 		{
+			"ImportPath": "github.com/go-ini/ini",
+			"Comment": "v0-54-g2e44421",
+			"Rev": "2e44421e256d82ebbf3d4d4fcabe8930b905eff3"
+		},
+		{
 			"ImportPath": "github.com/go-openapi/jsonpointer",
 			"Rev": "46af16f9f7b149af66e5d1bd010e3574dc06de98"
 		},
@@ -180,6 +442,11 @@
 		{
 			"ImportPath": "github.com/go-openapi/swag",
 			"Rev": "1d0bd113de87027671077d3c71eb3ac5d7dbba72"
+		},
+		{
+			"ImportPath": "github.com/godbus/dbus",
+			"Comment": "v3",
+			"Rev": "c7fdd8b5cd55e87b4e1f4e372cdb1db61dd6c66f"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
@@ -319,8 +586,208 @@
 			"Rev": "8616e8ee5e20a1704615e6c8d7afcdac06087a67"
 		},
 		{
+			"ImportPath": "github.com/google/cadvisor/api",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/cache/memory",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/collector",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container/common",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container/docker",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container/libcontainer",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container/raw",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container/rkt",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/container/systemd",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/devicemapper",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/events",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/fs",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/healthz",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/http",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/http/mux",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/info/v1",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/info/v2",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/machine",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/manager",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/manager/watcher",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/manager/watcher/raw",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/manager/watcher/rkt",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/metrics",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/pages",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/pages/static",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/storage",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/summary",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/cloudinfo",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/cpuload",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/cpuload/netlink",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/docker",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/oomparser",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/sysfs",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/sysinfo",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/utils/tail",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/validate",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
+			"ImportPath": "github.com/google/cadvisor/version",
+			"Comment": "v0.24.0-alpha1-82-gc30a9e7",
+			"Rev": "c30a9e7d3642fffb422f08be34a7bbc15d69cdbf"
+		},
+		{
 			"ImportPath": "github.com/google/gofuzz",
 			"Rev": "44d81051d367757e1c7c6a5a86423ece9afcf63c"
+		},
+		{
+			"ImportPath": "github.com/jmespath/go-jmespath",
+			"Comment": "0.2.2",
+			"Rev": "3433f3ea46d9f8019119e7dd41274e112a2359a9"
 		},
 		{
 			"ImportPath": "github.com/jonboulle/clockwork",
@@ -346,6 +813,15 @@
 		{
 			"ImportPath": "github.com/mailru/easyjson/jwriter",
 			"Rev": "d5b7844b561a7bc640052f1b935f7b800330d7e0"
+		},
+		{
+			"ImportPath": "github.com/matttproud/golang_protobuf_extensions/pbutil",
+			"Rev": "fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a"
+		},
+		{
+			"ImportPath": "github.com/mistifyio/go-zfs",
+			"Comment": "v2.1.1-5-g1b4ae6f",
+			"Rev": "1b4ae6fb4e77b095934d4430860ff202060169f8"
 		},
 		{
 			"ImportPath": "github.com/mitchellh/go-wordwrap",
@@ -522,7 +998,27 @@
 			"Rev": "d59fa0ac68bb5dd932ee8d24eed631cdd519efc3"
 		},
 		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/apparmor",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
 			"ImportPath": "github.com/opencontainers/runc/libcontainer/cgroups",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/cgroups/fs",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/cgroups/systemd",
 			"Comment": "v1.0.0-rc2-14-g45c30e7",
 			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
 		},
@@ -532,12 +1028,92 @@
 			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
 		},
 		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/configs/validate",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/criurpc",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/keys",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/label",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/seccomp",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/selinux",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/stacktrace",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/system",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/user",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
+			"ImportPath": "github.com/opencontainers/runc/libcontainer/utils",
+			"Comment": "v1.0.0-rc2-14-g45c30e7",
+			"Rev": "45c30e75abfd52107b53048004a83165403ad0d1"
+		},
+		{
 			"ImportPath": "github.com/pborman/uuid",
 			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
 		},
 		{
+			"ImportPath": "github.com/prometheus/client_golang/prometheus",
+			"Comment": "0.7.0-52-ge51041b",
+			"Rev": "e51041b3fa41cece0dca035740ba6411905be473"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_model/go",
+			"Comment": "model-0.0.2-12-gfa8ad6f",
+			"Rev": "fa8ad6fec33561be4280a8f0514318c79d7f6cb6"
+		},
+		{
+			"ImportPath": "github.com/prometheus/common/expfmt",
+			"Rev": "ffe929a3f4c4faeaa10f2b9535c2b1be3ad15650"
+		},
+		{
+			"ImportPath": "github.com/prometheus/common/model",
+			"Rev": "ffe929a3f4c4faeaa10f2b9535c2b1be3ad15650"
+		},
+		{
+			"ImportPath": "github.com/prometheus/procfs",
+			"Rev": "454a56f35412459b5e684fd5ec0f9211b94f002a"
+		},
+		{
+			"ImportPath": "github.com/seccomp/libseccomp-golang",
+			"Rev": "1b506fc7c24eec5a3693cdcbed40d9c226cfc6a1"
+		},
+		{
 			"ImportPath": "github.com/spf13/pflag",
 			"Rev": "5ccb023bc27df288a957c5e994cd44fd19619465"
+		},
+		{
+			"ImportPath": "github.com/syndtr/gocapability/capability",
+			"Rev": "e7cb7fa329f456b3855136a2642b197bad7366ba"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
@@ -554,6 +1130,10 @@
 		{
 			"ImportPath": "github.com/vishvananda/netns",
 			"Rev": "2c9454e4fc6e2edc1a1c84e64ed3d6e662fb6991"
+		},
+		{
+			"ImportPath": "golang.org/x/exp/inotify",
+			"Rev": "292a51b8d262487dab23a588950e8052d63d9113"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
@@ -581,6 +1161,10 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/lex/httplex",
+			"Rev": "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
+		},
+		{
+			"ImportPath": "golang.org/x/net/proxy",
 			"Rev": "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
 		},
 		{
@@ -743,178 +1327,190 @@
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/api/errors",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/api/meta",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/api/resource",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/apimachinery",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/apimachinery/announced",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/apimachinery/registered",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/apis/meta/v1",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/conversion",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/conversion/queryparams",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/fields",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/labels",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/openapi",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/schema",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/serializer",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/serializer/json",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/serializer/protobuf",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/serializer/recognizer",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/serializer/streaming",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/runtime/serializer/versioning",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/selection",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/types",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
+		},
+		{
+			"ImportPath": "k8s.io/apimachinery/pkg/util/diff",
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/errors",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/framer",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/httpstream",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/httpstream/spdy",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/intstr",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/json",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/net",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/rand",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/runtime",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/sets",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/strategicpatch",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/validation",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/validation/field",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/wait",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/util/yaml",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/version",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/watch",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/third_party/forked/golang/json",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/third_party/forked/golang/netutil",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/third_party/forked/golang/reflect",
-			"Rev": "bb0944e83985eee62505a0386e7df9014cc55263"
+			"Rev": "21807b270ec15d19215659a5caa08b17f66d6f44"
+		},
+		{
+			"ImportPath": "k8s.io/apiserver/pkg/features",
+			"Rev": "18254ddaaab8024609bdf570493103036d72f86d"
 		},
 		{
 			"ImportPath": "k8s.io/apiserver/pkg/server/httplog",
+			"Rev": "18254ddaaab8024609bdf570493103036d72f86d"
+		},
+		{
+			"ImportPath": "k8s.io/apiserver/pkg/util/feature",
 			"Rev": "18254ddaaab8024609bdf570493103036d72f86d"
 		},
 		{
@@ -997,6 +1593,11 @@
 			"Rev": "1679e38db83a0dbe1ef86deab577eead47ce75e2"
 		},
 		{
+			"ImportPath": "k8s.io/client-go/tools/cache",
+			"Comment": "v2.0.0-alpha.0-41-g1679e38",
+			"Rev": "1679e38db83a0dbe1ef86deab577eead47ce75e2"
+		},
+		{
 			"ImportPath": "k8s.io/client-go/tools/clientcmd/api",
 			"Comment": "v2.0.0-alpha.0-41-g1679e38",
 			"Rev": "1679e38db83a0dbe1ef86deab577eead47ce75e2"
@@ -1042,12 +1643,22 @@
 			"Rev": "1679e38db83a0dbe1ef86deab577eead47ce75e2"
 		},
 		{
+			"ImportPath": "k8s.io/client-go/util/workqueue",
+			"Comment": "v2.0.0-alpha.0-41-g1679e38",
+			"Rev": "1679e38db83a0dbe1ef86deab577eead47ce75e2"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/api",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/api/install",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/api/service",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1148,6 +1759,16 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/apis/certificates/v1beta1",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/apis/componentconfig",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1287,7 +1908,22 @@
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/client/legacylisters",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/cloudprovider",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/credentialprovider",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/features",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1302,12 +1938,107 @@
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/cadvisor",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/cm",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/cm/util",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/container",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/custommetrics",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/dockershim",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/dockershim/cm",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/dockertools",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/dockertools/securitycontext",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/events",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/images",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/leaky",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/lifecycle",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/metrics",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/network",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/network/cni",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/network/hairpin",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/network/hostport",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/network/kubenet",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/prober/results",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/qos",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1332,6 +2063,16 @@
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/types",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/util/cache",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/kubelet/util/format",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
@@ -1342,7 +2083,42 @@
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/master/ports",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/proxy",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/proxy/healthcheck",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/proxy/iptables",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/security/apparmor",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/securitycontext",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/util",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/bandwidth",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1353,6 +2129,16 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/util/chown",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/dbus",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/ebtables",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1377,6 +2163,11 @@
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/iptables",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/util/labels",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
@@ -1387,12 +2178,57 @@
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/net/sets",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/oom",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/util/parsers",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/procfs",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/selinux",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/slice",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/strings",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/sysctl",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/tail",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/util/term",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/util/version",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
@@ -1403,6 +2239,31 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/volume/util",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/plugin/pkg/scheduler/api",
+			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
+			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache",
 			"Comment": "v1.6.0-alpha.1-248-g0e5cda9",
 			"Rev": "0e5cda9893931a76ae22b95a70c506d18332c18c"
 		},
