@@ -190,7 +190,10 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	code, cause, err := h.client.StopPod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, code, cause, err)
-		return err
+		err = h.checkpointHandler.RemoveCheckpoint(podSandboxID)
+		if err != nil {
+			glog.Errorf("Failed to remove checkpoint for sandbox %q: %v", podSandboxID, err)
+		}
 	}
 
 	// destroy the network namespace
@@ -216,7 +219,6 @@ func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
 
 	if err := h.checkpointHandler.RemoveCheckpoint(podSandboxID); err != nil {
 		glog.Errorf("Remove checkpoint of pod %s failed: %v", podSandboxID, err)
-		return err
 	}
 
 	return nil
