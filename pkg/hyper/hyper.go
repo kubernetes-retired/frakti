@@ -66,12 +66,16 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cn
 	if err != nil {
 		return nil, nil, err
 	}
+	persistentCheckpointHandler, err := NewPersistentCheckpointHandler()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	rt := &Runtime{
 		client:            hyperClient,
 		streamingServer:   streamingServer,
 		netPlugin:         netPlugin,
-		checkpointHandler: NewPersistentCheckpointHandler(),
+		checkpointHandler: persistentCheckpointHandler,
 	}
 
 	return rt, streamingServer, nil
