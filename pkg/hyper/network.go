@@ -43,6 +43,10 @@ func networkInfoFromNs(netns ns.NetNS) *NetworkInfo {
 		return nil
 	})
 
+	if result == nil {
+		return nil
+	}
+
 	br, err := getBridgeNameByIpCompare(result.Ip)
 	if err != nil {
 		return nil
