@@ -27,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/frakti/pkg/runtime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
@@ -560,15 +561,52 @@ func (s *FraktiManager) Status(ctx context.Context, req *kubeapi.StatusRequest) 
 func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesRequest) (*kubeapi.ListImagesResponse, error) {
 	glog.V(3).Infof("ListImages with request %s", req.String())
 
-	// NOTE: we only show image list of hyper runtime and assume alternative runtime images are the same
-	images, err := s.imageService.ListImages(req.GetFilter())
-	if err != nil {
-		glog.Errorf("ListImages from hyper image service failed: %v", err)
-		return nil, err
+	var (
+		lock       sync.Mutex
+		firstError error
+	)
+	catchError := func(err error) {
+		lock.Lock()
+		defer lock.Unlock()
+		if firstError == nil {
+			firstError = err
+		}
+	}
+
+	imageServiceList := []runtime.ImageService{s.imageService, s.alternativeRuntimeService}
+	serviceNameList := []string{"hyper image service", "alternative image service"}
+	imageMapList := make([]map[string]*kubeapi.Image, 2)
+
+	listImageFunc := func(i int) {
+		images, err := imageServiceList[i].ListImages(req.GetFilter())
+		if err != nil {
+			catchError(fmt.Errorf("ListImage from %s failed: %v", serviceNameList[i], err))
+			return
+		}
+		imageMapList[i] = make(map[string]*kubeapi.Image, len(images))
+		for _, image := range images {
+			imageMapList[i][image.Id] = image
+		}
+	}
+
+	workqueue.Parallelize(2, 2, listImageFunc)
+
+	if firstError != nil {
+		glog.Error(firstError)
+		return nil, firstError
+	}
+
+	// NOTE: we show intersection of image list of hyper and alternative runtime
+	intersectList := getImageListIntersection(imageMapList[0], imageMapList[1])
+
+	// if there is different in two sides, print the different if log lever is high enough
+	if glog.V(5) && len(imageMapList[0]) != len(intersectList) {
+		glog.Infof("Image black hole in %s:\n%v", serviceNameList[0], getImageListDifference(imageMapList[0], imageMapList[1]))
+		glog.Infof("Image black hole in %s:\n%v", serviceNameList[0], getImageListDifference(imageMapList[1], imageMapList[0]))
 	}
 
 	return &kubeapi.ListImagesResponse{
-		Images: images,
+		Images: intersectList,
 	}, nil
 }
 
@@ -641,18 +679,35 @@ func (s *FraktiManager) PullImage(ctx context.Context, req *kubeapi.PullImageReq
 func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImageRequest) (*kubeapi.RemoveImageResponse, error) {
 	glog.V(3).Infof("RemoveImage with request %s", req.String())
 
-	// NOTE: we use hyper images as the view of image list, so do it first and return error immediately when it fails
-	err := s.imageService.RemoveImage(req.Image)
-	if err != nil {
-		glog.Errorf("RemoveImage from hyper image service failed: %v", err)
-		return nil, err
-	} else {
-		err = s.alternativeImageService.RemoveImage(req.Image)
-		if err != nil {
-			glog.Errorf("RemoveImage hyper image succeed but from alternative image service failed: %v", err)
-			return nil, err
+	var (
+		lock       sync.Mutex
+		firstError error
+	)
+	catchError := func(err error) {
+		lock.Lock()
+		defer lock.Unlock()
+		if firstError == nil {
+			firstError = err
 		}
 	}
+
+	imageServiceList := []runtime.ImageService{s.imageService, s.alternativeRuntimeService}
+	serviceNameList := []string{"hyper image service", "alternative image service"}
+
+	removeImageFunc := func(i int) {
+		err := imageServiceList[i].RemoveImage(req.Image)
+		if err != nil {
+			catchError(fmt.Errorf("RemoveImage from %s failed: %v", serviceNameList[i], err))
+		}
+	}
+
+	workqueue.Parallelize(2, 2, removeImageFunc)
+
+	if firstError != nil {
+		glog.Error(firstError)
+		return nil, firstError
+	}
+
 	return &kubeapi.RemoveImageResponse{}, nil
 }
 
@@ -671,4 +726,32 @@ func isOSContainerRuntimeRequired(podConfig *kubeapi.PodSandboxConfig) bool {
 		}
 	}
 	return false
+}
+
+// getImageListIntersection return the intersection of images in mapA and mapB
+func getImageListIntersection(mapA, mapB map[string]*kubeapi.Image) []*kubeapi.Image {
+	var result []*kubeapi.Image
+	intersecIDList := sets.StringKeySet(mapA).Intersection(sets.StringKeySet(mapB)).UnsortedList()
+	for _, imageID := range intersecIDList {
+		kubeImage := &kubeapi.Image{
+			Id:          imageID,
+			RepoTags:    sets.NewString(mapA[imageID].RepoTags...).Intersection(sets.NewString(mapB[imageID].RepoTags...)).UnsortedList(),
+			RepoDigests: sets.NewString(mapA[imageID].RepoDigests...).Intersection(sets.NewString(mapB[imageID].RepoDigests...)).UnsortedList(),
+			Size_:       mapA[imageID].Size_,
+			Uid:         mapA[imageID].Uid,
+			Username:    mapA[imageID].Username,
+		}
+		result = append(result, kubeImage)
+	}
+	return result
+}
+
+// getImageListIntersection return the difference of images in mapA from mapB
+func getImageListDifference(mapA, mapB map[string]*kubeapi.Image) []*kubeapi.Image {
+	var diffList []*kubeapi.Image
+	diff := sets.StringKeySet(mapA).Difference(sets.StringKeySet(mapB)).UnsortedList()
+	for _, i := range diff {
+		diffList = append(diffList, mapA[i])
+	}
+	return diffList
 }
