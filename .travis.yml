@@ -2,6 +2,9 @@ language: go
 sudo: required
 dist: trusty
 
+services:
+  - docker
+
 go:
   - 1.7.x
   - 1.8.x
@@ -10,6 +13,7 @@ go:
 go_import_path: k8s.io/frakti
 
 install:
+  - docker run -v /usr/local/bin:/target jpetazzo/nsenter
   - go install -v $(go list ./... | grep -v /vendor/)
   - hack/install-protoc.sh
   - hack/install-hypercontainer.sh

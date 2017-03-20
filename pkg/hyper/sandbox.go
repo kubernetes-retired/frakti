@@ -222,9 +222,9 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	return nil
 }
 
-// DeletePodSandbox deletes the sandbox. If there are any running containers in the
+// RemovePodSandbox deletes the sandbox. If there are any running containers in the
 // sandbox, they should be force deleted.
-func (h *Runtime) DeletePodSandbox(podSandboxID string) error {
+func (h *Runtime) RemovePodSandbox(podSandboxID string) error {
 	err := h.client.RemovePod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Remove pod %s failed: %v", podSandboxID, err)

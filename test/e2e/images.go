@@ -53,11 +53,18 @@ func testPublicImage(client internalapi.ImageManagerService, image string) {
 		Image: image,
 	}
 	By("get image list")
-	imageList, err := client.ListImages(&kubeapi.ImageFilter{
+	// List all images, then use filter to get expected ones.
+	// NOTE: We have to do this because ListImages(filter) only works
+	// for docker 1.13+, but frakti && this test should work for old
+	// docker versions. Remove this when docker got upgraded.
+	imageList, err := client.ListImages(nil)
+	framework.ExpectNoError(err, "Failed to get image list: %v", err)
+
+	filteredImage := filterImageFromList(imageList, &kubeapi.ImageFilter{
 		Image: &imageSpec,
 	})
-	framework.ExpectNoError(err, "Failed to get image list: %v", err)
-	Expect(len(imageList)).To(Equal(1), "should have one image in list")
+
+	Expect(len(filteredImage)).To(Equal(1), "should have one image in list")
 
 	By("remove image")
 	err = client.RemoveImage(&imageSpec)
@@ -69,6 +76,33 @@ func testPublicImage(client internalapi.ImageManagerService, image string) {
 	})
 	framework.ExpectNoError(err, "Failed to get image list: %v", err)
 	Expect(len(imageList)).To(Equal(0), "should have none image in list")
+}
+
+// filterImageFromList filter out specified image from image list
+func filterImageFromList(images []*kubeapi.Image, filter *kubeapi.ImageFilter) []*kubeapi.Image {
+	var results []*kubeapi.Image
+	for _, img := range images {
+		if filter != nil && filter.GetImage() != nil && filter.GetImage().Image != "" {
+			image := filter.GetImage().Image
+			if !inList(image, img.RepoTags) && !inList(image, img.RepoDigests) {
+				continue
+			}
+		}
+
+		results = append(results, img)
+	}
+	return results
+}
+
+// inList checks if a string is in a list
+func inList(in string, list []string) bool {
+	for _, str := range list {
+		if in == str {
+			return true
+		}
+	}
+
+	return false
 }
 
 // TODO: need some test case with private image

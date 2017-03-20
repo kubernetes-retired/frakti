@@ -81,6 +81,11 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cn
 	return rt, streamingServer, nil
 }
 
+// ServiceName method is used to log out with service's name
+func (h *Runtime) ServiceName() string {
+	return "hyper runtime service"
+}
+
 // Version returns the runtime name, runtime version and runtime API version
 func (h *Runtime) Version(kubeApiVersion string) (*kubeapi.VersionResponse, error) {
 	version, apiVersion, err := h.client.GetVersion()
