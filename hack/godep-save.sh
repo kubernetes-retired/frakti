@@ -21,9 +21,27 @@ set -o pipefail
 FRAKTI_ROOT=$(dirname "${BASH_SOURCE}")/..
 source "${FRAKTI_ROOT}/hack/lib/init.sh"
 GODEP="${GODEP:-godep}"
+PRE_RESTORE_FLAG="--pre-restore"
 
+# Some special pkg dependencies we may need restore them
+# before godep-save when try to update
+PRE_RESTORE_PKG=(
+  "k8s.io/client-go"
+)
 
-cd ${FRAKTI_ROOT}
+if [ $# -gt 0 ]; then
+  if [ "$1" = "$PRE_RESTORE_FLAG" ]; then
+    for pkg in ${PRE_RESTORE_PKG[@]}
+    do
+      cd ${GOPATH}/src/$pkg
+      ${GODEP} restore
+      echo "- Pre-restore pkg $pkg"
+    done
+  else
+    echo "For now, we only support '--pre-restore' flag"
+    exit 1
+  fi
+fi
 
 # Some things we want in godeps aren't code dependencies, so ./...
 # won't pick them up.
@@ -31,6 +49,8 @@ REQUIRED_BINS=(
   "github.com/onsi/ginkgo/ginkgo"
   "./..."
 )
+
+cd ${FRAKTI_ROOT}
 
 pushd "${FRAKTI_ROOT}" > /dev/null
   GO15VENDOREXPERIMENT=1 ${GODEP} save "${REQUIRED_BINS[@]}"
