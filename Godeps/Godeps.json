@@ -1,7 +1,7 @@
 {
 	"ImportPath": "k8s.io/frakti",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v75",
+	"GodepVersion": "v79",
 	"Packages": [
 		"github.com/onsi/ginkgo/ginkgo",
 		"./..."
@@ -1511,6 +1511,10 @@
 		},
 		{
 			"ImportPath": "k8s.io/apiserver/pkg/util/feature",
+			"Rev": "18254ddaaab8024609bdf570493103036d72f86d"
+		},
+		{
+			"ImportPath": "k8s.io/apiserver/pkg/util/flag",
 			"Rev": "18254ddaaab8024609bdf570493103036d72f86d"
 		},
 		{
