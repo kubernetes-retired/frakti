@@ -24,7 +24,7 @@ frakti: $(shell $(LOCALKUBEFILES))
 
 .PHONY: install
 install:
-	cp -f ./out/frakti /usr/local/bin
+	cp -f ./out/frakti /usr/bin
 
 clean:
 	rm -rf ${BUILD_DIR}
