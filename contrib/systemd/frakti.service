@@ -1,0 +1,22 @@
+[Unit]
+Description=Hypervisor-based container runtime for Kubernetes
+Documentation=https://github.com/kubernetes/frakti
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/frakti --v=3 \
+          --log-dir=/var/log/frakti \
+          --logtostderr=false \
+          --listen=/var/run/frakti.sock \
+          --streaming-server-addr=%H \
+          --hyper-endpoint=127.0.0.1:22318
+MountFlags=shared
+TasksMax=8192
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=infinity
+TimeoutStartSec=0
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
