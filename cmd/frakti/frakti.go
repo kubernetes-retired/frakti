@@ -23,10 +23,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 
-	"k8s.io/apiserver/pkg/util/flag"
 	"k8s.io/frakti/pkg/alternativeruntime"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
+	"k8s.io/frakti/pkg/util/flags"
 	"k8s.io/frakti/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
@@ -59,7 +59,7 @@ var (
 )
 
 func main() {
-	flag.InitFlags()
+	flags.InitFlags()
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
