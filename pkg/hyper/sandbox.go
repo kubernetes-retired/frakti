@@ -26,6 +26,7 @@ import (
 	"github.com/containernetworking/cni/pkg/ns"
 	"golang.org/x/sys/unix"
 	"k8s.io/frakti/pkg/hyper/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 )
 
@@ -131,7 +132,7 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 		cgroupParent = linuxConfig.CgroupParent
 	}
 
-	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, BestEffort) {
+	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, string(v1.PodQOSBestEffort)) {
 		cpuNumber, err = getCpuLimitFromCgroup(cgroupParent)
 		if err != nil {
 			return nil, err
@@ -144,7 +145,7 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 	} else {
 		// If pod level QoS is disabled, or this pod is a BE, use default value instead.
 		// NOTE: thus actually changes BE to guaranteed. But generally, HyperContainer should not be used for BE workload,
-		// it only make sense when we allow multiple runtime in one node.
+		// and we now allow multiple runtime in one node.
 		cpuNumber = int32(defaultCPUNumber)
 		memoryinMegabytes = int32(defaultMemoryinMegabytes)
 	}
