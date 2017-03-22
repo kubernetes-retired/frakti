@@ -43,10 +43,6 @@ const (
 	// fraktiAnnotationLabel is used to save annotations into labels
 	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
 
-	// BestEffort defines the BE qos pod
-	// we can not import `pkg/kubelet/qos` because it redefines `log_dir`, conflicts
-	BestEffort = "BestEffort"
-
 	// default resources while the pod level qos of kubelet pod is not specified.
 	defaultCPUNumber         = 1
 	defaultMemoryinMegabytes = 64
@@ -312,7 +308,15 @@ func getCpuLimitFromCgroup(cgroupParent string) (int32, error) {
 
 	// HyperContainer only support int32 vcpu number, and we need to use `math.Ceil` to make sure vcpu number is always enough.
 	vcpuNumber := float64(cpuQuota) / float64(cpuPeriod)
-	return int32(math.Ceil(vcpuNumber)), nil
+	hyperCPUNumber := int32(math.Ceil(vcpuNumber))
+
+	// This is needed when pod is burstable but no cpu limit is set, then cpuQuota will be -1, hyperCPUNumber
+	// will be calculate to 0
+	if hyperCPUNumber < defaultCPUNumber {
+		hyperCPUNumber = defaultCPUNumber
+	}
+
+	return hyperCPUNumber, nil
 }
 
 // readCgroupFileToInt64 reads contents from given `cgroupPath/cgroupFile` and returns its int64 value
@@ -342,7 +346,10 @@ func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
 	}
 
 	memoryinMegabytes := int32(memoryInBytes / MiB)
+
 	// HyperContainer requires at least 64Mi memory
+	// And this also protect when pod is burstable but no memory limit is set,
+	// then frakti will read a illegal (larger than int32) value and got memoryinMegabytes < 0
 	if memoryinMegabytes < defaultMemoryinMegabytes {
 		memoryinMegabytes = defaultMemoryinMegabytes
 	}
