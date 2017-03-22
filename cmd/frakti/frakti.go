@@ -17,15 +17,17 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
 	"github.com/golang/glog"
+	"github.com/spf13/pflag"
 
+	"k8s.io/apiserver/pkg/util/flag"
 	"k8s.io/frakti/pkg/alternativeruntime"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
+	"k8s.io/frakti/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
@@ -37,26 +39,28 @@ const (
 )
 
 var (
-	version = flag.Bool("version", false, "Print version and exit")
-	listen  = flag.String("listen", "/var/run/frakti.sock",
+	version = pflag.Bool("version", false, "Print version and exit")
+	listen  = pflag.String("listen", "/var/run/frakti.sock",
 		"The sockets to listen on, e.g. /var/run/frakti.sock")
-	hyperEndpoint = flag.String("hyper-endpoint", "127.0.0.1:22318",
+	hyperEndpoint = pflag.String("hyper-endpoint", "127.0.0.1:22318",
 		"The endpoint for connecting hyperd, e.g. 127.0.0.1:22318")
-	streamingServerPort = flag.String("streaming-server-port", "22521",
+	streamingServerPort = pflag.String("streaming-server-port", "22521",
 		"The port for the streaming server to serve on, e.g. 22521")
-	streamingServerAddress = flag.String("streaming-server-addr", "0.0.0.0",
+	streamingServerAddress = pflag.String("streaming-server-addr", "0.0.0.0",
 		"The IP address for the streaming server to serve on, e.g. 0.0.0.0")
-	cniNetDir = flag.String("cni-net-dir", "/etc/cni/net.d",
+	cniNetDir = pflag.String("cni-net-dir", "/etc/cni/net.d",
 		"The directory for putting cni configuration file")
-	cniPluginDir = flag.String("cni-plugin-dir", "/opt/cni/bin",
+	cniPluginDir = pflag.String("cni-plugin-dir", "/opt/cni/bin",
 		"The directory for putting cni plugin binary file")
-	alternativeRuntimeEndpoint = flag.String("docker-endpoint", "unix:///var/run/docker.sock",
+	alternativeRuntimeEndpoint = pflag.String("docker-endpoint", "unix:///var/run/docker.sock",
 		"The endpoint of alternative runtime to communicate with")
-	enableAlternativeRuntime = flag.Bool("enable-alternative-runtime", true, "Enable alternative runtime to handle OS containers, default is true")
+	enableAlternativeRuntime = pflag.Bool("enable-alternative-runtime", true, "Enable alternative runtime to handle OS containers, default is true")
 )
 
 func main() {
-	flag.Parse()
+	flag.InitFlags()
+	logs.InitLogs()
+	defer logs.FlushLogs()
 
 	if *version {
 		glog.Infof("frakti version: %s\n", fraktiVersion)
