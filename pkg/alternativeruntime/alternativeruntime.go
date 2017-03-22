@@ -47,7 +47,7 @@ func (a *AternativeRuntime) ServiceName() string {
 	return "alternative runtime service"
 }
 
-func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir string, cniPluginDir string) (*AternativeRuntime, error) {
+func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, cgroupDriver string) (*AternativeRuntime, error) {
 	// For now we use docker as the only supported alternative runtime
 	glog.Infof("Initialize alternative runtime: docker runtime\n")
 
@@ -78,6 +78,16 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 	}
 	var nl *noOpLegacyHost
 	pluginSettings.LegacyRuntimeHost = nl
+	// set cgroup driver to dockershim
+	dockerInfo, err := dockerClient.Info()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get info from docker: %v", err)
+	}
+	if len(dockerInfo.CgroupDriver) == 0 {
+		glog.Warningf("No cgroup driver is set in Docker, use frakti configuration: %q", cgroupDriver)
+	} else if dockerInfo.CgroupDriver != cgroupDriver {
+		return nil, fmt.Errorf("misconfiguration: frakti cgroup driver: %q is different from docker cgroup driver: %q", dockerInfo.CgroupDriver, cgroupDriver)
+	}
 	ds, err := dockershim.NewDockerService(
 		dockerClient,
 		kubeCfg.SeccompProfileRoot,
@@ -85,7 +95,7 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 		streamingConfig,
 		&pluginSettings,
 		kubeCfg.RuntimeCgroups,
-		kubeCfg.CgroupDriver,
+		cgroupDriver,
 		&dockertools.NativeExecHandler{},
 	)
 	if err != nil {

@@ -55,6 +55,7 @@ var (
 	alternativeRuntimeEndpoint = pflag.String("docker-endpoint", "unix:///var/run/docker.sock",
 		"The endpoint of alternative runtime to communicate with")
 	enableAlternativeRuntime = pflag.Bool("enable-alternative-runtime", true, "Enable alternative runtime to handle OS containers, default is true")
+	cgroupDriver             = pflag.String("cgroup-driver", "cgroupfs", "Driver that the frakti uses to manipulate cgroups on the host. *SHOULD BE SAME AS* kubelet cgroup driver configuration.  Possible values: 'cgroupfs', 'systemd'")
 )
 
 func main() {
@@ -65,6 +66,11 @@ func main() {
 	if *version {
 		glog.Infof("frakti version: %s\n", fraktiVersion)
 		os.Exit(0)
+	}
+
+	if *cgroupDriver != "cgroupfs" && *cgroupDriver != "systemd" {
+		glog.Error("cgroup-driver flag should only be set as 'cgroupfs' or 'systemd'")
+		os.Exit(1)
 	}
 
 	// 1. Initialize hyper runtime and streaming server
@@ -81,6 +87,7 @@ func main() {
 		getAlternativeStreamingConfig(),
 		*cniNetDir,
 		*cniPluginDir,
+		*cgroupDriver,
 	)
 	if err != nil && *enableAlternativeRuntime {
 		glog.Errorf("Initialize alternative runtime failed: %v", err)
