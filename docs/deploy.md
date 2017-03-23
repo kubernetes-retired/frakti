@@ -180,13 +180,13 @@ systemctl start frakti
 On Ubuntu 16.04+:
 
 ```sh
-apt-get install -y kubelet kubeadm kubectl kubernetes-cni
+apt-get install -y kubelet kubeadm kubectl
 ```
 
 On CentOS 7:
 
 ```sh
-yum install -y kubelet kubeadm kubectl kubernetes-cni
+yum install -y kubelet kubeadm kubectl
 ```
 
 > Note that there are no kubernete v1.6 rpms on `yum.kubernetes.io`, so it needs to be fetched from `dl.k8s.io`:
