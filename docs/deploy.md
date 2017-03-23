@@ -8,6 +8,7 @@ Updated: 3/21/2017
     - [Install hyperd](#install-hyperd)
     - [Install docker](#install-docker)
     - [Install frakti](#install-frakti)
+    - [Install CNI](#install-cni)
     - [Install kubelet](#install-kubelet)
   - [Setting up the master node](#setting-up-the-worker-nodes)
   - [Setting up the worker nodes](#setting-up-the-worker-nodes)
@@ -79,8 +80,7 @@ systemctl start docker
 ### Install frakti
 
 ```sh
-# TODO: get frakti from releases
-curl -sSL https://storage.googleapis.com/frakti/frakti -o /usr/bin/frakti
+curl -sSL https://github.com/kubernetes/frakti/releases/download/v0.1/frakti -o /usr/bin/frakti
 chmod +x /usr/bin/frakti
 cat <<EOF > /lib/systemd/system/frakti.service
 [Unit]
@@ -106,12 +106,9 @@ Restart=on-abnormal
 [Install]
 WantedBy=multi-user.target
 EOF
-
-systemctl enable frakti
-systemctl start frakti
 ```
 
-### Install kubelet
+### Install CNI
 
 On Ubuntu 16.04+:
 
@@ -122,7 +119,7 @@ cat <<EOF > /etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial-unstable main
 EOF
 apt-get update
-apt-get install -y kubelet kubeadm kubectl kubernetes-cni
+apt-get install -y kubernetes-cni
 ```
 
 On CentOS 7:
@@ -139,21 +136,10 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF
 setenforce 0
-yum install -y kubelet kubeadm kubectl kubernetes-cni
+yum install -y kubernetes-cni
 ```
 
-> Note that there are no kubernete v1.6 rpms on `yum.kubernetes.io`, so it needs to be fetched from `dl.k8s.io`:
-
-```sh
-# Download latest release of kubelet and kubectl
-# TODO: remove this after the stable v1.6 release
-curl -SL https://dl.k8s.io/v1.6.0-beta.4/kubernetes-server-linux-amd64.tar.gz -o kubernetes-server-linux-amd64.tar.gz
-tar zxvf kubernetes-server-linux-amd64.tar.gz
-/bin/cp -f kubernetes/server/bin/{kubelet,kubeadm,kubectl} /usr/bin/
-rm -rf kubernetes-server-linux-amd64.tar.gz
-```
-
-Configure cni network:
+Configure CNI networks:
 
 ```sh
 mkdir -p /etc/cni/net.d
@@ -180,6 +166,38 @@ cat >/etc/cni/net.d/99-loopback.conf <<-EOF
     "type": "loopback"
 }
 EOF
+```
+
+### Start frakti
+
+```sh
+systemctl enable frakti
+systemctl start frakti
+```
+
+### Install kubelet
+
+On Ubuntu 16.04+:
+
+```sh
+apt-get install -y kubelet kubeadm kubectl
+```
+
+On CentOS 7:
+
+```sh
+yum install -y kubelet kubeadm kubectl
+```
+
+> Note that there are no kubernete v1.6 rpms on `yum.kubernetes.io`, so it needs to be fetched from `dl.k8s.io`:
+
+```sh
+# Download latest release of kubelet and kubectl
+# TODO: remove this after the stable v1.6 release
+curl -SL https://dl.k8s.io/v1.6.0-beta.4/kubernetes-server-linux-amd64.tar.gz -o kubernetes-server-linux-amd64.tar.gz
+tar zxvf kubernetes-server-linux-amd64.tar.gz
+/bin/cp -f kubernetes/server/bin/{kubelet,kubeadm,kubectl} /usr/bin/
+rm -rf kubernetes-server-linux-amd64.tar.gz
 ```
 
 Configure kubelet with frakti runtime:
