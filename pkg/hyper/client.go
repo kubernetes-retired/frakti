@@ -237,8 +237,12 @@ func (c *Client) RemoveContainer(containerID string) error {
 
 // StopContainer stops a hyper container
 func (c *Client) StopContainer(containerID string, timeout int64) error {
-	if timeout <= 0 {
-		return fmt.Errorf("Timeout can not be %d, it must be greater than zero.", timeout)
+	ctxTimeout := time.Duration(timeout) * time.Second
+	if ctxTimeout < hyperContextTimeout {
+		ctxTimeout = hyperContextTimeout
+	} else {
+		// extend 5s give hyperd enough time to response if timeout
+		ctxTimeout += time.Duration(5) * time.Second
 	}
 
 	// do checks about container status
@@ -250,23 +254,12 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 		glog.V(3).Infof("Container %q is already stopped, skip", containerID)
 		return nil
 	}
+	ctx, cancel := getContextWithTimeout(ctxTimeout)
+	defer cancel()
 
-	ch := make(chan error, 1)
+	_, err = c.client.ContainerStop(ctx, &types.ContainerStopRequest{ContainerID: containerID, Timeout: timeout})
 
-	go func(containerID string) {
-		ctx, cancel := getContextWithTimeout(hyperContextTimeout)
-		defer cancel()
-
-		_, err := c.client.ContainerStop(ctx, &types.ContainerStopRequest{ContainerID: containerID})
-		ch <- err
-	}(containerID)
-
-	select {
-	case <-time.After(time.Duration(timeout) * time.Second):
-		return fmt.Errorf("Stop container %s timeout", containerID)
-	case err := <-ch:
-		return err
-	}
+	return err
 }
 
 // GetImageInfo gets the information of the image.
