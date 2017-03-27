@@ -51,14 +51,6 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 	// For now we use docker as the only supported alternative runtime
 	glog.Infof("Initialize alternative runtime: docker runtime\n")
 
-	// If we use alternative runtime, we should use CNI. So let's check if CNI directories are properly configured
-	if _, err := os.Stat(cniNetDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("dockershim requires CNI network, but %s does not exist", cniNetDir)
-	}
-	if _, err := os.Stat(cniPluginDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("dockershim requires CNI network, but %s does not exist", cniPluginDir)
-	}
-
 	kubeCfg := &componentconfigv1alpha1.KubeletConfiguration{}
 	componentconfigv1alpha1.SetDefaults_KubeletConfiguration(kubeCfg)
 	dockerClient := dockertools.ConnectToDockerOrDie(
