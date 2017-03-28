@@ -108,11 +108,13 @@ func (h *Runtime) Status() (*kubeapi.RuntimeStatus, error) {
 		Type:   kubeapi.RuntimeReady,
 		Status: true,
 	}
-	// Always set networkReady for now.
-	// TODO: get real network status when network plugin is enabled.
+	var netReady bool
+	if err := h.netPlugin.Status(); err == nil {
+		netReady = true
+	}
 	networkReady := &kubeapi.RuntimeCondition{
 		Type:   kubeapi.NetworkReady,
-		Status: true,
+		Status: netReady,
 	}
 	conditions := []*kubeapi.RuntimeCondition{runtimeReady, networkReady}
 	if _, _, err := h.client.GetVersion(); err != nil {
