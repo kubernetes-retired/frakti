@@ -142,10 +142,9 @@ func (c *Client) RemovePod(podID string) error {
 		&types.PodRemoveRequest{PodID: podID},
 	)
 	if err != nil {
-		if resp != nil && resp.Code == errorCodePodNotFound {
+		if isPodNotFoundError(err, podID) || (resp != nil && resp.Code == errorCodePodNotFound) {
 			return nil
 		}
-
 		return err
 	}
 
