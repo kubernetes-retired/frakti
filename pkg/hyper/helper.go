@@ -397,3 +397,15 @@ func isPodSandboxRunning(client *Client, podID string) (bool, error) {
 
 	return podInfo.Status.Phase == "Running", nil
 }
+
+// isPodNotFoundError returns if error type is not found in hyperd
+func isPodNotFoundError(err error, podID string) bool {
+	if err != nil {
+		errString := err.Error()
+		if strings.Contains(errString, fmt.Sprintf("Can not get Pod info with pod ID(%s)", podID)) ||
+			strings.Contains(errString, fmt.Sprintf("Can not find that Pod(%s)", podID)) {
+			return true
+		}
+	}
+	return false
+}

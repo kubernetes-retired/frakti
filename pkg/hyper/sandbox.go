@@ -191,12 +191,11 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	code, cause, err := h.client.StopPod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, code, cause, err)
-		if err.Error() == fmt.Sprintf("Can not get Pod info with pod ID(%s)", podSandboxID) || err.Error() == fmt.Sprintf("Can not find pod(%s)", podSandboxID) {
+		if isPodNotFoundError(err, podSandboxID) {
 			// destroy the network namespace
 			err = h.netPlugin.TearDownPod(netNsPath, podSandboxID)
 			if err != nil {
 				glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
-
 			}
 
 			unix.Unmount(netNsPath, unix.MNT_DETACH)

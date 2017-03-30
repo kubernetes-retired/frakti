@@ -200,7 +200,7 @@ func (s *FraktiManager) RemovePodSandbox(ctx context.Context, req *kubeapi.Remov
 	glog.V(3).Infof("RemovePodSandbox from runtime service with request %s", req.String())
 
 	runtimeService, _ := s.getRuntimeService(req.PodSandboxId)
-	err := s.hyperRuntimeService.RemovePodSandbox(req.PodSandboxId)
+	err := runtimeService.RemovePodSandbox(req.PodSandboxId)
 	if err != nil {
 		glog.Errorf("RemovePodSandbox from %s failed: %v", runtimeService.ServiceName(), err)
 		return nil, err
