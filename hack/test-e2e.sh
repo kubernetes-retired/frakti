@@ -119,7 +119,7 @@ EOF'
 EOF'
 
   # build cni plugins and copy to specified folder
-  ./build
+  ./build.sh
   sudo mkdir -p /opt/cni/bin
   sudo cp bin/* /opt/cni/bin/
 }
