@@ -37,7 +37,7 @@ function start_frakti() {
     sudo "${FRAKTI_OUTPUT_BINDIR}/frakti" \
         --listen="${FRAKTI_LISTEN_ADDR}" \
         --hyper-endpoint="127.0.0.1:${HYPERD_PORT}" \
-        --log_dir=${FRAKTI_TEMP} \
+        --logtostderr \
         --v=3 1>&2 & \
     FRAKTI_PID=$!
 }
@@ -72,9 +72,9 @@ __EOF__
       #--v=1 \
     sudo "${HYPERD_BINARY_PATH}" \
       --host="tcp://127.0.0.1:${hyper_api_port}" \
-      --log_dir=${HYPERD_TEMP} \
+      --logtostderr \
       --v=3 \
-      --config="${config}" &>/dev/null &
+      --config="${config}" &
     HYPERD_PID=$!
     # wait hyperd start
     frakti::util::wait_for_url "http://127.0.0.1:${hyper_api_port}/info" "hyper-info"
