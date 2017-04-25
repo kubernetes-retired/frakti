@@ -38,7 +38,7 @@ function start_frakti() {
         --listen="${FRAKTI_LISTEN_ADDR}" \
         --hyper-endpoint="127.0.0.1:${HYPERD_PORT}" \
         --logtostderr \
-        --v=3 1>&2 & \
+        --v=12 1>&2 & \
     FRAKTI_PID=$!
 }
 
