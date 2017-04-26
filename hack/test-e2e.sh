@@ -38,7 +38,7 @@ function start_frakti() {
         --listen="${FRAKTI_LISTEN_ADDR}" \
         --hyper-endpoint="127.0.0.1:${HYPERD_PORT}" \
         --logtostderr \
-        --v=12 1>&2 & \
+        --v=5 1>&2 & \
     FRAKTI_PID=$!
 }
 
@@ -69,7 +69,6 @@ Initrd=${HYPER_INITRD_PATH}
 StorageDriver=${HYPER_STORAGE_DRIVER}
 gRPCHost=127.0.0.1:${HYPERD_PORT}
 __EOF__
-      #--v=1 \
     sudo "${HYPERD_BINARY_PATH}" \
       --host="tcp://127.0.0.1:${hyper_api_port}" \
       --logtostderr \
@@ -87,7 +86,8 @@ function install_remote_hyperd() {
 
 function configure_cni() {
   # get cni repo
-  go get -d github.com/containernetworking/cni/...
+  mkdir -p $GOPATH/src/github.com/containernetworking
+  git clone https://github.com/containernetworking/cni $GOPATH/src/github.com/containernetworking/cni
   cd $GOPATH/src/github.com/containernetworking/cni
 
   # create network configure file
