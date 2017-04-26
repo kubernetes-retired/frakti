@@ -49,11 +49,11 @@ frakti::hyper::build_hyperstart() {
   make
 
   HYPER_KERNEL_PATH="${hyperstart_root}/build/kernel"
-  if [! -f ${HYPER_KERNEL_PATH}]; then
+  if [ ! -f ${HYPER_KERNEL_PATH} ]; then
       return 1
   fi
   HYPER_INITRD_PATH="${hyperstart_root}/build/hyper-initrd.img"
-  if [! -f ${HYPER_INITRD_PATH}]; then
+  if [ ! -f ${HYPER_INITRD_PATH} ]; then
       return 1
   fi
 }
@@ -71,7 +71,7 @@ frakti::hyper::build_hyperd() {
   make
 
   HYPERD_BINARY_PATH="${hyperd_root}/hyperd"
-  if [! -f ${HYPERD_BINARY_PATH}]; then
+  if [ ! -f ${HYPERD_BINARY_PATH} ]; then
       return 1
   fi
 }
