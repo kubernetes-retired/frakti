@@ -39,7 +39,7 @@ var (
 	lastUUID uuid.UUID
 
 	//default network for cni configure
-	DefaultNet string = "10.10.0.0/16"
+	DefaultNet string = "10.30.0.0/16"
 )
 
 func LoadDefaultClient() (*FraktiClient, error) {
