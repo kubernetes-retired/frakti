@@ -11,14 +11,11 @@ import (
 type Addr struct {
 	*net.IPNet
 	Label string
-	Flags int
-	Scope int
-	Peer  *net.IPNet
 }
 
 // String returns $ip/$netmask $label
 func (a Addr) String() string {
-	return strings.TrimSpace(fmt.Sprintf("%s %s", a.IPNet, a.Label))
+	return fmt.Sprintf("%s %s", a.IPNet, a.Label)
 }
 
 // ParseAddr parses the string representation of an address in the
@@ -43,11 +40,4 @@ func (a Addr) Equal(x Addr) bool {
 	sizeb, _ := x.Mask.Size()
 	// ignore label for comparison
 	return a.IP.Equal(x.IP) && sizea == sizeb
-}
-
-func (a Addr) PeerEqual(x Addr) bool {
-	sizea, _ := a.Peer.Mask.Size()
-	sizeb, _ := x.Peer.Mask.Size()
-	// ignore label for comparison
-	return a.Peer.IP.Equal(x.Peer.IP) && sizea == sizeb
 }

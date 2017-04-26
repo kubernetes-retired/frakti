@@ -47,10 +47,6 @@ const (
 	dockerRuntimeName = "docker"
 	kubeAPIVersion    = "0.1.0"
 
-	// https://docs.docker.com/engine/reference/api/docker_remote_api/
-	// docker version should be at least 1.10.x
-	minimumDockerAPIVersion = "1.22.0"
-
 	// String used to detect docker host mode for various namespaces (e.g.
 	// networking). Must match the value returned by docker inspect -f
 	// '{{.HostConfig.NetworkMode}}'.
@@ -168,13 +164,6 @@ func NewDockerService(client dockertools.DockerInterface, seccompProfileRoot str
 		containerManager:  cm.NewContainerManager(cgroupsName, client),
 		checkpointHandler: checkpointHandler,
 	}
-
-	// check docker version compatibility.
-	if err = ds.checkVersionCompatibility(); err != nil {
-		return nil, err
-	}
-
-	// create streaming server if configured.
 	if streamingConfig != nil {
 		var err error
 		ds.streamingServer, err = streaming.NewServer(*streamingConfig, ds.streamingRuntime)
@@ -312,7 +301,7 @@ func (ds *dockerService) GetPodPortMappings(podSandboxID string) ([]*hostport.Po
 	// Return empty portMappings if checkpoint is not found
 	if err != nil {
 		if err == errors.CheckpointNotFoundError {
-			glog.Warningf("Failed to retrieve checkpoint for sandbox %q: %v", podSandboxID, err)
+			glog.Warningf("Failed to retrieve checkpoint for sandbox %q: %v", err)
 			return nil, nil
 		} else {
 			return nil, err
@@ -390,27 +379,6 @@ func (ds *dockerService) GenerateExpectedCgroupParent(cgroupParent string) (stri
 	return cgroupParent, nil
 }
 
-// checkVersionCompatibility verifies whether docker is in a compatible version.
-func (ds *dockerService) checkVersionCompatibility() error {
-	apiVersion, err := ds.getDockerAPIVersion()
-	if err != nil {
-		return err
-	}
-
-	minAPIVersion, err := semver.Parse(minimumDockerAPIVersion)
-	if err != nil {
-		return err
-	}
-
-	// Verify the docker version.
-	result := apiVersion.Compare(minAPIVersion)
-	if result < 0 {
-		return fmt.Errorf("docker API version is older than %s", minimumDockerAPIVersion)
-	}
-
-	return nil
-}
-
 // getDockerAPIVersion gets the semver-compatible docker api version.
 func (ds *dockerService) getDockerAPIVersion() (*semver.Version, error) {
 	var dv *dockertypes.Version
@@ -419,6 +387,9 @@ func (ds *dockerService) getDockerAPIVersion() (*semver.Version, error) {
 		dv, err = ds.getDockerVersionFromCache()
 	} else {
 		dv, err = ds.getDockerVersion()
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	apiVersion, err := semver.Parse(dv.APIVersion)
