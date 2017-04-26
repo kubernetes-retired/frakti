@@ -103,7 +103,7 @@ function configure_cni() {
     "ipMasq": true,
     "ipam": {
         "type": "host-local",
-        "subnet": "10.10.0.0/16",
+        "subnet": "10.30.0.0/16",
         "routes": [
             { "dst": "0.0.0.0/0"  }
         ]
