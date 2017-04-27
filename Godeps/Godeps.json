@@ -3,8 +3,8 @@
 	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
 	"Packages": [
-		"./...",
-		"github.com/onsi/ginkgo/ginkgo"
+		"github.com/onsi/ginkgo/ginkgo",
+		"./..."
 	],
 	"Deps": [
 		{
@@ -1502,6 +1502,11 @@
 			"Rev": "76153773eaa3a268131d3d993290a194a1370585"
 		},
 		{
+			"ImportPath": "k8s.io/client-go/tools/portforward",
+			"Comment": "v2.0.0-alpha.0-111-g7615377",
+			"Rev": "76153773eaa3a268131d3d993290a194a1370585"
+		},
+		{
 			"ImportPath": "k8s.io/client-go/tools/record",
 			"Comment": "v2.0.0-alpha.0-111-g7615377",
 			"Rev": "76153773eaa3a268131d3d993290a194a1370585"
@@ -1863,6 +1868,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/client/listers/core/v1",
+			"Comment": "v1.6.2",
+			"Rev": "477efc3cbe6a7effca06bd1452fa356e2201e1ee"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/client/unversioned/remotecommand",
 			"Comment": "v1.6.2",
 			"Rev": "477efc3cbe6a7effca06bd1452fa356e2201e1ee"
 		},
