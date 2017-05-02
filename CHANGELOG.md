@@ -1,13 +1,42 @@
 <!-- TOC -->
 
+- [v0.2](#v02)
+    - [Features and updates](#features-and-updates)
+    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
+    - [Known issues](#known-issues)
 - [v0.1](#v01)
     - [Features](#features)
     - [HyperContainer specific notes](#hypercontainer-specific-notes)
     - [External Dependency Version Information](#external-dependency-version-information)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
-    - [Known issues](#known-issues)
+    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests-1)
+    - [Known issues](#known-issues-1)
 
 <!-- /TOC -->
+
+# v0.2
+
+This release includes enhances and bug fixes.
+
+## Features and updates
+
+- [#113](https://github.com/kubernetes/frakti/pull/113) Support setting CNI network plugins dynamically
+- [#114](https://github.com/kubernetes/frakti/pull/114) Enable force kill container on timeout
+- [#116](https://github.com/kubernetes/frakti/pull/116) Do not fail on removing nonexist pods
+- [#118](https://github.com/kubernetes/frakti/pull/118) Avoid panic when labels are nil
+- [#119](https://github.com/kubernetes/frakti/pull/119) Support dns options and searches
+- [#126](https://github.com/kubernetes/frakti/pull/126) Fix hostPid support
+- [#130](https://github.com/kubernetes/frakti/pull/130) Update latest frakti architecture
+
+## Kubelet Node e2e tests
+
+Frakti has passed 118 of 121 node e2e tests. ALl failed cases are related with upstream hyperd issues.
+
+See [#109](https://github.com/kubernetes/frakti/issues/109) for more details.
+
+## Known issues
+
+- [#124](https://github.com/kubernetes/frakti/issues/124) nosuchimagehash: No such image with digest
+- [#122](https://github.com/kubernetes/frakti/issues/122) port mapping is not supported yet
 
 # v0.1
 

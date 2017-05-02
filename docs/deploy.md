@@ -43,8 +43,7 @@ curl -sSL https://hypercontainer.io/install | bash
 Configure hyperd:
 
 ```sh
-echo -e "Hypervisor=libvirt\n\
-Kernel=/var/lib/hyper/kernel\n\
+echo -e "Kernel=/var/lib/hyper/kernel\n\
 Initrd=/var/lib/hyper/hyper-initrd.img\n\
 Hypervisor=qemu\n\
 StorageDriver=overlay\n\
@@ -80,7 +79,7 @@ systemctl start docker
 ### Install frakti
 
 ```sh
-curl -sSL https://github.com/kubernetes/frakti/releases/download/v0.1/frakti -o /usr/bin/frakti
+curl -sSL https://github.com/kubernetes/frakti/releases/download/v0.2/frakti -o /usr/bin/frakti
 chmod +x /usr/bin/frakti
 cat <<EOF > /lib/systemd/system/frakti.service
 [Unit]
@@ -189,30 +188,18 @@ On CentOS 7:
 yum install -y kubelet kubeadm kubectl
 ```
 
-> Note that there are no kubernete v1.6 rpms on `yum.kubernetes.io`, so it needs to be fetched from `dl.k8s.io`:
-
-```sh
-# Download latest release of kubelet and kubectl
-# TODO: remove this after the stable v1.6 release
-curl -SL https://dl.k8s.io/v1.6.0-beta.4/kubernetes-server-linux-amd64.tar.gz -o kubernetes-server-linux-amd64.tar.gz
-tar zxvf kubernetes-server-linux-amd64.tar.gz
-/bin/cp -f kubernetes/server/bin/{kubelet,kubeadm,kubectl} /usr/bin/
-rm -rf kubernetes-server-linux-amd64.tar.gz
-```
-
 Configure kubelet with frakti runtime:
 
 ```sh
 sed -i '2 i\Environment="KUBELET_EXTRA_ARGS=--container-runtime=remote --container-runtime-endpoint=/var/run/frakti.sock --feature-gates=AllAlpha=true"' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+systemctl daemon-reload
 ```
 
 ## Setting up the master node
 
 ```sh
-# export KUBE_HYPERKUBE_IMAGE=
 kubeadm init kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version latest
 ```
-
 
 Optional: enable schedule pods on the master
 
