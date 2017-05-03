@@ -1,17 +1,21 @@
-# Cluster deploying of frakti
+# Frakti deploying
 
-Updated: 3/21/2017
+Updated: 5/3/2017
 
-- [Cluster deploying of frakti](#cluster-deploying-of-frakti)
-  - [Overview](#overview)
-  - [Install packages](#install-packages)
-    - [Install hyperd](#install-hyperd)
-    - [Install docker](#install-docker)
-    - [Install frakti](#install-frakti)
-    - [Install CNI](#install-cni)
-    - [Install kubelet](#install-kubelet)
-  - [Setting up the master node](#setting-up-the-worker-nodes)
-  - [Setting up the worker nodes](#setting-up-the-worker-nodes)
+- [Frakti deploying](#frakti-deploying)
+    - [Overview](#overview)
+    - [All in one](#all-in-one)
+    - [Kubernetes cluster](#kubernetes-cluster)
+        - [Install packages](#install-packages)
+            - [Install hyperd](#install-hyperd)
+            - [Install docker](#install-docker)
+            - [Install frakti](#install-frakti)
+            - [Install CNI](#install-cni)
+            - [Start frakti](#start-frakti)
+            - [Install kubelet](#install-kubelet)
+        - [Setting up the master node](#setting-up-the-master-node)
+        - [Setting up the worker nodes](#setting-up-the-worker-nodes)
+
 
 ## Overview
 
@@ -23,9 +27,21 @@ Frakti is a hypervisor-based container runtime, it depends on a few packages bes
 - docker: the docker container engine (auxiliary container runtime)
 - cni: the network plugin
 
-## Install packages
+## All in one
 
-### Install hyperd
+An all in one kubernetes cluster with frakti runtime could be deployed by running:
+
+```sh
+cluster/allinone.sh
+```
+
+## Kubernetes cluster
+
+### Install packages
+
+Firstly, hyperd, docker, frakti, CNI and kubelet should be installed on all nodes (including master).
+
+#### Install hyperd
 
 On Ubuntu 16.04+:
 
@@ -52,7 +68,7 @@ systemctl enable hyperd
 systemctl restart hyperd
 ```
 
-### Install docker
+#### Install docker
 
 On Ubuntu 16.04+:
 
@@ -76,7 +92,7 @@ systemctl enable docker
 systemctl start docker
 ```
 
-### Install frakti
+#### Install frakti
 
 ```sh
 curl -sSL https://github.com/kubernetes/frakti/releases/download/v0.2/frakti -o /usr/bin/frakti
@@ -107,7 +123,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-### Install CNI
+#### Install CNI
 
 On Ubuntu 16.04+:
 
@@ -138,7 +154,10 @@ setenforce 0
 yum install -y kubernetes-cni
 ```
 
-Configure CNI networks:
+CNI networks should also be configured, note that
+
+- frakti only supports bridge network plugin yet
+- subnets should be different on different nodes, .e.g. `10.244.1.0/24` for the master and `10.244.2.0/24` for the first node
 
 ```sh
 mkdir -p /etc/cni/net.d
@@ -152,7 +171,7 @@ cat >/etc/cni/net.d/10-mynet.conf <<-EOF
     "ipMasq": true,
     "ipam": {
         "type": "host-local",
-        "subnet": "10.244.0.0/16",
+        "subnet": "10.244.1.0/24",
         "routes": [
             { "dst": "0.0.0.0/0"  }
         ]
@@ -167,14 +186,14 @@ cat >/etc/cni/net.d/99-loopback.conf <<-EOF
 EOF
 ```
 
-### Start frakti
+#### Start frakti
 
 ```sh
 systemctl enable frakti
 systemctl start frakti
 ```
 
-### Install kubelet
+#### Install kubelet
 
 On Ubuntu 16.04+:
 
@@ -195,7 +214,7 @@ sed -i '2 i\Environment="KUBELET_EXTRA_ARGS=--container-runtime=remote --contain
 systemctl daemon-reload
 ```
 
-## Setting up the master node
+### Setting up the master node
 
 ```sh
 kubeadm init kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version latest
@@ -208,7 +227,7 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule-
 ```
 
-## Setting up the worker nodes
+### Setting up the worker nodes
 
 ```sh
 # get token on master node
