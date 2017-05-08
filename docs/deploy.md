@@ -156,8 +156,8 @@ yum install -y kubernetes-cni
 
 CNI networks should also be configured, note that
 
-- frakti only supports bridge network plugin yet
-- subnets should be different on different nodes, .e.g. `10.244.1.0/24` for the master and `10.244.2.0/24` for the first node
+- frakti only supports **bridge** network plugin yet
+- **subnets should be different on different nodes**, .e.g. `10.244.1.0/24` for the master and `10.244.2.0/24` for the first node
 
 ```sh
 mkdir -p /etc/cni/net.d
@@ -235,4 +235,31 @@ token=$(kubeadm token list | grep authentication,signing | awk '{print $1}')
 
 # join master on worker nodes
 kubeadm join --token $token ${master_ip}
+```
+
+### Setting CNI network routes
+
+Containers across multi-node could be connected via direct route. You should setup the routes for all nodes, e.g. suppose one master node and two worker nodes:
+
+```
+NODE   IP_ADDRESS   CONTAINER_CIDR
+master 10.140.0.1  10.244.1.0/24
+node-1 10.140.0.2  10.244.2.0/24
+node-2 10.140.0.3  10.244.3.0/24
+```
+
+CNI routes could be added by running
+
+```sh
+# on master
+ip route add 10.244.2.0/24 via 10.140.0.2
+ip route add 10.244.3.0/24 via 10.140.0.3
+
+# on node-1
+ip route add 10.244.1.0/24 via 10.140.0.1
+ip route add 10.244.3.0/24 via 10.140.0.3
+
+# on node-2
+ip route add 10.244.1.0/24 via 10.140.0.1
+ip route add 10.244.2.0/24 via 10.140.0.2
 ```
