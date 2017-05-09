@@ -67,7 +67,6 @@ install-frakti() {
 Description=Hypervisor-based container runtime for Kubernetes
 Documentation=https://github.com/kubernetes/frakti
 After=network.target
-
 [Service]
 ExecStart=/usr/bin/frakti --v=3 \
           --log-dir=/var/log/frakti \
@@ -83,7 +82,6 @@ LimitNPROC=1048576
 LimitCORE=infinity
 TimeoutStartSec=0
 Restart=on-abnormal
-
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -95,7 +93,7 @@ install-kubelet-centos() {
     cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
-baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64-unstable
+baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
 enabled=1
 gpgcheck=1
 repo_gpgcheck=1
@@ -110,7 +108,7 @@ install-kubelet-ubuntu() {
     apt-get update && apt-get install -y apt-transport-https
     curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
     cat <<EOF > /etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial-unstable main
+deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
     apt-get update
     apt-get install -y kubernetes-cni kubelet kubeadm kubectl
@@ -149,10 +147,10 @@ EOF
 }
 
 setup-master() {
-    kubeadm init kubeadm init --pod-network-cidr ${CLUSTER_CIDR} --kubernetes-version latest
+    kubeadm init kubeadm init --pod-network-cidr ${CLUSTER_CIDR} --kubernetes-version stable
     # Also enable schedule pods on the master for allinone.
     export KUBECONFIG=/etc/kubernetes/admin.conf
-    kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule-
+    kubectl taint nodes --all node-role.kubernetes.io/master-
 }
 
 command_exists() {
