@@ -28,9 +28,9 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/frakti/pkg/hyper/types"
+	"k8s.io/kubernetes/pkg/client/unversioned/remotecommand"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
-	"k8s.io/kubernetes/pkg/util/term"
 )
 
 const (
@@ -455,7 +455,7 @@ func (c *Client) TTYResize(containerID, execID string, height, width int32) erro
 }
 
 // ExecInContainer exec a command in container with specified io, tty and timeout
-func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size, timeout time.Duration) error {
+func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize, timeout time.Duration) error {
 	execID, err := c.ContainerExecCreate(containerId, cmd, tty)
 	if err != nil {
 		return err
@@ -480,7 +480,7 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 	}
 	defer cancel()
 
-	kubecontainer.HandleResizing(resize, func(size term.Size) {
+	kubecontainer.HandleResizing(resize, func(size remotecommand.TerminalSize) {
 		if err := c.TTYResize(containerId, execID, int32(size.Height), int32(size.Width)); err != nil {
 			glog.Errorf("Resize tty failed: %v", err)
 		}
@@ -593,8 +593,8 @@ func (c *Client) Wait(containerId, execId string, noHang bool) (int32, error) {
 }
 
 // AttachContainer attach a container with id, io stream and resize
-func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	kubecontainer.HandleResizing(resize, func(size term.Size) {
+func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize) error {
+	kubecontainer.HandleResizing(resize, func(size remotecommand.TerminalSize) {
 		if err := c.TTYResize(containerID, "", int32(size.Height), int32(size.Width)); err != nil {
 			glog.Errorf("Resize tty failed: %v", err)
 		}

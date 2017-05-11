@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
@@ -89,6 +90,7 @@ func main() {
 		*cniNetDir,
 		*cniPluginDir,
 		*cgroupDriver,
+		filepath.Join(*rootDir, "alternative"),
 	)
 	if err != nil && *enableAlternativeRuntime {
 		glog.Errorf("Initialize alternative runtime failed: %v", err)

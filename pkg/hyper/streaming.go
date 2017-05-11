@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/client/unversioned/remotecommand"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
-	"k8s.io/kubernetes/pkg/util/term"
 )
 
 type streamingRuntime struct {
@@ -37,7 +37,7 @@ type streamingRuntime struct {
 var _ streaming.Runtime = &streamingRuntime{}
 
 // Exec execute a command in the container.
-func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize) error {
 	err := ensureContainerRunning(sr.client, rawContainerID)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.R
 }
 
 // Attach attach to a running container.
-func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize) error {
 	err := ensureContainerRunning(sr.client, rawContainerID)
 	if err != nil {
 		return err

@@ -566,6 +566,13 @@ func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImag
 	return &kubeapi.RemoveImageResponse{}, nil
 }
 
+// ImageFSInfo returns information of the filesystem that is used to store images.
+func (s *FraktiManager) ImageFsInfo(ctx context.Context, req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error) {
+	glog.V(3).Infof("ImageFsInfo with request %s", req.String())
+
+	return nil, fmt.Errorf("not implemented")
+}
+
 // isOSContainerRuntimeRequired check if this pod requires to run with os container runtime.
 func isOSContainerRuntimeRequired(podConfig *kubeapi.PodSandboxConfig) bool {
 	// user require it
