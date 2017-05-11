@@ -17,11 +17,11 @@ limitations under the License.
 package hyper
 
 import (
-	"fmt"
 	"github.com/golang/glog"
-	"net"
 
 	"github.com/containernetworking/cni/pkg/ns"
+	cnitypes "github.com/containernetworking/cni/pkg/types"
+	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/vishvananda/netlink"
 )
 
@@ -29,116 +29,44 @@ import (
 // network device from CNI Result
 type NetworkInfo struct {
 	IfName     string
-	Mac        net.HardwareAddr
-	Ip         *net.IPNet
+	Mac        string
+	Ip         string
 	Gateway    string
 	BridgeName string
 }
 
-func networkInfoFromNs(netns ns.NetNS) *NetworkInfo {
-	var result *NetworkInfo
+func convertCNIResult2NetworkInfo(result cnitypes.Result) *NetworkInfo {
+	ret := &NetworkInfo{}
 
-	netns.Do(func(_ ns.NetNS) error {
-		result = collectInterfaceInfo()
-		return nil
-	})
+	r, err := current.GetResult(result)
 
-	if result == nil {
-		return nil
-	}
-
-	br, err := getBridgeNameByIpCompare(result.Ip)
 	if err != nil {
+		glog.Errorf("Convert CNI Result failed: %v", err)
 		return nil
 	}
 
-	result.BridgeName = br
-
-	return result
-}
-
-func collectInterfaceInfo() *NetworkInfo {
-	links, err := netlink.LinkList()
-	if err != nil {
-		glog.Errorf("Get link list failed: %v", err)
-		return nil
-	}
-
-	var result *NetworkInfo
-	for _, link := range links {
-		if link.Type() != "veth" {
-			glog.Infof("Get interface information in container ns, skip non-veth device %s", link.Attrs().Name)
+	// only handle bridge plugin now
+	// TODO: support other plugins in the future
+	for _, iface := range r.Interfaces {
+		if iface.Sandbox != "" {
+			// interface information in net ns
+			ret.IfName = iface.Name
+			ret.Mac = iface.Mac
 			continue
 		}
-
-		name := link.Attrs().Name
-		mac := link.Attrs().HardwareAddr
-
-		// TODO: IPv6
-		addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
-		if err != nil {
-			glog.Errorf("Get address list of link %s failed: %v", name, err)
-			continue
-		}
-		var ip *net.IPNet
-		if addrs != nil {
-			ip = addrs[0].IPNet
-		}
-
-		gateway := ""
-		routes, err := netlink.RouteList(link, netlink.FAMILY_V4)
-		if err != nil {
-			glog.Errorf("Get route list of link %s failed: %v", name, err)
-			continue
-		}
-		for _, route := range routes {
-			// Routes lost, retrieve them in the future
-			if route.Gw != nil && route.Dst == nil {
-				// Only need default gateway right now
-				gateway = route.Gw.String()
-				break
-			}
-		}
-
-		result = &NetworkInfo{
-			IfName:  name,
-			Mac:     mac,
-			Ip:      ip,
-			Gateway: gateway,
-		}
-
-		break
-	}
-
-	return result
-}
-
-func getBridgeNameByIpCompare(ip *net.IPNet) (string, error) {
-	links, err := netlink.LinkList()
-	if err != nil {
-		return "", err
-	}
-
-	for _, link := range links {
-		if link.Type() != "bridge" {
-			glog.Infof("Get bridge name in host net ns, skip non-bridge device %s", link.Attrs().Name)
-			continue
-		}
-
-		// TODO: IPv6
-		addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+		l, err := netlink.LinkByName(iface.Name)
 		if err != nil {
 			continue
 		}
-
-		for _, addr := range addrs {
-			if addr.IPNet.Contains(ip.IP) {
-				return link.Attrs().Name, nil
-			}
+		if _, ok := l.(*netlink.Bridge); ok {
+			// find the bridge name
+			ret.BridgeName = iface.Name
 		}
 	}
+	ret.Ip = r.IPs[0].Address.String()
+	ret.Gateway = r.IPs[0].Gateway.String()
 
-	return "", fmt.Errorf("cannot find bridge which ip %s belong to", ip.String())
+	return ret
 }
 
 func setDownLinksInNs(netns ns.NetNS) error {
