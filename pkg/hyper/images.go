@@ -17,6 +17,7 @@ limitations under the License.
 package hyper
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/golang/glog"
@@ -108,4 +109,9 @@ func (h *Runtime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) 
 		RepoDigests: imageInfo.RepoDigests,
 		Size_:       imageSize,
 	}, nil
+}
+
+// ImageFsInfo returns information of the filesystem that is used to store images.
+func (h *Runtime) ImageFsInfo() (*kubeapi.FsInfo, error) {
+	return nil, fmt.Errorf("not implemented")
 }

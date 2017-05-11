@@ -175,7 +175,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.GoGoProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Types definitions for HyperContainer
 type ContainerPort struct {
@@ -191,6 +193,41 @@ func (m *ContainerPort) String() string            { return proto.CompactTextStr
 func (*ContainerPort) ProtoMessage()               {}
 func (*ContainerPort) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{0} }
 
+func (m *ContainerPort) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ContainerPort) GetHostPort() int32 {
+	if m != nil {
+		return m.HostPort
+	}
+	return 0
+}
+
+func (m *ContainerPort) GetContainerPort() int32 {
+	if m != nil {
+		return m.ContainerPort
+	}
+	return 0
+}
+
+func (m *ContainerPort) GetProtocol() string {
+	if m != nil {
+		return m.Protocol
+	}
+	return ""
+}
+
+func (m *ContainerPort) GetHostIP() string {
+	if m != nil {
+		return m.HostIP
+	}
+	return ""
+}
+
 type EnvironmentVar struct {
 	Env   string `protobuf:"bytes,1,opt,name=env,proto3" json:"env,omitempty"`
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -200,6 +237,20 @@ func (m *EnvironmentVar) Reset()                    { *m = EnvironmentVar{} }
 func (m *EnvironmentVar) String() string            { return proto.CompactTextString(m) }
 func (*EnvironmentVar) ProtoMessage()               {}
 func (*EnvironmentVar) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{1} }
+
+func (m *EnvironmentVar) GetEnv() string {
+	if m != nil {
+		return m.Env
+	}
+	return ""
+}
+
+func (m *EnvironmentVar) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
 
 type VolumeMount struct {
 	Name      string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -212,6 +263,27 @@ func (m *VolumeMount) String() string            { return proto.CompactTextStrin
 func (*VolumeMount) ProtoMessage()               {}
 func (*VolumeMount) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{2} }
 
+func (m *VolumeMount) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *VolumeMount) GetMountPath() string {
+	if m != nil {
+		return m.MountPath
+	}
+	return ""
+}
+
+func (m *VolumeMount) GetReadOnly() bool {
+	if m != nil {
+		return m.ReadOnly
+	}
+	return false
+}
+
 type WaitingStatus struct {
 	Reason string `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
 }
@@ -221,6 +293,13 @@ func (m *WaitingStatus) String() string            { return proto.CompactTextStr
 func (*WaitingStatus) ProtoMessage()               {}
 func (*WaitingStatus) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{3} }
 
+func (m *WaitingStatus) GetReason() string {
+	if m != nil {
+		return m.Reason
+	}
+	return ""
+}
+
 type RunningStatus struct {
 	StartedAt string `protobuf:"bytes,1,opt,name=startedAt,proto3" json:"startedAt,omitempty"`
 }
@@ -229,6 +308,13 @@ func (m *RunningStatus) Reset()                    { *m = RunningStatus{} }
 func (m *RunningStatus) String() string            { return proto.CompactTextString(m) }
 func (*RunningStatus) ProtoMessage()               {}
 func (*RunningStatus) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{4} }
+
+func (m *RunningStatus) GetStartedAt() string {
+	if m != nil {
+		return m.StartedAt
+	}
+	return ""
+}
 
 type TermStatus struct {
 	ExitCode   int32  `protobuf:"varint,1,opt,name=exitCode,proto3" json:"exitCode,omitempty"`
@@ -243,6 +329,41 @@ func (m *TermStatus) String() string            { return proto.CompactTextString
 func (*TermStatus) ProtoMessage()               {}
 func (*TermStatus) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{5} }
 
+func (m *TermStatus) GetExitCode() int32 {
+	if m != nil {
+		return m.ExitCode
+	}
+	return 0
+}
+
+func (m *TermStatus) GetReason() string {
+	if m != nil {
+		return m.Reason
+	}
+	return ""
+}
+
+func (m *TermStatus) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *TermStatus) GetStartedAt() string {
+	if m != nil {
+		return m.StartedAt
+	}
+	return ""
+}
+
+func (m *TermStatus) GetFinishedAt() string {
+	if m != nil {
+		return m.FinishedAt
+	}
+	return ""
+}
+
 type ContainerStatus struct {
 	Name        string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	ContainerID string         `protobuf:"bytes,2,opt,name=containerID,proto3" json:"containerID,omitempty"`
@@ -256,6 +377,27 @@ func (m *ContainerStatus) Reset()                    { *m = ContainerStatus{} }
 func (m *ContainerStatus) String() string            { return proto.CompactTextString(m) }
 func (*ContainerStatus) ProtoMessage()               {}
 func (*ContainerStatus) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{6} }
+
+func (m *ContainerStatus) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ContainerStatus) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ContainerStatus) GetPhase() string {
+	if m != nil {
+		return m.Phase
+	}
+	return ""
+}
 
 func (m *ContainerStatus) GetWaiting() *WaitingStatus {
 	if m != nil {
@@ -297,6 +439,20 @@ func (m *ContainerInfo) GetContainer() *Container {
 	return nil
 }
 
+func (m *ContainerInfo) GetCreatedAt() int64 {
+	if m != nil {
+		return m.CreatedAt
+	}
+	return 0
+}
+
+func (m *ContainerInfo) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 func (m *ContainerInfo) GetStatus() *ContainerStatus {
 	if m != nil {
 		return m.Status
@@ -325,6 +481,76 @@ func (m *Container) Reset()                    { *m = Container{} }
 func (m *Container) String() string            { return proto.CompactTextString(m) }
 func (*Container) ProtoMessage()               {}
 func (*Container) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{8} }
+
+func (m *Container) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Container) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *Container) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *Container) GetImageID() string {
+	if m != nil {
+		return m.ImageID
+	}
+	return ""
+}
+
+func (m *Container) GetImagePullPolicy() string {
+	if m != nil {
+		return m.ImagePullPolicy
+	}
+	return ""
+}
+
+func (m *Container) GetWorkingDir() string {
+	if m != nil {
+		return m.WorkingDir
+	}
+	return ""
+}
+
+func (m *Container) GetUser() string {
+	if m != nil {
+		return m.User
+	}
+	return ""
+}
+
+func (m *Container) GetTty() bool {
+	if m != nil {
+		return m.Tty
+	}
+	return false
+}
+
+func (m *Container) GetCommands() []string {
+	if m != nil {
+		return m.Commands
+	}
+	return nil
+}
+
+func (m *Container) GetArgs() []string {
+	if m != nil {
+		return m.Args
+	}
+	return nil
+}
 
 func (m *Container) GetPorts() []*ContainerPort {
 	if m != nil {
@@ -369,6 +595,55 @@ func (m *RBDVolumeSource) String() string            { return proto.CompactTextS
 func (*RBDVolumeSource) ProtoMessage()               {}
 func (*RBDVolumeSource) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{9} }
 
+func (m *RBDVolumeSource) GetMonitors() []string {
+	if m != nil {
+		return m.Monitors
+	}
+	return nil
+}
+
+func (m *RBDVolumeSource) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *RBDVolumeSource) GetFsType() string {
+	if m != nil {
+		return m.FsType
+	}
+	return ""
+}
+
+func (m *RBDVolumeSource) GetPool() string {
+	if m != nil {
+		return m.Pool
+	}
+	return ""
+}
+
+func (m *RBDVolumeSource) GetUser() string {
+	if m != nil {
+		return m.User
+	}
+	return ""
+}
+
+func (m *RBDVolumeSource) GetKeyring() string {
+	if m != nil {
+		return m.Keyring
+	}
+	return ""
+}
+
+func (m *RBDVolumeSource) GetReadOnly() bool {
+	if m != nil {
+		return m.ReadOnly
+	}
+	return false
+}
+
 type PodVolume struct {
 	Name   string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Source string           `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
@@ -380,6 +655,27 @@ func (m *PodVolume) Reset()                    { *m = PodVolume{} }
 func (m *PodVolume) String() string            { return proto.CompactTextString(m) }
 func (*PodVolume) ProtoMessage()               {}
 func (*PodVolume) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{10} }
+
+func (m *PodVolume) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *PodVolume) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
+func (m *PodVolume) GetDriver() string {
+	if m != nil {
+		return m.Driver
+	}
+	return ""
+}
 
 func (m *PodVolume) GetRbd() *RBDVolumeSource {
 	if m != nil {
@@ -422,6 +718,20 @@ func (m *PodSpec) GetLabels() map[string]string {
 	return nil
 }
 
+func (m *PodSpec) GetVcpu() int32 {
+	if m != nil {
+		return m.Vcpu
+	}
+	return 0
+}
+
+func (m *PodSpec) GetMemory() int32 {
+	if m != nil {
+		return m.Memory
+	}
+	return 0
+}
+
 type PodStatus struct {
 	Phase           string             `protobuf:"bytes,1,opt,name=phase,proto3" json:"phase,omitempty"`
 	Message         string             `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -438,11 +748,60 @@ func (m *PodStatus) String() string            { return proto.CompactTextString(
 func (*PodStatus) ProtoMessage()               {}
 func (*PodStatus) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{12} }
 
+func (m *PodStatus) GetPhase() string {
+	if m != nil {
+		return m.Phase
+	}
+	return ""
+}
+
+func (m *PodStatus) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *PodStatus) GetReason() string {
+	if m != nil {
+		return m.Reason
+	}
+	return ""
+}
+
+func (m *PodStatus) GetHostIP() string {
+	if m != nil {
+		return m.HostIP
+	}
+	return ""
+}
+
+func (m *PodStatus) GetPodIP() []string {
+	if m != nil {
+		return m.PodIP
+	}
+	return nil
+}
+
+func (m *PodStatus) GetStartTime() string {
+	if m != nil {
+		return m.StartTime
+	}
+	return ""
+}
+
 func (m *PodStatus) GetContainerStatus() []*ContainerStatus {
 	if m != nil {
 		return m.ContainerStatus
 	}
 	return nil
+}
+
+func (m *PodStatus) GetFinishTime() string {
+	if m != nil {
+		return m.FinishTime
+	}
+	return ""
 }
 
 type PodInfo struct {
@@ -461,6 +820,41 @@ func (m *PodInfo) String() string            { return proto.CompactTextString(m)
 func (*PodInfo) ProtoMessage()               {}
 func (*PodInfo) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{13} }
 
+func (m *PodInfo) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *PodInfo) GetKind() string {
+	if m != nil {
+		return m.Kind
+	}
+	return ""
+}
+
+func (m *PodInfo) GetApiVersion() string {
+	if m != nil {
+		return m.ApiVersion
+	}
+	return ""
+}
+
+func (m *PodInfo) GetVm() string {
+	if m != nil {
+		return m.Vm
+	}
+	return ""
+}
+
+func (m *PodInfo) GetCreatedAt() int64 {
+	if m != nil {
+		return m.CreatedAt
+	}
+	return 0
+}
+
 func (m *PodInfo) GetSpec() *PodSpec {
 	if m != nil {
 		return m.Spec
@@ -473,6 +867,13 @@ func (m *PodInfo) GetStatus() *PodStatus {
 		return m.Status
 	}
 	return nil
+}
+
+func (m *PodInfo) GetPodName() string {
+	if m != nil {
+		return m.PodName
+	}
+	return ""
 }
 
 type ImageInfo struct {
@@ -489,6 +890,48 @@ func (m *ImageInfo) Reset()                    { *m = ImageInfo{} }
 func (m *ImageInfo) String() string            { return proto.CompactTextString(m) }
 func (*ImageInfo) ProtoMessage()               {}
 func (*ImageInfo) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{14} }
+
+func (m *ImageInfo) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *ImageInfo) GetParentID() string {
+	if m != nil {
+		return m.ParentID
+	}
+	return ""
+}
+
+func (m *ImageInfo) GetRepoTags() []string {
+	if m != nil {
+		return m.RepoTags
+	}
+	return nil
+}
+
+func (m *ImageInfo) GetRepoDigests() []string {
+	if m != nil {
+		return m.RepoDigests
+	}
+	return nil
+}
+
+func (m *ImageInfo) GetCreated() int64 {
+	if m != nil {
+		return m.Created
+	}
+	return 0
+}
+
+func (m *ImageInfo) GetVirtualSize() int64 {
+	if m != nil {
+		return m.VirtualSize
+	}
+	return 0
+}
 
 func (m *ImageInfo) GetLabels() map[string]string {
 	if m != nil {
@@ -547,6 +990,13 @@ func (m *PodStats) GetFilesystem() []*FsStats {
 	return nil
 }
 
+func (m *PodStats) GetTimestamp() int64 {
+	if m != nil {
+		return m.Timestamp
+	}
+	return 0
+}
+
 func (m *PodStats) GetContainersStats() []*ContainersStats {
 	if m != nil {
 		return m.ContainersStats
@@ -571,9 +1021,16 @@ func (m *CpuStats) GetUsage() *CpuUsage {
 	return nil
 }
 
+func (m *CpuStats) GetLoadAverage() int32 {
+	if m != nil {
+		return m.LoadAverage
+	}
+	return 0
+}
+
 type CpuUsage struct {
 	Total  uint64   `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
-	PerCpu []uint64 `protobuf:"varint,2,rep,name=perCpu" json:"perCpu,omitempty"`
+	PerCpu []uint64 `protobuf:"varint,2,rep,packed,name=perCpu" json:"perCpu,omitempty"`
 	User   uint64   `protobuf:"varint,3,opt,name=user,proto3" json:"user,omitempty"`
 	System uint64   `protobuf:"varint,4,opt,name=system,proto3" json:"system,omitempty"`
 }
@@ -582,6 +1039,34 @@ func (m *CpuUsage) Reset()                    { *m = CpuUsage{} }
 func (m *CpuUsage) String() string            { return proto.CompactTextString(m) }
 func (*CpuUsage) ProtoMessage()               {}
 func (*CpuUsage) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{17} }
+
+func (m *CpuUsage) GetTotal() uint64 {
+	if m != nil {
+		return m.Total
+	}
+	return 0
+}
+
+func (m *CpuUsage) GetPerCpu() []uint64 {
+	if m != nil {
+		return m.PerCpu
+	}
+	return nil
+}
+
+func (m *CpuUsage) GetUser() uint64 {
+	if m != nil {
+		return m.User
+	}
+	return 0
+}
+
+func (m *CpuUsage) GetSystem() uint64 {
+	if m != nil {
+		return m.System
+	}
+	return 0
+}
 
 type BlkioStats struct {
 	IoServiceBytesRecursive []*BlkioStatEntry `protobuf:"bytes,1,rep,name=ioServiceBytesRecursive" json:"ioServiceBytesRecursive,omitempty"`
@@ -669,6 +1154,41 @@ func (m *BlkioStatEntry) String() string            { return proto.CompactTextSt
 func (*BlkioStatEntry) ProtoMessage()               {}
 func (*BlkioStatEntry) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{19} }
 
+func (m *BlkioStatEntry) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *BlkioStatEntry) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *BlkioStatEntry) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
+func (m *BlkioStatEntry) GetMajor() uint64 {
+	if m != nil {
+		return m.Major
+	}
+	return 0
+}
+
+func (m *BlkioStatEntry) GetMinor() uint64 {
+	if m != nil {
+		return m.Minor
+	}
+	return 0
+}
+
 func (m *BlkioStatEntry) GetStat() map[string]uint64 {
 	if m != nil {
 		return m.Stat
@@ -688,6 +1208,27 @@ func (m *MemoryStats) Reset()                    { *m = MemoryStats{} }
 func (m *MemoryStats) String() string            { return proto.CompactTextString(m) }
 func (*MemoryStats) ProtoMessage()               {}
 func (*MemoryStats) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{20} }
+
+func (m *MemoryStats) GetUsage() uint64 {
+	if m != nil {
+		return m.Usage
+	}
+	return 0
+}
+
+func (m *MemoryStats) GetWorkingSet() uint64 {
+	if m != nil {
+		return m.WorkingSet
+	}
+	return 0
+}
+
+func (m *MemoryStats) GetFailcnt() uint64 {
+	if m != nil {
+		return m.Failcnt
+	}
+	return 0
+}
 
 func (m *MemoryStats) GetContainerData() *MemoryStatsMemoryData {
 	if m != nil {
@@ -712,6 +1253,20 @@ func (m *MemoryStatsMemoryData) Reset()                    { *m = MemoryStatsMem
 func (m *MemoryStatsMemoryData) String() string            { return proto.CompactTextString(m) }
 func (*MemoryStatsMemoryData) ProtoMessage()               {}
 func (*MemoryStatsMemoryData) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{21} }
+
+func (m *MemoryStatsMemoryData) GetPgfault() uint64 {
+	if m != nil {
+		return m.Pgfault
+	}
+	return 0
+}
+
+func (m *MemoryStatsMemoryData) GetPgmajfault() uint64 {
+	if m != nil {
+		return m.Pgmajfault
+	}
+	return 0
+}
 
 type NetworkStats struct {
 	Interfaces []*InterfaceStats `protobuf:"bytes,1,rep,name=interfaces" json:"interfaces,omitempty"`
@@ -764,6 +1319,83 @@ func (m *TcpStat) String() string            { return proto.CompactTextString(m)
 func (*TcpStat) ProtoMessage()               {}
 func (*TcpStat) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{23} }
 
+func (m *TcpStat) GetEstablished() uint64 {
+	if m != nil {
+		return m.Established
+	}
+	return 0
+}
+
+func (m *TcpStat) GetSynSent() uint64 {
+	if m != nil {
+		return m.SynSent
+	}
+	return 0
+}
+
+func (m *TcpStat) GetSynRecv() uint64 {
+	if m != nil {
+		return m.SynRecv
+	}
+	return 0
+}
+
+func (m *TcpStat) GetFinWait1() uint64 {
+	if m != nil {
+		return m.FinWait1
+	}
+	return 0
+}
+
+func (m *TcpStat) GetFinWait2() uint64 {
+	if m != nil {
+		return m.FinWait2
+	}
+	return 0
+}
+
+func (m *TcpStat) GetTimeWait() uint64 {
+	if m != nil {
+		return m.TimeWait
+	}
+	return 0
+}
+
+func (m *TcpStat) GetClose() uint64 {
+	if m != nil {
+		return m.Close
+	}
+	return 0
+}
+
+func (m *TcpStat) GetCloseWait() uint64 {
+	if m != nil {
+		return m.CloseWait
+	}
+	return 0
+}
+
+func (m *TcpStat) GetLastAck() uint64 {
+	if m != nil {
+		return m.LastAck
+	}
+	return 0
+}
+
+func (m *TcpStat) GetListen() uint64 {
+	if m != nil {
+		return m.Listen
+	}
+	return 0
+}
+
+func (m *TcpStat) GetClosing() uint64 {
+	if m != nil {
+		return m.Closing
+	}
+	return 0
+}
+
 type InterfaceStats struct {
 	Name      string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	RxBytes   uint64 `protobuf:"varint,2,opt,name=rxBytes,proto3" json:"rxBytes,omitempty"`
@@ -780,6 +1412,69 @@ func (m *InterfaceStats) Reset()                    { *m = InterfaceStats{} }
 func (m *InterfaceStats) String() string            { return proto.CompactTextString(m) }
 func (*InterfaceStats) ProtoMessage()               {}
 func (*InterfaceStats) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{24} }
+
+func (m *InterfaceStats) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *InterfaceStats) GetRxBytes() uint64 {
+	if m != nil {
+		return m.RxBytes
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetRxPackets() uint64 {
+	if m != nil {
+		return m.RxPackets
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetRxErrors() uint64 {
+	if m != nil {
+		return m.RxErrors
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetRxDropped() uint64 {
+	if m != nil {
+		return m.RxDropped
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetTxBytes() uint64 {
+	if m != nil {
+		return m.TxBytes
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetTxPackets() uint64 {
+	if m != nil {
+		return m.TxPackets
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetTxErrors() uint64 {
+	if m != nil {
+		return m.TxErrors
+	}
+	return 0
+}
+
+func (m *InterfaceStats) GetTxDropped() uint64 {
+	if m != nil {
+		return m.TxDropped
+	}
+	return 0
+}
 
 type FsStats struct {
 	Device          string `protobuf:"bytes,1,opt,name=device,proto3" json:"device,omitempty"`
@@ -804,6 +1499,111 @@ func (m *FsStats) String() string            { return proto.CompactTextString(m)
 func (*FsStats) ProtoMessage()               {}
 func (*FsStats) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{25} }
 
+func (m *FsStats) GetDevice() string {
+	if m != nil {
+		return m.Device
+	}
+	return ""
+}
+
+func (m *FsStats) GetLimit() uint64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *FsStats) GetUsage() uint64 {
+	if m != nil {
+		return m.Usage
+	}
+	return 0
+}
+
+func (m *FsStats) GetAvailable() uint64 {
+	if m != nil {
+		return m.Available
+	}
+	return 0
+}
+
+func (m *FsStats) GetReadsCompleted() uint64 {
+	if m != nil {
+		return m.ReadsCompleted
+	}
+	return 0
+}
+
+func (m *FsStats) GetReadsMerged() uint64 {
+	if m != nil {
+		return m.ReadsMerged
+	}
+	return 0
+}
+
+func (m *FsStats) GetSectorsRead() uint64 {
+	if m != nil {
+		return m.SectorsRead
+	}
+	return 0
+}
+
+func (m *FsStats) GetReadTime() uint64 {
+	if m != nil {
+		return m.ReadTime
+	}
+	return 0
+}
+
+func (m *FsStats) GetWritesCompleted() uint64 {
+	if m != nil {
+		return m.WritesCompleted
+	}
+	return 0
+}
+
+func (m *FsStats) GetWritesMerged() uint64 {
+	if m != nil {
+		return m.WritesMerged
+	}
+	return 0
+}
+
+func (m *FsStats) GetSectorsWritten() uint64 {
+	if m != nil {
+		return m.SectorsWritten
+	}
+	return 0
+}
+
+func (m *FsStats) GetWriteTime() uint64 {
+	if m != nil {
+		return m.WriteTime
+	}
+	return 0
+}
+
+func (m *FsStats) GetIoInProgress() uint64 {
+	if m != nil {
+		return m.IoInProgress
+	}
+	return 0
+}
+
+func (m *FsStats) GetIoTime() uint64 {
+	if m != nil {
+		return m.IoTime
+	}
+	return 0
+}
+
+func (m *FsStats) GetWeightedIoTime() uint64 {
+	if m != nil {
+		return m.WeightedIoTime
+	}
+	return 0
+}
+
 type ContainersStats struct {
 	ContainerID string        `protobuf:"bytes,1,opt,name=containerID,proto3" json:"containerID,omitempty"`
 	Cpu         *CpuStats     `protobuf:"bytes,2,opt,name=cpu" json:"cpu,omitempty"`
@@ -818,6 +1618,13 @@ func (m *ContainersStats) Reset()                    { *m = ContainersStats{} }
 func (m *ContainersStats) String() string            { return proto.CompactTextString(m) }
 func (*ContainersStats) ProtoMessage()               {}
 func (*ContainersStats) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{26} }
+
+func (m *ContainersStats) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
 
 func (m *ContainersStats) GetCpu() *CpuStats {
 	if m != nil {
@@ -854,6 +1661,13 @@ func (m *ContainersStats) GetFilesystem() []*FsStats {
 	return nil
 }
 
+func (m *ContainersStats) GetTimestamp() int64 {
+	if m != nil {
+		return m.Timestamp
+	}
+	return 0
+}
+
 type PodInfoRequest struct {
 	PodID string `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 }
@@ -862,6 +1676,13 @@ func (m *PodInfoRequest) Reset()                    { *m = PodInfoRequest{} }
 func (m *PodInfoRequest) String() string            { return proto.CompactTextString(m) }
 func (*PodInfoRequest) ProtoMessage()               {}
 func (*PodInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{27} }
+
+func (m *PodInfoRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
 
 type PodInfoResponse struct {
 	PodInfo *PodInfo `protobuf:"bytes,1,opt,name=podInfo" json:"podInfo,omitempty"`
@@ -889,6 +1710,20 @@ func (m *PodListRequest) String() string            { return proto.CompactTextSt
 func (*PodListRequest) ProtoMessage()               {}
 func (*PodListRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{29} }
 
+func (m *PodListRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *PodListRequest) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
+
 type PodListResult struct {
 	PodID     string            `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 	PodName   string            `protobuf:"bytes,2,opt,name=podName,proto3" json:"podName,omitempty"`
@@ -902,6 +1737,41 @@ func (m *PodListResult) Reset()                    { *m = PodListResult{} }
 func (m *PodListResult) String() string            { return proto.CompactTextString(m) }
 func (*PodListResult) ProtoMessage()               {}
 func (*PodListResult) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{30} }
+
+func (m *PodListResult) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *PodListResult) GetPodName() string {
+	if m != nil {
+		return m.PodName
+	}
+	return ""
+}
+
+func (m *PodListResult) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
+
+func (m *PodListResult) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *PodListResult) GetCreatedAt() int64 {
+	if m != nil {
+		return m.CreatedAt
+	}
+	return 0
+}
 
 func (m *PodListResult) GetLabels() map[string]string {
 	if m != nil {
@@ -936,6 +1806,20 @@ func (m *ContainerListRequest) String() string            { return proto.Compact
 func (*ContainerListRequest) ProtoMessage()               {}
 func (*ContainerListRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{32} }
 
+func (m *ContainerListRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *ContainerListRequest) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
+
 type ContainerListResult struct {
 	ContainerID   string `protobuf:"bytes,1,opt,name=containerID,proto3" json:"containerID,omitempty"`
 	ContainerName string `protobuf:"bytes,2,opt,name=containerName,proto3" json:"containerName,omitempty"`
@@ -947,6 +1831,34 @@ func (m *ContainerListResult) Reset()                    { *m = ContainerListRes
 func (m *ContainerListResult) String() string            { return proto.CompactTextString(m) }
 func (*ContainerListResult) ProtoMessage()               {}
 func (*ContainerListResult) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{33} }
+
+func (m *ContainerListResult) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ContainerListResult) GetContainerName() string {
+	if m != nil {
+		return m.ContainerName
+	}
+	return ""
+}
+
+func (m *ContainerListResult) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *ContainerListResult) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
 
 type ContainerListResponse struct {
 	ContainerList []*ContainerListResult `protobuf:"bytes,1,rep,name=containerList" json:"containerList,omitempty"`
@@ -973,6 +1885,13 @@ func (m *ContainerInfoRequest) Reset()                    { *m = ContainerInfoRe
 func (m *ContainerInfoRequest) String() string            { return proto.CompactTextString(m) }
 func (*ContainerInfoRequest) ProtoMessage()               {}
 func (*ContainerInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{35} }
+
+func (m *ContainerInfoRequest) GetContainer() string {
+	if m != nil {
+		return m.Container
+	}
+	return ""
+}
 
 type ContainerInfoResponse struct {
 	ContainerInfo *ContainerInfo `protobuf:"bytes,1,opt,name=containerInfo" json:"containerInfo,omitempty"`
@@ -1001,6 +1920,27 @@ func (m *VMListResult) String() string            { return proto.CompactTextStri
 func (*VMListResult) ProtoMessage()               {}
 func (*VMListResult) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{37} }
 
+func (m *VMListResult) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
+
+func (m *VMListResult) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *VMListResult) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
 type VMListRequest struct {
 	PodID string `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 	VmID  string `protobuf:"bytes,2,opt,name=vmID,proto3" json:"vmID,omitempty"`
@@ -1010,6 +1950,20 @@ func (m *VMListRequest) Reset()                    { *m = VMListRequest{} }
 func (m *VMListRequest) String() string            { return proto.CompactTextString(m) }
 func (*VMListRequest) ProtoMessage()               {}
 func (*VMListRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{38} }
+
+func (m *VMListRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *VMListRequest) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
 
 type VMListResponse struct {
 	VmList []*VMListResult `protobuf:"bytes,1,rep,name=vmList" json:"vmList,omitempty"`
@@ -1041,6 +1995,27 @@ func (m *ImageListRequest) String() string            { return proto.CompactText
 func (*ImageListRequest) ProtoMessage()               {}
 func (*ImageListRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{40} }
 
+func (m *ImageListRequest) GetFilterArgs() string {
+	if m != nil {
+		return m.FilterArgs
+	}
+	return ""
+}
+
+func (m *ImageListRequest) GetFilter() string {
+	if m != nil {
+		return m.Filter
+	}
+	return ""
+}
+
+func (m *ImageListRequest) GetAll() bool {
+	if m != nil {
+		return m.All
+	}
+	return false
+}
+
 type ImageListResponse struct {
 	ImageList []*ImageInfo `protobuf:"bytes,1,rep,name=imageList" json:"imageList,omitempty"`
 }
@@ -1067,6 +2042,20 @@ func (m *VMCreateRequest) String() string            { return proto.CompactTextS
 func (*VMCreateRequest) ProtoMessage()               {}
 func (*VMCreateRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{42} }
 
+func (m *VMCreateRequest) GetCpu() int32 {
+	if m != nil {
+		return m.Cpu
+	}
+	return 0
+}
+
+func (m *VMCreateRequest) GetMemory() int32 {
+	if m != nil {
+		return m.Memory
+	}
+	return 0
+}
+
 type VMCreateResponse struct {
 	VmID string `protobuf:"bytes,1,opt,name=vmID,proto3" json:"vmID,omitempty"`
 }
@@ -1075,6 +2064,13 @@ func (m *VMCreateResponse) Reset()                    { *m = VMCreateResponse{} 
 func (m *VMCreateResponse) String() string            { return proto.CompactTextString(m) }
 func (*VMCreateResponse) ProtoMessage()               {}
 func (*VMCreateResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{43} }
+
+func (m *VMCreateResponse) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
 
 type VMRemoveRequest struct {
 	VmID string `protobuf:"bytes,1,opt,name=vmID,proto3" json:"vmID,omitempty"`
@@ -1085,6 +2081,13 @@ func (m *VMRemoveRequest) String() string            { return proto.CompactTextS
 func (*VMRemoveRequest) ProtoMessage()               {}
 func (*VMRemoveRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{44} }
 
+func (m *VMRemoveRequest) GetVmID() string {
+	if m != nil {
+		return m.VmID
+	}
+	return ""
+}
+
 type VMRemoveResponse struct {
 	Code  int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Cause string `protobuf:"bytes,2,opt,name=cause,proto3" json:"cause,omitempty"`
@@ -1094,6 +2097,20 @@ func (m *VMRemoveResponse) Reset()                    { *m = VMRemoveResponse{} 
 func (m *VMRemoveResponse) String() string            { return proto.CompactTextString(m) }
 func (*VMRemoveResponse) ProtoMessage()               {}
 func (*VMRemoveResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{45} }
+
+func (m *VMRemoveResponse) GetCode() int32 {
+	if m != nil {
+		return m.Code
+	}
+	return 0
+}
+
+func (m *VMRemoveResponse) GetCause() string {
+	if m != nil {
+		return m.Cause
+	}
+	return ""
+}
 
 type UserContainerPort struct {
 	HostPort      int32  `protobuf:"varint,1,opt,name=hostPort,proto3" json:"hostPort,omitempty"`
@@ -1107,6 +2124,34 @@ func (m *UserContainerPort) String() string            { return proto.CompactTex
 func (*UserContainerPort) ProtoMessage()               {}
 func (*UserContainerPort) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{46} }
 
+func (m *UserContainerPort) GetHostPort() int32 {
+	if m != nil {
+		return m.HostPort
+	}
+	return 0
+}
+
+func (m *UserContainerPort) GetContainerPort() int32 {
+	if m != nil {
+		return m.ContainerPort
+	}
+	return 0
+}
+
+func (m *UserContainerPort) GetServicePort() int32 {
+	if m != nil {
+		return m.ServicePort
+	}
+	return 0
+}
+
+func (m *UserContainerPort) GetProtocol() string {
+	if m != nil {
+		return m.Protocol
+	}
+	return ""
+}
+
 type UserVolumeReference struct {
 	Path     string      `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	Volume   string      `protobuf:"bytes,2,opt,name=volume,proto3" json:"volume,omitempty"`
@@ -1118,6 +2163,27 @@ func (m *UserVolumeReference) Reset()                    { *m = UserVolumeRefere
 func (m *UserVolumeReference) String() string            { return proto.CompactTextString(m) }
 func (*UserVolumeReference) ProtoMessage()               {}
 func (*UserVolumeReference) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{47} }
+
+func (m *UserVolumeReference) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *UserVolumeReference) GetVolume() string {
+	if m != nil {
+		return m.Volume
+	}
+	return ""
+}
+
+func (m *UserVolumeReference) GetReadOnly() bool {
+	if m != nil {
+		return m.ReadOnly
+	}
+	return false
+}
 
 func (m *UserVolumeReference) GetDetail() *UserVolume {
 	if m != nil {
@@ -1140,6 +2206,41 @@ func (m *UserFileReference) String() string            { return proto.CompactTex
 func (*UserFileReference) ProtoMessage()               {}
 func (*UserFileReference) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{48} }
 
+func (m *UserFileReference) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *UserFileReference) GetFilename() string {
+	if m != nil {
+		return m.Filename
+	}
+	return ""
+}
+
+func (m *UserFileReference) GetPerm() string {
+	if m != nil {
+		return m.Perm
+	}
+	return ""
+}
+
+func (m *UserFileReference) GetUser() string {
+	if m != nil {
+		return m.User
+	}
+	return ""
+}
+
+func (m *UserFileReference) GetGroup() string {
+	if m != nil {
+		return m.Group
+	}
+	return ""
+}
+
 func (m *UserFileReference) GetDetail() *UserFile {
 	if m != nil {
 		return m.Detail
@@ -1158,6 +2259,27 @@ func (m *UserUser) String() string            { return proto.CompactTextString(m
 func (*UserUser) ProtoMessage()               {}
 func (*UserUser) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{49} }
 
+func (m *UserUser) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UserUser) GetGroup() string {
+	if m != nil {
+		return m.Group
+	}
+	return ""
+}
+
+func (m *UserUser) GetAdditionalGroups() []string {
+	if m != nil {
+		return m.AdditionalGroups
+	}
+	return nil
+}
+
 type Ulimit struct {
 	Name string `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
 	Hard uint64 `protobuf:"varint,2,opt,name=Hard,proto3" json:"Hard,omitempty"`
@@ -1168,6 +2290,27 @@ func (m *Ulimit) Reset()                    { *m = Ulimit{} }
 func (m *Ulimit) String() string            { return proto.CompactTextString(m) }
 func (*Ulimit) ProtoMessage()               {}
 func (*Ulimit) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{50} }
+
+func (m *Ulimit) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Ulimit) GetHard() uint64 {
+	if m != nil {
+		return m.Hard
+	}
+	return 0
+}
+
+func (m *Ulimit) GetSoft() uint64 {
+	if m != nil {
+		return m.Soft
+	}
+	return 0
+}
 
 type UserContainer struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1195,6 +2338,41 @@ func (m *UserContainer) String() string            { return proto.CompactTextStr
 func (*UserContainer) ProtoMessage()               {}
 func (*UserContainer) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{51} }
 
+func (m *UserContainer) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UserContainer) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *UserContainer) GetWorkdir() string {
+	if m != nil {
+		return m.Workdir
+	}
+	return ""
+}
+
+func (m *UserContainer) GetRestartPolicy() string {
+	if m != nil {
+		return m.RestartPolicy
+	}
+	return ""
+}
+
+func (m *UserContainer) GetTty() bool {
+	if m != nil {
+		return m.Tty
+	}
+	return false
+}
+
 func (m *UserContainer) GetSysctl() map[string]string {
 	if m != nil {
 		return m.Sysctl
@@ -1205,6 +2383,20 @@ func (m *UserContainer) GetSysctl() map[string]string {
 func (m *UserContainer) GetEnvs() []*EnvironmentVar {
 	if m != nil {
 		return m.Envs
+	}
+	return nil
+}
+
+func (m *UserContainer) GetCommand() []string {
+	if m != nil {
+		return m.Command
+	}
+	return nil
+}
+
+func (m *UserContainer) GetEntrypoint() []string {
+	if m != nil {
+		return m.Entrypoint
 	}
 	return nil
 }
@@ -1244,11 +2436,32 @@ func (m *UserContainer) GetLabels() map[string]string {
 	return nil
 }
 
+func (m *UserContainer) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UserContainer) GetStopSignal() string {
+	if m != nil {
+		return m.StopSignal
+	}
+	return ""
+}
+
 func (m *UserContainer) GetUlimits() []*Ulimit {
 	if m != nil {
 		return m.Ulimits
 	}
 	return nil
+}
+
+func (m *UserContainer) GetLogPath() string {
+	if m != nil {
+		return m.LogPath
+	}
+	return ""
 }
 
 type UserResource struct {
@@ -1260,6 +2473,20 @@ func (m *UserResource) Reset()                    { *m = UserResource{} }
 func (m *UserResource) String() string            { return proto.CompactTextString(m) }
 func (*UserResource) ProtoMessage()               {}
 func (*UserResource) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{52} }
+
+func (m *UserResource) GetVcpu() int32 {
+	if m != nil {
+		return m.Vcpu
+	}
+	return 0
+}
+
+func (m *UserResource) GetMemory() int32 {
+	if m != nil {
+		return m.Memory
+	}
+	return 0
+}
 
 type UserFile struct {
 	Name     string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1273,6 +2500,34 @@ func (m *UserFile) String() string            { return proto.CompactTextString(m
 func (*UserFile) ProtoMessage()               {}
 func (*UserFile) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{53} }
 
+func (m *UserFile) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UserFile) GetEncoding() string {
+	if m != nil {
+		return m.Encoding
+	}
+	return ""
+}
+
+func (m *UserFile) GetUri() string {
+	if m != nil {
+		return m.Uri
+	}
+	return ""
+}
+
+func (m *UserFile) GetContent() string {
+	if m != nil {
+		return m.Content
+	}
+	return ""
+}
+
 type UserVolumeOption struct {
 	User     string   `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	Keyring  string   `protobuf:"bytes,2,opt,name=keyring,proto3" json:"keyring,omitempty"`
@@ -1283,6 +2538,27 @@ func (m *UserVolumeOption) Reset()                    { *m = UserVolumeOption{} 
 func (m *UserVolumeOption) String() string            { return proto.CompactTextString(m) }
 func (*UserVolumeOption) ProtoMessage()               {}
 func (*UserVolumeOption) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{54} }
+
+func (m *UserVolumeOption) GetUser() string {
+	if m != nil {
+		return m.User
+	}
+	return ""
+}
+
+func (m *UserVolumeOption) GetKeyring() string {
+	if m != nil {
+		return m.Keyring
+	}
+	return ""
+}
+
+func (m *UserVolumeOption) GetMonitors() []string {
+	if m != nil {
+		return m.Monitors
+	}
+	return nil
+}
 
 type UserVolume struct {
 	Name   string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1297,11 +2573,39 @@ func (m *UserVolume) String() string            { return proto.CompactTextString
 func (*UserVolume) ProtoMessage()               {}
 func (*UserVolume) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{55} }
 
+func (m *UserVolume) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UserVolume) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
+func (m *UserVolume) GetFormat() string {
+	if m != nil {
+		return m.Format
+	}
+	return ""
+}
+
 func (m *UserVolume) GetOption() *UserVolumeOption {
 	if m != nil {
 		return m.Option
 	}
 	return nil
+}
+
+func (m *UserVolume) GetFstype() string {
+	if m != nil {
+		return m.Fstype
+	}
+	return ""
 }
 
 type UserInterface struct {
@@ -1318,6 +2622,48 @@ func (m *UserInterface) String() string            { return proto.CompactTextStr
 func (*UserInterface) ProtoMessage()               {}
 func (*UserInterface) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{56} }
 
+func (m *UserInterface) GetBridge() string {
+	if m != nil {
+		return m.Bridge
+	}
+	return ""
+}
+
+func (m *UserInterface) GetIp() string {
+	if m != nil {
+		return m.Ip
+	}
+	return ""
+}
+
+func (m *UserInterface) GetIfname() string {
+	if m != nil {
+		return m.Ifname
+	}
+	return ""
+}
+
+func (m *UserInterface) GetMac() string {
+	if m != nil {
+		return m.Mac
+	}
+	return ""
+}
+
+func (m *UserInterface) GetGateway() string {
+	if m != nil {
+		return m.Gateway
+	}
+	return ""
+}
+
+func (m *UserInterface) GetTap() string {
+	if m != nil {
+		return m.Tap
+	}
+	return ""
+}
+
 type UserServiceBackend struct {
 	HostIP   string `protobuf:"bytes,1,opt,name=hostIP,proto3" json:"hostIP,omitempty"`
 	HostPort int32  `protobuf:"varint,2,opt,name=hostPort,proto3" json:"hostPort,omitempty"`
@@ -1327,6 +2673,20 @@ func (m *UserServiceBackend) Reset()                    { *m = UserServiceBacken
 func (m *UserServiceBackend) String() string            { return proto.CompactTextString(m) }
 func (*UserServiceBackend) ProtoMessage()               {}
 func (*UserServiceBackend) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{57} }
+
+func (m *UserServiceBackend) GetHostIP() string {
+	if m != nil {
+		return m.HostIP
+	}
+	return ""
+}
+
+func (m *UserServiceBackend) GetHostPort() int32 {
+	if m != nil {
+		return m.HostPort
+	}
+	return 0
+}
 
 type UserService struct {
 	ServiceIP   string                `protobuf:"bytes,1,opt,name=serviceIP,proto3" json:"serviceIP,omitempty"`
@@ -1339,6 +2699,27 @@ func (m *UserService) Reset()                    { *m = UserService{} }
 func (m *UserService) String() string            { return proto.CompactTextString(m) }
 func (*UserService) ProtoMessage()               {}
 func (*UserService) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{58} }
+
+func (m *UserService) GetServiceIP() string {
+	if m != nil {
+		return m.ServiceIP
+	}
+	return ""
+}
+
+func (m *UserService) GetProtocol() string {
+	if m != nil {
+		return m.Protocol
+	}
+	return ""
+}
+
+func (m *UserService) GetServicePort() int32 {
+	if m != nil {
+		return m.ServicePort
+	}
+	return 0
+}
 
 func (m *UserService) GetHosts() []*UserServiceBackend {
 	if m != nil {
@@ -1356,6 +2737,13 @@ func (m *PodLogConfig) Reset()                    { *m = PodLogConfig{} }
 func (m *PodLogConfig) String() string            { return proto.CompactTextString(m) }
 func (*PodLogConfig) ProtoMessage()               {}
 func (*PodLogConfig) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{59} }
+
+func (m *PodLogConfig) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
 
 func (m *PodLogConfig) GetConfig() map[string]string {
 	if m != nil {
@@ -1375,6 +2763,27 @@ func (m *PortMapping) String() string            { return proto.CompactTextStrin
 func (*PortMapping) ProtoMessage()               {}
 func (*PortMapping) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{60} }
 
+func (m *PortMapping) GetContainerPort() string {
+	if m != nil {
+		return m.ContainerPort
+	}
+	return ""
+}
+
+func (m *PortMapping) GetHostPort() string {
+	if m != nil {
+		return m.HostPort
+	}
+	return ""
+}
+
+func (m *PortMapping) GetProtocol() string {
+	if m != nil {
+		return m.Protocol
+	}
+	return ""
+}
+
 type PortmappingWhiteList struct {
 	// allowed internal networks in CIDR format for portmapping
 	// Those networks could visit all container ports if portmapping is enabled
@@ -1388,6 +2797,20 @@ func (m *PortmappingWhiteList) Reset()                    { *m = PortmappingWhit
 func (m *PortmappingWhiteList) String() string            { return proto.CompactTextString(m) }
 func (*PortmappingWhiteList) ProtoMessage()               {}
 func (*PortmappingWhiteList) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{61} }
+
+func (m *PortmappingWhiteList) GetInternalNetworks() []string {
+	if m != nil {
+		return m.InternalNetworks
+	}
+	return nil
+}
+
+func (m *PortmappingWhiteList) GetExternalNetworks() []string {
+	if m != nil {
+		return m.ExternalNetworks
+	}
+	return nil
+}
 
 type UserPod struct {
 	// TODO: rename this to name (renaming will also change restful API)
@@ -1416,6 +2839,41 @@ func (m *UserPod) String() string            { return proto.CompactTextString(m)
 func (*UserPod) ProtoMessage()               {}
 func (*UserPod) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{62} }
 
+func (m *UserPod) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UserPod) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *UserPod) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *UserPod) GetRestartPolicy() string {
+	if m != nil {
+		return m.RestartPolicy
+	}
+	return ""
+}
+
+func (m *UserPod) GetTty() bool {
+	if m != nil {
+		return m.Tty
+	}
+	return false
+}
+
 func (m *UserPod) GetLabels() map[string]string {
 	if m != nil {
 		return m.Labels
@@ -1433,6 +2891,13 @@ func (m *UserPod) GetResource() *UserResource {
 func (m *UserPod) GetLog() *PodLogConfig {
 	if m != nil {
 		return m.Log
+	}
+	return nil
+}
+
+func (m *UserPod) GetDns() []string {
+	if m != nil {
+		return m.Dns
 	}
 	return nil
 }
@@ -1486,6 +2951,20 @@ func (m *UserPod) GetPortmappings() []*PortMapping {
 	return nil
 }
 
+func (m *UserPod) GetDnsOptions() []string {
+	if m != nil {
+		return m.DnsOptions
+	}
+	return nil
+}
+
+func (m *UserPod) GetDnsSearch() []string {
+	if m != nil {
+		return m.DnsSearch
+	}
+	return nil
+}
+
 type PodCreateRequest struct {
 	PodSpec *UserPod `protobuf:"bytes,1,opt,name=podSpec" json:"podSpec,omitempty"`
 	PodID   string   `protobuf:"bytes,2,opt,name=podID,proto3" json:"podID,omitempty"`
@@ -1503,6 +2982,13 @@ func (m *PodCreateRequest) GetPodSpec() *UserPod {
 	return nil
 }
 
+func (m *PodCreateRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 type PodCreateResponse struct {
 	PodID string `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 }
@@ -1511,6 +2997,13 @@ func (m *PodCreateResponse) Reset()                    { *m = PodCreateResponse{
 func (m *PodCreateResponse) String() string            { return proto.CompactTextString(m) }
 func (*PodCreateResponse) ProtoMessage()               {}
 func (*PodCreateResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{64} }
+
+func (m *PodCreateResponse) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
 
 type PodRemoveRequest struct {
 	PodID string `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
@@ -1521,6 +3014,13 @@ func (m *PodRemoveRequest) String() string            { return proto.CompactText
 func (*PodRemoveRequest) ProtoMessage()               {}
 func (*PodRemoveRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{65} }
 
+func (m *PodRemoveRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 type PodRemoveResponse struct {
 	Code  int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Cause string `protobuf:"bytes,2,opt,name=cause,proto3" json:"cause,omitempty"`
@@ -1530,6 +3030,20 @@ func (m *PodRemoveResponse) Reset()                    { *m = PodRemoveResponse{
 func (m *PodRemoveResponse) String() string            { return proto.CompactTextString(m) }
 func (*PodRemoveResponse) ProtoMessage()               {}
 func (*PodRemoveResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{66} }
+
+func (m *PodRemoveResponse) GetCode() int32 {
+	if m != nil {
+		return m.Code
+	}
+	return 0
+}
+
+func (m *PodRemoveResponse) GetCause() string {
+	if m != nil {
+		return m.Cause
+	}
+	return ""
+}
 
 type ContainerLogsRequest struct {
 	Container  string `protobuf:"bytes,1,opt,name=container,proto3" json:"container,omitempty"`
@@ -1546,6 +3060,55 @@ func (m *ContainerLogsRequest) String() string            { return proto.Compact
 func (*ContainerLogsRequest) ProtoMessage()               {}
 func (*ContainerLogsRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{67} }
 
+func (m *ContainerLogsRequest) GetContainer() string {
+	if m != nil {
+		return m.Container
+	}
+	return ""
+}
+
+func (m *ContainerLogsRequest) GetFollow() bool {
+	if m != nil {
+		return m.Follow
+	}
+	return false
+}
+
+func (m *ContainerLogsRequest) GetTimestamps() bool {
+	if m != nil {
+		return m.Timestamps
+	}
+	return false
+}
+
+func (m *ContainerLogsRequest) GetTail() string {
+	if m != nil {
+		return m.Tail
+	}
+	return ""
+}
+
+func (m *ContainerLogsRequest) GetSince() string {
+	if m != nil {
+		return m.Since
+	}
+	return ""
+}
+
+func (m *ContainerLogsRequest) GetStdout() bool {
+	if m != nil {
+		return m.Stdout
+	}
+	return false
+}
+
+func (m *ContainerLogsRequest) GetStderr() bool {
+	if m != nil {
+		return m.Stderr
+	}
+	return false
+}
+
 type ContainerLogsResponse struct {
 	Log []byte `protobuf:"bytes,1,opt,name=log,proto3" json:"log,omitempty"`
 }
@@ -1554,6 +3117,13 @@ func (m *ContainerLogsResponse) Reset()                    { *m = ContainerLogsR
 func (m *ContainerLogsResponse) String() string            { return proto.CompactTextString(m) }
 func (*ContainerLogsResponse) ProtoMessage()               {}
 func (*ContainerLogsResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{68} }
+
+func (m *ContainerLogsResponse) GetLog() []byte {
+	if m != nil {
+		return m.Log
+	}
+	return nil
+}
 
 type DriverStatus struct {
 	Name   string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1564,6 +3134,20 @@ func (m *DriverStatus) Reset()                    { *m = DriverStatus{} }
 func (m *DriverStatus) String() string            { return proto.CompactTextString(m) }
 func (*DriverStatus) ProtoMessage()               {}
 func (*DriverStatus) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{69} }
+
+func (m *DriverStatus) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *DriverStatus) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
 
 type InfoRequest struct {
 }
@@ -1593,11 +3177,88 @@ func (m *InfoResponse) String() string            { return proto.CompactTextStri
 func (*InfoResponse) ProtoMessage()               {}
 func (*InfoResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{71} }
 
+func (m *InfoResponse) GetID() string {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+func (m *InfoResponse) GetContainers() int32 {
+	if m != nil {
+		return m.Containers
+	}
+	return 0
+}
+
+func (m *InfoResponse) GetImages() int32 {
+	if m != nil {
+		return m.Images
+	}
+	return 0
+}
+
+func (m *InfoResponse) GetDriver() string {
+	if m != nil {
+		return m.Driver
+	}
+	return ""
+}
+
 func (m *InfoResponse) GetDstatus() []*DriverStatus {
 	if m != nil {
 		return m.Dstatus
 	}
 	return nil
+}
+
+func (m *InfoResponse) GetDockerRootDir() string {
+	if m != nil {
+		return m.DockerRootDir
+	}
+	return ""
+}
+
+func (m *InfoResponse) GetIndexServerAddress() string {
+	if m != nil {
+		return m.IndexServerAddress
+	}
+	return ""
+}
+
+func (m *InfoResponse) GetExecutionDriver() string {
+	if m != nil {
+		return m.ExecutionDriver
+	}
+	return ""
+}
+
+func (m *InfoResponse) GetMemTotal() int64 {
+	if m != nil {
+		return m.MemTotal
+	}
+	return 0
+}
+
+func (m *InfoResponse) GetPods() int64 {
+	if m != nil {
+		return m.Pods
+	}
+	return 0
+}
+
+func (m *InfoResponse) GetOperatingSystem() string {
+	if m != nil {
+		return m.OperatingSystem
+	}
+	return ""
+}
+
+func (m *InfoResponse) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
 }
 
 type ExecCreateRequest struct {
@@ -1611,6 +3272,27 @@ func (m *ExecCreateRequest) String() string            { return proto.CompactTex
 func (*ExecCreateRequest) ProtoMessage()               {}
 func (*ExecCreateRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{72} }
 
+func (m *ExecCreateRequest) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ExecCreateRequest) GetCommand() []string {
+	if m != nil {
+		return m.Command
+	}
+	return nil
+}
+
+func (m *ExecCreateRequest) GetTty() bool {
+	if m != nil {
+		return m.Tty
+	}
+	return false
+}
+
 type ExecCreateResponse struct {
 	ExecID string `protobuf:"bytes,1,opt,name=execID,proto3" json:"execID,omitempty"`
 }
@@ -1619,6 +3301,13 @@ func (m *ExecCreateResponse) Reset()                    { *m = ExecCreateRespons
 func (m *ExecCreateResponse) String() string            { return proto.CompactTextString(m) }
 func (*ExecCreateResponse) ProtoMessage()               {}
 func (*ExecCreateResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{73} }
+
+func (m *ExecCreateResponse) GetExecID() string {
+	if m != nil {
+		return m.ExecID
+	}
+	return ""
+}
 
 type ExecStartRequest struct {
 	ContainerID string `protobuf:"bytes,1,opt,name=containerID,proto3" json:"containerID,omitempty"`
@@ -1631,6 +3320,27 @@ func (m *ExecStartRequest) String() string            { return proto.CompactText
 func (*ExecStartRequest) ProtoMessage()               {}
 func (*ExecStartRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{74} }
 
+func (m *ExecStartRequest) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ExecStartRequest) GetExecID() string {
+	if m != nil {
+		return m.ExecID
+	}
+	return ""
+}
+
+func (m *ExecStartRequest) GetStdin() []byte {
+	if m != nil {
+		return m.Stdin
+	}
+	return nil
+}
+
 type ExecStartResponse struct {
 	Stdout []byte `protobuf:"bytes,1,opt,name=stdout,proto3" json:"stdout,omitempty"`
 }
@@ -1639,6 +3349,13 @@ func (m *ExecStartResponse) Reset()                    { *m = ExecStartResponse{
 func (m *ExecStartResponse) String() string            { return proto.CompactTextString(m) }
 func (*ExecStartResponse) ProtoMessage()               {}
 func (*ExecStartResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{75} }
+
+func (m *ExecStartResponse) GetStdout() []byte {
+	if m != nil {
+		return m.Stdout
+	}
+	return nil
+}
 
 type ExecVMRequest struct {
 	PodID   string   `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
@@ -1651,6 +3368,27 @@ func (m *ExecVMRequest) String() string            { return proto.CompactTextStr
 func (*ExecVMRequest) ProtoMessage()               {}
 func (*ExecVMRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{76} }
 
+func (m *ExecVMRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *ExecVMRequest) GetCommand() []string {
+	if m != nil {
+		return m.Command
+	}
+	return nil
+}
+
+func (m *ExecVMRequest) GetStdin() []byte {
+	if m != nil {
+		return m.Stdin
+	}
+	return nil
+}
+
 type ExecVMResponse struct {
 	Stdout   []byte `protobuf:"bytes,1,opt,name=stdout,proto3" json:"stdout,omitempty"`
 	ExitCode int32  `protobuf:"varint,2,opt,name=exitCode,proto3" json:"exitCode,omitempty"`
@@ -1660,6 +3398,20 @@ func (m *ExecVMResponse) Reset()                    { *m = ExecVMResponse{} }
 func (m *ExecVMResponse) String() string            { return proto.CompactTextString(m) }
 func (*ExecVMResponse) ProtoMessage()               {}
 func (*ExecVMResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{77} }
+
+func (m *ExecVMResponse) GetStdout() []byte {
+	if m != nil {
+		return m.Stdout
+	}
+	return nil
+}
+
+func (m *ExecVMResponse) GetExitCode() int32 {
+	if m != nil {
+		return m.ExitCode
+	}
+	return 0
+}
 
 type ExecSignalRequest struct {
 	ContainerID string `protobuf:"bytes,1,opt,name=containerID,proto3" json:"containerID,omitempty"`
@@ -1671,6 +3423,27 @@ func (m *ExecSignalRequest) Reset()                    { *m = ExecSignalRequest{
 func (m *ExecSignalRequest) String() string            { return proto.CompactTextString(m) }
 func (*ExecSignalRequest) ProtoMessage()               {}
 func (*ExecSignalRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{78} }
+
+func (m *ExecSignalRequest) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ExecSignalRequest) GetExecID() string {
+	if m != nil {
+		return m.ExecID
+	}
+	return ""
+}
+
+func (m *ExecSignalRequest) GetSignal() int64 {
+	if m != nil {
+		return m.Signal
+	}
+	return 0
+}
 
 type ExecSignalResponse struct {
 }
@@ -1688,6 +3461,13 @@ func (m *PodStartRequest) Reset()                    { *m = PodStartRequest{} }
 func (m *PodStartRequest) String() string            { return proto.CompactTextString(m) }
 func (*PodStartRequest) ProtoMessage()               {}
 func (*PodStartRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{80} }
+
+func (m *PodStartRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
 
 type PodStartResponse struct {
 }
@@ -1708,6 +3488,27 @@ func (m *WaitRequest) String() string            { return proto.CompactTextStrin
 func (*WaitRequest) ProtoMessage()               {}
 func (*WaitRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{82} }
 
+func (m *WaitRequest) GetContainer() string {
+	if m != nil {
+		return m.Container
+	}
+	return ""
+}
+
+func (m *WaitRequest) GetProcessId() string {
+	if m != nil {
+		return m.ProcessId
+	}
+	return ""
+}
+
+func (m *WaitRequest) GetNoHang() bool {
+	if m != nil {
+		return m.NoHang
+	}
+	return false
+}
+
 type WaitResponse struct {
 	ExitCode int32 `protobuf:"varint,1,opt,name=exitCode,proto3" json:"exitCode,omitempty"`
 }
@@ -1716,6 +3517,13 @@ func (m *WaitResponse) Reset()                    { *m = WaitResponse{} }
 func (m *WaitResponse) String() string            { return proto.CompactTextString(m) }
 func (*WaitResponse) ProtoMessage()               {}
 func (*WaitResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{83} }
+
+func (m *WaitResponse) GetExitCode() int32 {
+	if m != nil {
+		return m.ExitCode
+	}
+	return 0
+}
 
 type AttachMessage struct {
 	ContainerID string `protobuf:"bytes,1,opt,name=containerID,proto3" json:"containerID,omitempty"`
@@ -1726,6 +3534,20 @@ func (m *AttachMessage) Reset()                    { *m = AttachMessage{} }
 func (m *AttachMessage) String() string            { return proto.CompactTextString(m) }
 func (*AttachMessage) ProtoMessage()               {}
 func (*AttachMessage) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{84} }
+
+func (m *AttachMessage) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *AttachMessage) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
 
 type ContainerCreateRequest struct {
 	ContainerSpec *UserContainer `protobuf:"bytes,1,opt,name=containerSpec" json:"containerSpec,omitempty"`
@@ -1744,6 +3566,13 @@ func (m *ContainerCreateRequest) GetContainerSpec() *UserContainer {
 	return nil
 }
 
+func (m *ContainerCreateRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 type ContainerCreateResponse struct {
 	ContainerID string `protobuf:"bytes,1,opt,name=containerID,proto3" json:"containerID,omitempty"`
 }
@@ -1752,6 +3581,13 @@ func (m *ContainerCreateResponse) Reset()                    { *m = ContainerCre
 func (m *ContainerCreateResponse) String() string            { return proto.CompactTextString(m) }
 func (*ContainerCreateResponse) ProtoMessage()               {}
 func (*ContainerCreateResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{86} }
+
+func (m *ContainerCreateResponse) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
 
 type ContainerStartRequest struct {
 	// ID of the container to start.
@@ -1762,6 +3598,13 @@ func (m *ContainerStartRequest) Reset()                    { *m = ContainerStart
 func (m *ContainerStartRequest) String() string            { return proto.CompactTextString(m) }
 func (*ContainerStartRequest) ProtoMessage()               {}
 func (*ContainerStartRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{87} }
+
+func (m *ContainerStartRequest) GetContainerId() string {
+	if m != nil {
+		return m.ContainerId
+	}
+	return ""
+}
 
 type ContainerStartResponse struct {
 }
@@ -1781,6 +3624,20 @@ func (m *ContainerRenameRequest) String() string            { return proto.Compa
 func (*ContainerRenameRequest) ProtoMessage()               {}
 func (*ContainerRenameRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{89} }
 
+func (m *ContainerRenameRequest) GetOldContainerName() string {
+	if m != nil {
+		return m.OldContainerName
+	}
+	return ""
+}
+
+func (m *ContainerRenameRequest) GetNewContainerName() string {
+	if m != nil {
+		return m.NewContainerName
+	}
+	return ""
+}
+
 type ContainerRenameResponse struct {
 }
 
@@ -1797,6 +3654,13 @@ func (m *ContainerRemoveRequest) Reset()                    { *m = ContainerRemo
 func (m *ContainerRemoveRequest) String() string            { return proto.CompactTextString(m) }
 func (*ContainerRemoveRequest) ProtoMessage()               {}
 func (*ContainerRemoveRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{91} }
+
+func (m *ContainerRemoveRequest) GetContainerId() string {
+	if m != nil {
+		return m.ContainerId
+	}
+	return ""
+}
 
 type ContainerRemoveResponse struct {
 }
@@ -1820,6 +3684,48 @@ func (m *AuthConfig) String() string            { return proto.CompactTextString
 func (*AuthConfig) ProtoMessage()               {}
 func (*AuthConfig) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{93} }
 
+func (m *AuthConfig) GetUsername() string {
+	if m != nil {
+		return m.Username
+	}
+	return ""
+}
+
+func (m *AuthConfig) GetPassword() string {
+	if m != nil {
+		return m.Password
+	}
+	return ""
+}
+
+func (m *AuthConfig) GetAuth() string {
+	if m != nil {
+		return m.Auth
+	}
+	return ""
+}
+
+func (m *AuthConfig) GetEmail() string {
+	if m != nil {
+		return m.Email
+	}
+	return ""
+}
+
+func (m *AuthConfig) GetServeraddress() string {
+	if m != nil {
+		return m.Serveraddress
+	}
+	return ""
+}
+
+func (m *AuthConfig) GetRegistrytoken() string {
+	if m != nil {
+		return m.Registrytoken
+	}
+	return ""
+}
+
 type ImagePullRequest struct {
 	Image string      `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
 	Tag   string      `protobuf:"bytes,2,opt,name=tag,proto3" json:"tag,omitempty"`
@@ -1830,6 +3736,20 @@ func (m *ImagePullRequest) Reset()                    { *m = ImagePullRequest{} 
 func (m *ImagePullRequest) String() string            { return proto.CompactTextString(m) }
 func (*ImagePullRequest) ProtoMessage()               {}
 func (*ImagePullRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{94} }
+
+func (m *ImagePullRequest) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *ImagePullRequest) GetTag() string {
+	if m != nil {
+		return m.Tag
+	}
+	return ""
+}
 
 func (m *ImagePullRequest) GetAuth() *AuthConfig {
 	if m != nil {
@@ -1847,6 +3767,13 @@ func (m *ImagePullResponse) String() string            { return proto.CompactTex
 func (*ImagePullResponse) ProtoMessage()               {}
 func (*ImagePullResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{95} }
 
+func (m *ImagePullResponse) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
 type ImagePushRequest struct {
 	Repo string      `protobuf:"bytes,1,opt,name=repo,proto3" json:"repo,omitempty"`
 	Tag  string      `protobuf:"bytes,2,opt,name=tag,proto3" json:"tag,omitempty"`
@@ -1857,6 +3784,20 @@ func (m *ImagePushRequest) Reset()                    { *m = ImagePushRequest{} 
 func (m *ImagePushRequest) String() string            { return proto.CompactTextString(m) }
 func (*ImagePushRequest) ProtoMessage()               {}
 func (*ImagePushRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{96} }
+
+func (m *ImagePushRequest) GetRepo() string {
+	if m != nil {
+		return m.Repo
+	}
+	return ""
+}
+
+func (m *ImagePushRequest) GetTag() string {
+	if m != nil {
+		return m.Tag
+	}
+	return ""
+}
 
 func (m *ImagePushRequest) GetAuth() *AuthConfig {
 	if m != nil {
@@ -1874,6 +3815,13 @@ func (m *ImagePushResponse) String() string            { return proto.CompactTex
 func (*ImagePushResponse) ProtoMessage()               {}
 func (*ImagePushResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{97} }
 
+func (m *ImagePushResponse) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
 type ImageRemoveRequest struct {
 	Image string `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
 	Force bool   `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
@@ -1885,6 +3833,27 @@ func (m *ImageRemoveRequest) String() string            { return proto.CompactTe
 func (*ImageRemoveRequest) ProtoMessage()               {}
 func (*ImageRemoveRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{98} }
 
+func (m *ImageRemoveRequest) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *ImageRemoveRequest) GetForce() bool {
+	if m != nil {
+		return m.Force
+	}
+	return false
+}
+
+func (m *ImageRemoveRequest) GetPrune() bool {
+	if m != nil {
+		return m.Prune
+	}
+	return false
+}
+
 type ImageDelete struct {
 	Untaged string `protobuf:"bytes,1,opt,name=untaged,proto3" json:"untaged,omitempty"`
 	Deleted string `protobuf:"bytes,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
@@ -1894,6 +3863,20 @@ func (m *ImageDelete) Reset()                    { *m = ImageDelete{} }
 func (m *ImageDelete) String() string            { return proto.CompactTextString(m) }
 func (*ImageDelete) ProtoMessage()               {}
 func (*ImageDelete) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{99} }
+
+func (m *ImageDelete) GetUntaged() string {
+	if m != nil {
+		return m.Untaged
+	}
+	return ""
+}
+
+func (m *ImageDelete) GetDeleted() string {
+	if m != nil {
+		return m.Deleted
+	}
+	return ""
+}
 
 type ImageRemoveResponse struct {
 	Images []*ImageDelete `protobuf:"bytes,1,rep,name=images" json:"images,omitempty"`
@@ -1920,6 +3903,20 @@ func (m *ContainerStopRequest) Reset()                    { *m = ContainerStopRe
 func (m *ContainerStopRequest) String() string            { return proto.CompactTextString(m) }
 func (*ContainerStopRequest) ProtoMessage()               {}
 func (*ContainerStopRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{101} }
+
+func (m *ContainerStopRequest) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ContainerStopRequest) GetTimeout() int64 {
+	if m != nil {
+		return m.Timeout
+	}
+	return 0
+}
 
 type ContainerStopResponse struct {
 }
@@ -1949,6 +3946,20 @@ func (m *VersionResponse) String() string            { return proto.CompactTextS
 func (*VersionResponse) ProtoMessage()               {}
 func (*VersionResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{104} }
 
+func (m *VersionResponse) GetVersion() string {
+	if m != nil {
+		return m.Version
+	}
+	return ""
+}
+
+func (m *VersionResponse) GetApiVersion() string {
+	if m != nil {
+		return m.ApiVersion
+	}
+	return ""
+}
+
 type ServiceListResponse struct {
 	Services []*UserService `protobuf:"bytes,1,rep,name=services" json:"services,omitempty"`
 }
@@ -1974,6 +3985,13 @@ func (m *ServiceListRequest) String() string            { return proto.CompactTe
 func (*ServiceListRequest) ProtoMessage()               {}
 func (*ServiceListRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{106} }
 
+func (m *ServiceListRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 type ServiceAddRequest struct {
 	PodID    string         `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 	Services []*UserService `protobuf:"bytes,2,rep,name=services" json:"services,omitempty"`
@@ -1983,6 +4001,13 @@ func (m *ServiceAddRequest) Reset()                    { *m = ServiceAddRequest{
 func (m *ServiceAddRequest) String() string            { return proto.CompactTextString(m) }
 func (*ServiceAddRequest) ProtoMessage()               {}
 func (*ServiceAddRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{107} }
+
+func (m *ServiceAddRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
 
 func (m *ServiceAddRequest) GetServices() []*UserService {
 	if m != nil {
@@ -2009,6 +4034,13 @@ func (m *ServiceDelRequest) String() string            { return proto.CompactTex
 func (*ServiceDelRequest) ProtoMessage()               {}
 func (*ServiceDelRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{109} }
 
+func (m *ServiceDelRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 func (m *ServiceDelRequest) GetServices() []*UserService {
 	if m != nil {
 		return m.Services
@@ -2034,6 +4066,13 @@ func (m *ServiceUpdateRequest) String() string            { return proto.Compact
 func (*ServiceUpdateRequest) ProtoMessage()               {}
 func (*ServiceUpdateRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{111} }
 
+func (m *ServiceUpdateRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 func (m *ServiceUpdateRequest) GetServices() []*UserService {
 	if m != nil {
 		return m.Services
@@ -2058,6 +4097,13 @@ func (m *PodStopRequest) String() string            { return proto.CompactTextSt
 func (*PodStopRequest) ProtoMessage()               {}
 func (*PodStopRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{113} }
 
+func (m *PodStopRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 type PodStopResponse struct {
 	Code  int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Cause string `protobuf:"bytes,2,opt,name=cause,proto3" json:"cause,omitempty"`
@@ -2068,6 +4114,20 @@ func (m *PodStopResponse) String() string            { return proto.CompactTextS
 func (*PodStopResponse) ProtoMessage()               {}
 func (*PodStopResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{114} }
 
+func (m *PodStopResponse) GetCode() int32 {
+	if m != nil {
+		return m.Code
+	}
+	return 0
+}
+
+func (m *PodStopResponse) GetCause() string {
+	if m != nil {
+		return m.Cause
+	}
+	return ""
+}
+
 type PodSignalRequest struct {
 	PodID  string `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 	Signal int64  `protobuf:"varint,2,opt,name=signal,proto3" json:"signal,omitempty"`
@@ -2077,6 +4137,20 @@ func (m *PodSignalRequest) Reset()                    { *m = PodSignalRequest{} 
 func (m *PodSignalRequest) String() string            { return proto.CompactTextString(m) }
 func (*PodSignalRequest) ProtoMessage()               {}
 func (*PodSignalRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{115} }
+
+func (m *PodSignalRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *PodSignalRequest) GetSignal() int64 {
+	if m != nil {
+		return m.Signal
+	}
+	return 0
+}
 
 type PodSignalResponse struct {
 }
@@ -2095,6 +4169,13 @@ func (m *PodPauseRequest) String() string            { return proto.CompactTextS
 func (*PodPauseRequest) ProtoMessage()               {}
 func (*PodPauseRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{117} }
 
+func (m *PodPauseRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
 type PodPauseResponse struct {
 }
 
@@ -2111,6 +4192,13 @@ func (m *PodUnpauseRequest) Reset()                    { *m = PodUnpauseRequest{
 func (m *PodUnpauseRequest) String() string            { return proto.CompactTextString(m) }
 func (*PodUnpauseRequest) ProtoMessage()               {}
 func (*PodUnpauseRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{119} }
+
+func (m *PodUnpauseRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
 
 type PodUnpauseResponse struct {
 }
@@ -2130,6 +4218,20 @@ func (m *PodLabelsRequest) Reset()                    { *m = PodLabelsRequest{} 
 func (m *PodLabelsRequest) String() string            { return proto.CompactTextString(m) }
 func (*PodLabelsRequest) ProtoMessage()               {}
 func (*PodLabelsRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{121} }
+
+func (m *PodLabelsRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *PodLabelsRequest) GetOverride() bool {
+	if m != nil {
+		return m.Override
+	}
+	return false
+}
 
 func (m *PodLabelsRequest) GetLabels() map[string]string {
 	if m != nil {
@@ -2154,6 +4256,13 @@ func (m *PodStatsRequest) Reset()                    { *m = PodStatsRequest{} }
 func (m *PodStatsRequest) String() string            { return proto.CompactTextString(m) }
 func (*PodStatsRequest) ProtoMessage()               {}
 func (*PodStatsRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{123} }
+
+func (m *PodStatsRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
 
 type PodStatsResponse struct {
 	PodStats *PodStats `protobuf:"bytes,1,opt,name=podStats" json:"podStats,omitempty"`
@@ -2188,6 +4297,13 @@ func (m *PingResponse) String() string            { return proto.CompactTextStri
 func (*PingResponse) ProtoMessage()               {}
 func (*PingResponse) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{126} }
 
+func (m *PingResponse) GetHyperdStats() string {
+	if m != nil {
+		return m.HyperdStats
+	}
+	return ""
+}
+
 type ContainerSignalRequest struct {
 	PodID       string `protobuf:"bytes,1,opt,name=podID,proto3" json:"podID,omitempty"`
 	ContainerID string `protobuf:"bytes,2,opt,name=containerID,proto3" json:"containerID,omitempty"`
@@ -2198,6 +4314,27 @@ func (m *ContainerSignalRequest) Reset()                    { *m = ContainerSign
 func (m *ContainerSignalRequest) String() string            { return proto.CompactTextString(m) }
 func (*ContainerSignalRequest) ProtoMessage()               {}
 func (*ContainerSignalRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{127} }
+
+func (m *ContainerSignalRequest) GetPodID() string {
+	if m != nil {
+		return m.PodID
+	}
+	return ""
+}
+
+func (m *ContainerSignalRequest) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *ContainerSignalRequest) GetSignal() int64 {
+	if m != nil {
+		return m.Signal
+	}
+	return 0
+}
 
 type ContainerSignalResponse struct {
 }
@@ -2218,6 +4355,34 @@ func (m *TTYResizeRequest) Reset()                    { *m = TTYResizeRequest{} 
 func (m *TTYResizeRequest) String() string            { return proto.CompactTextString(m) }
 func (*TTYResizeRequest) ProtoMessage()               {}
 func (*TTYResizeRequest) Descriptor() ([]byte, []int) { return fileDescriptorTypes, []int{129} }
+
+func (m *TTYResizeRequest) GetContainerID() string {
+	if m != nil {
+		return m.ContainerID
+	}
+	return ""
+}
+
+func (m *TTYResizeRequest) GetExecID() string {
+	if m != nil {
+		return m.ExecID
+	}
+	return ""
+}
+
+func (m *TTYResizeRequest) GetWidth() int32 {
+	if m != nil {
+		return m.Width
+	}
+	return 0
+}
+
+func (m *TTYResizeRequest) GetHeight() int32 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
 
 type TTYResizeResponse struct {
 }
@@ -2367,7 +4532,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for PublicAPI service
 
@@ -3944,8 +6109,10 @@ var _PublicAPI_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: fileDescriptorTypes,
+	Metadata: "types.proto",
 }
+
+func init() { proto.RegisterFile("types.proto", fileDescriptorTypes) }
 
 var fileDescriptorTypes = []byte{
 	// 5242 bytes of a gzipped FileDescriptorProto

@@ -85,6 +85,8 @@ type ImageService interface {
 	// RemoveImage removes the image.
 	// It should return success if the image has already been removed.
 	RemoveImage(image *kubeapi.ImageSpec) error
+	// ImageFsInfo returns information of the filesystem that is used to store images.
+	ImageFsInfo() (*kubeapi.FsInfo, error)
 
 	// ServiceName method is used to log out with service's name
 	ServiceName() string
