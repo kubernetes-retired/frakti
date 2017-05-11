@@ -81,8 +81,6 @@ On CentOS 7:
 
 ```sh
 yum install -y docker
-sed -i 's/native.cgroupdriver=systemd/native.cgroupdriver=cgroupfs/g' /usr/lib/systemd/system/docker.service
-systemctl daemon-reload
 ```
 
 Configure and start docker:
@@ -97,6 +95,7 @@ systemctl start docker
 ```sh
 curl -sSL https://github.com/kubernetes/frakti/releases/download/v0.2/frakti -o /usr/bin/frakti
 chmod +x /usr/bin/frakti
+cgroup_driver=$(docker info | awk '/Cgroup Driver/{print $3}')
 cat <<EOF > /lib/systemd/system/frakti.service
 [Unit]
 Description=Hypervisor-based container runtime for Kubernetes
@@ -107,6 +106,7 @@ After=network.target
 ExecStart=/usr/bin/frakti --v=3 \
           --log-dir=/var/log/frakti \
           --logtostderr=false \
+          --cgroup-driver=${cgroup_driver} \
           --listen=/var/run/frakti.sock \
           --streaming-server-addr=%H \
           --hyper-endpoint=127.0.0.1:22318
@@ -131,7 +131,7 @@ On Ubuntu 16.04+:
 apt-get update && apt-get install -y apt-transport-https
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 cat <<EOF > /etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial-unstable main
+deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get install -y kubernetes-cni
@@ -143,7 +143,7 @@ On CentOS 7:
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
-baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64-unstable
+baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
 enabled=1
 gpgcheck=1
 repo_gpgcheck=1
