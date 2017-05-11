@@ -25,8 +25,6 @@ import (
 )
 
 const (
-	// FraktiRootDir is the root directory for Frakti
-	FraktiRootDir = "/var/lib/frakti"
 	// default directory to store pod sandbox checkpoint files
 	sandboxCheckpointDir = "sandbox"
 	ProtocolTCP          = Protocol("tcp")
@@ -84,8 +82,8 @@ type PersistentCheckpointHandler struct {
 	store CheckpointStore
 }
 
-func NewPersistentCheckpointHandler() (CheckpointHandler, error) {
-	checkpointDir := filepath.Join(FraktiRootDir, sandboxCheckpointDir)
+func NewPersistentCheckpointHandler(fraktiRootDir string) (CheckpointHandler, error) {
+	checkpointDir := filepath.Join(fraktiRootDir, sandboxCheckpointDir)
 	if _, err := os.Stat(checkpointDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(checkpointDir, 0755); err != nil && !os.IsExist(err) {
 			return nil, err
