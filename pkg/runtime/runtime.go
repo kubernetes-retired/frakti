@@ -19,7 +19,7 @@ package runtime
 import (
 	"time"
 
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 )
 
 // RuntimeService interface should be implemented by a container runtime.
