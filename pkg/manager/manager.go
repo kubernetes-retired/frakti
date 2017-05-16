@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/frakti/pkg/alternativeruntime"
 	"k8s.io/frakti/pkg/runtime"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )

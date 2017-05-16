@@ -25,7 +25,7 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/types"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 )
 
 const (
@@ -60,6 +60,11 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 		return nil, fmt.Errorf("Privileged containers are not supported in hyper")
 	}
 
+	logPath := filepath.Join(sandboxConfig.LogDirectory, config.LogPath)
+	if config.Labels == nil {
+		config.Labels = make(map[string]string)
+	}
+	config.Labels[containerLogPathLabelKey] = logPath
 	containerSpec := &types.UserContainer{
 		Name:       buildContainerName(sandboxConfig, config),
 		Image:      config.GetImage().Image,
@@ -68,7 +73,7 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 		Command:    config.Args,
 		Entrypoint: config.Command,
 		Labels:     buildLabelsWithAnnotations(config.Labels, config.Annotations),
-		LogPath:    filepath.Join(sandboxConfig.LogDirectory, config.LogPath),
+		LogPath:    logPath,
 	}
 
 	// make volumes
@@ -225,6 +230,7 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 		return nil, err
 	}
 
+	logPath := status.Container.Labels[containerLogPathLabelKey]
 	state := toKubeContainerState(status.Status.Phase)
 	annotations := getAnnotationsFromLabels(status.Container.Labels)
 	kubeletLabels := getKubeletLabels(status.Container.Labels)
@@ -250,6 +256,7 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 		Labels:      kubeletLabels,
 		Annotations: annotations,
 		CreatedAt:   createdAtNano,
+		LogPath:     logPath,
 	}
 
 	mounts := make([]*kubeapi.Mount, len(status.Container.VolumeMounts))

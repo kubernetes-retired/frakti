@@ -27,7 +27,7 @@ import (
 	"golang.org/x/sys/unix"
 	"k8s.io/frakti/pkg/hyper/types"
 	"k8s.io/kubernetes/pkg/api/v1"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 )
 
 // RunPodSandbox creates and starts a pod-level sandbox.

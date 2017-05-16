@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"k8s.io/frakti/test/e2e/framework"
-	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	internalapi "k8s.io/kubernetes/pkg/kubelet/apis/cri"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

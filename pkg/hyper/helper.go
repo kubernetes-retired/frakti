@@ -32,7 +32,7 @@ import (
 	libcontainercgroups "github.com/opencontainers/runc/libcontainer/cgroups"
 	"golang.org/x/net/context"
 	"k8s.io/frakti/pkg/hyper/types"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 )
 
 const (
@@ -42,6 +42,8 @@ const (
 	kubeSandboxNamePrefix = "POD"
 	// fraktiAnnotationLabel is used to save annotations into labels
 	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
+
+	containerLogPathLabelKey = "io.kubernetes.container.logpath"
 
 	// default resources while the pod level qos of kubelet pod is not specified.
 	defaultCPUNumber         = 1
@@ -226,6 +228,7 @@ func toPodSandboxState(state string) kubeapi.PodSandboxState {
 //getKubeletLabels gets kubelet labels from labels.
 func getKubeletLabels(lables map[string]string) map[string]string {
 	delete(lables, fraktiAnnotationLabel)
+	delete(lables, containerLogPathLabelKey)
 	return lables
 }
 
