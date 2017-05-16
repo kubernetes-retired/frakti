@@ -43,6 +43,8 @@ const (
 	// fraktiAnnotationLabel is used to save annotations into labels
 	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
 
+	containerLogPathLabelKey = "io.kubernetes.container.logpath"
+
 	// default resources while the pod level qos of kubelet pod is not specified.
 	defaultCPUNumber         = 1
 	defaultMemoryinMegabytes = 64
@@ -226,6 +228,7 @@ func toPodSandboxState(state string) kubeapi.PodSandboxState {
 //getKubeletLabels gets kubelet labels from labels.
 func getKubeletLabels(lables map[string]string) map[string]string {
 	delete(lables, fraktiAnnotationLabel)
+	delete(lables, containerLogPathLabelKey)
 	return lables
 }
 
