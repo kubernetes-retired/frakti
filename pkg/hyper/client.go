@@ -570,7 +570,7 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 		return err
 	}
 
-	return utilexec.CodeExitError{Err: nil, Code: int(exitCode)}
+	return utilexec.CodeExitError{Err: fmt.Errorf("Exit with code %d", exitCode), Code: int(exitCode)}
 }
 
 // Wait gets exit code by containerID and execID

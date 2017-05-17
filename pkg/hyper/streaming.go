@@ -27,6 +27,7 @@ import (
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
+	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )
 
 type streamingRuntime struct {
@@ -42,7 +43,11 @@ func (sr *streamingRuntime) Exec(rawContainerID string, cmd []string, stdin io.R
 	if err != nil {
 		return err
 	}
-	return sr.client.ExecInContainer(rawContainerID, cmd, stdin, stdout, stderr, tty, resize, 0)
+	err = sr.client.ExecInContainer(rawContainerID, cmd, stdin, stdout, stderr, tty, resize, 0)
+	if _, ok := err.(utilexec.CodeExitError); ok {
+		return nil
+	}
+	return err
 }
 
 // Attach attach to a running container.
