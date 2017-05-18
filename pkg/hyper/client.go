@@ -384,7 +384,7 @@ func (c *Client) RemoveImage(image, tag string) error {
 		repoSep = "@"
 	}
 
-	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s%s%s", image, repoSep, tag)})
+	_, err := c.client.ImageRemove(ctx, &types.ImageRemoveRequest{Image: fmt.Sprintf("%s%s%s", image, repoSep, tag), Force: true})
 	return err
 }
 
