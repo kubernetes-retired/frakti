@@ -12,6 +12,9 @@ go:
 
 go_import_path: k8s.io/frakti
 
+before_install:
+  - hack/install-docker.sh
+
 install:
   - docker run -v /usr/local/bin:/target jpetazzo/nsenter
   - go install -v $(go list ./... | grep -v /vendor/)

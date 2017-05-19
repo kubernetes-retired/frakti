@@ -124,6 +124,14 @@ EOF'
   sudo cp bin/* /opt/cni/bin/
 }
 
+function test_cri() {
+  # install critest
+  go get github.com/kubernetes-incubator/cri-tools/cmd/critest
+
+  # run critest
+  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="image" validation
+}
+
 FRAKTI_LISTEN_ADDR=${FRAKTI_LISTEN_ADDR:-/var/run/frakti.sock}
 HYPERD_PORT=${HYPERD_PORT:-22318}
 HYPERD_HOME=${HYPERD_HOME:-/var/lib/hyper}
@@ -147,6 +155,8 @@ runTests() {
   start_frakti
 
   frakti::test::e2e
+
+  test_cri
 }
 
 runTests
