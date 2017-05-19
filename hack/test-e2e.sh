@@ -38,7 +38,7 @@ function start_frakti() {
         --listen="${FRAKTI_LISTEN_ADDR}" \
         --hyper-endpoint="127.0.0.1:${HYPERD_PORT}" \
         --logtostderr \
-        --v=5 1>&2 & \
+        --v=3 1>&2 & \
     FRAKTI_PID=$!
 }
 
@@ -129,7 +129,7 @@ function test_cri() {
   go get github.com/kubernetes-incubator/cri-tools/cmd/critest
 
   # run critest
-  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="image" validation
+  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="Conformance" --skip="container port" validation
 }
 
 FRAKTI_LISTEN_ADDR=${FRAKTI_LISTEN_ADDR:-/var/run/frakti.sock}
