@@ -129,7 +129,7 @@ function test_cri() {
   go get github.com/kubernetes-incubator/cri-tools/cmd/critest
 
   # run critest
-  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="image" validation
+  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="\[Conformance\]" validation
 }
 
 FRAKTI_LISTEN_ADDR=${FRAKTI_LISTEN_ADDR:-/var/run/frakti.sock}
@@ -154,7 +154,7 @@ runTests() {
 
   start_frakti
 
-  frakti::test::e2e
+  #frakti::test::e2e
 
   test_cri
 }
