@@ -217,7 +217,7 @@ systemctl daemon-reload
 ### Setting up the master node
 
 ```sh
-kubeadm init kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version latest
+kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version latest
 ```
 
 Optional: enable schedule pods on the master
@@ -234,7 +234,7 @@ kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule-
 token=$(kubeadm token list | grep authentication,signing | awk '{print $1}')
 
 # join master on worker nodes
-kubeadm join --token $token ${master_ip}
+kubeadm join --token $token ${master_ip:port}
 ```
 
 ### Setting CNI network routes

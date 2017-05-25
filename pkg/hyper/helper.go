@@ -43,9 +43,7 @@ const (
 	// fraktiAnnotationLabel is used to save annotations into labels
 	fraktiAnnotationLabel = "io.kubernetes.frakti.annotations"
 
-	// default resources while the pod level qos of kubelet pod is not specified.
-	defaultCPUNumber         = 1
-	defaultMemoryinMegabytes = 64
+	containerLogPathLabelKey = "io.kubernetes.container.logpath"
 
 	// More details about these: http://kubernetes.io/docs/user-guide/compute-resources/
 	// cpuQuotaCgroupFile is the `cfs_quota_us` value set by kubelet pod qos
@@ -296,7 +294,7 @@ func toKubeContainerState(state string) kubeapi.ContainerState {
 
 // TODO(harry) These two methods will find subsystem mount point frequently, consider move FindCgroupMountpoint into a unified place.
 // getCpuLimitFromCgroup get the cpu limit from given cgroupParent
-func getCpuLimitFromCgroup(cgroupParent string) (int32, error) {
+func (h *Runtime) getCpuLimitFromCgroup(cgroupParent string) (int32, error) {
 	mntPath, err := libcontainercgroups.FindCgroupMountpoint("cpu")
 	if err != nil {
 		return -1, err
@@ -317,8 +315,8 @@ func getCpuLimitFromCgroup(cgroupParent string) (int32, error) {
 
 	// This is needed when pod is burstable but no cpu limit is set, then cpuQuota will be -1, hyperCPUNumber
 	// will be calculate to 0
-	if hyperCPUNumber < defaultCPUNumber {
-		hyperCPUNumber = defaultCPUNumber
+	if hyperCPUNumber < h.defaultCPUNum {
+		hyperCPUNumber = h.defaultCPUNum
 	}
 
 	return hyperCPUNumber, nil
@@ -339,7 +337,7 @@ func readCgroupFileToInt64(cgroupPath, cgroupFile string) (int64, error) {
 }
 
 // getMemeoryLimitFromCgroup get the memory limit from given cgroupParent
-func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
+func (h *Runtime) getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
 	mntPath, err := libcontainercgroups.FindCgroupMountpoint("memory")
 	if err != nil {
 		return -1, err
@@ -355,8 +353,8 @@ func getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
 	// HyperContainer requires at least 64Mi memory
 	// And this also protect when pod is burstable but no memory limit is set,
 	// then frakti will read a illegal (larger than int32) value and got memoryinMegabytes < 0
-	if memoryinMegabytes < defaultMemoryinMegabytes {
-		memoryinMegabytes = defaultMemoryinMegabytes
+	if memoryinMegabytes < h.defaultMemoryMB {
+		memoryinMegabytes = h.defaultMemoryMB
 	}
 	return memoryinMegabytes, nil
 }

@@ -42,10 +42,13 @@ type Runtime struct {
 	streamingServer   streaming.Server
 	netPlugin         ocicni.CNIPlugin
 	checkpointHandler CheckpointHandler
+
+	defaultCPUNum   int32
+	defaultMemoryMB int32
 }
 
 // NewHyperRuntime creates a new Runtime
-func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cniNetDir string, cniPluginDir string) (*Runtime, streaming.Server, error) {
+func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir string, defaultCPUNum, defaultMemoryMB int32) (*Runtime, streaming.Server, error) {
 	hyperClient, err := NewClient(hyperEndpoint, hyperConnectionTimeout)
 	if err != nil {
 		glog.Fatalf("Initialize hyper client failed: %v", err)
@@ -76,6 +79,8 @@ func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cn
 		streamingServer:   streamingServer,
 		netPlugin:         netPlugin,
 		checkpointHandler: persistentCheckpointHandler,
+		defaultCPUNum:     defaultCPUNum,
+		defaultMemoryMB:   defaultMemoryMB,
 	}
 
 	return rt, streamingServer, nil
