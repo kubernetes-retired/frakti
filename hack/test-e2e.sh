@@ -17,6 +17,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+CNI_VERSION=${CNI_VERSION:-"v0.5.2"}
 FRAKTI_ROOT=$(readlink -f $(dirname "${BASH_SOURCE}")/..)
 source "${FRAKTI_ROOT}/hack/lib/init.sh"
 
@@ -85,14 +86,13 @@ function install_remote_hyperd() {
 }
 
 function configure_cni() {
-  # get cni repo
-  mkdir -p $GOPATH/src/github.com/containernetworking
-  git clone https://github.com/containernetworking/cni $GOPATH/src/github.com/containernetworking/cni
-  cd $GOPATH/src/github.com/containernetworking/cni
+  # install cni
+  sudo mkdir -p /etc/cni/net.d  /opt/cni/bin
+  curl -sSL https://github.com/containernetworking/cni/releases/download/${CNI_VERSION}/cni-amd64-${CNI_VERSION}.tgz -o cni.tgz
+  sudo tar zxvf cni.tgz -C /opt/cni/bin
+  rm -f cni.tgz
 
   # create network configure file
-  sudo mkdir -p /etc/cni/net.d
-
   sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conf <<-EOF
 {
     "cniVersion": "0.3.0",
@@ -117,11 +117,6 @@ EOF'
     "type": "loopback"
 }
 EOF'
-
-  # build cni plugins and copy to specified folder
-  ./build.sh
-  sudo mkdir -p /opt/cni/bin
-  sudo cp bin/* /opt/cni/bin/
 }
 
 function test_cri() {
