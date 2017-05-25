@@ -48,7 +48,7 @@ type Runtime struct {
 }
 
 // NewHyperRuntime creates a new Runtime
-func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, defaultCPUNum, defaultMemoryMB int32) (*Runtime, streaming.Server, error) {
+func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir string, defaultCPUNum, defaultMemoryMB int32) (*Runtime, streaming.Server, error) {
 	hyperClient, err := NewClient(hyperEndpoint, hyperConnectionTimeout)
 	if err != nil {
 		glog.Fatalf("Initialize hyper client failed: %v", err)
