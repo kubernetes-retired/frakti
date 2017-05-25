@@ -113,6 +113,27 @@ Further information could be found at:
 - [HyperContainer](http://hypercontainer.io/)
 - [The blog on k8s.io about Hypernetes](http://blog.kubernetes.io/2016/05/hypernetes-security-and-multi-tenancy-in-kubernetes.html)
 
+## The differences between `frakti` with other Linux container runtimes
+
+- Better Security and Isolation
+  - frakti provides hardware virtualization based Pod sandbox for Kubernetes
+- No Kernel Sharing
+  - Every Pod in frakti has its own kernel (Bring Your Own Kernel), LinuxKit image support is on the way
+- Match k8s QoS Classes
+  - frakti is best to run Pod with `resources.limits` being set (i.e. all Guaranteed and most Burstable Pods), otherwise, frakti will set default resource limit for Pod
+  - This behavior is configurable by `--defaultCPUNum` and `--defaultMemoryMB`  of frakti
+- Mixed Runtimes Mode
+  - frakti support mixed runtimes on the same Node (HyperContainer and Docker). We recommend user to run `BestEffort` Pods, daemon Pods in Docker runtime by adding `runtime.frakti.alpha.kubernetes.io/OSContainer` annotation to them
+  - Additionally, special cases like privileged Pods, host network Pods etc will be automatically run in Docker runtime
+- Persistent Volume
+  - All k8s PVs are supported in frakti
+  - We are also working on another build-in PV plugin for frakti and it will attach block devices to Pod as volumes directly to achieve much higher performance.
+- Cross-host Networking
+  - frakti is fully based on CNI (bridge mode only for now), so there's no big difference here
+  - We are working on making `Fannel` & `Calico` work out-of-box with `fakti` based Kubernetes
+
+Besides the lists above, all behaviors of frakti is 100% the same with other Liunx container runtimes like Docker, please enjoy it!
+
 ## License
 
 The work done has been licensed under Apache License 2.0.The license file can be found [here](LICENSE). You can find out more about license at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0).
