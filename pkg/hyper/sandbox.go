@@ -32,7 +32,7 @@ import (
 
 // RunPodSandbox creates and starts a pod-level sandbox.
 func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
-	userpod, err := buildUserPod(config)
+	userpod, err := h.buildUserPod(config)
 	if err != nil {
 		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
 		return "", err
@@ -123,7 +123,7 @@ func addNetworkInterfaceForPod(userpod *types.UserPod, info *NetworkInfo) {
 
 // buildUserPod builds hyperd's UserPod based kubelet PodSandboxConfig.
 // TODO: support pod-level portmapping (depends on hyperd).
-func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
+func (h *Runtime) buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 	var (
 		cpuNumber, memoryinMegabytes int32
 		err                          error
@@ -134,11 +134,11 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 	}
 
 	if len(cgroupParent) != 0 && !strings.Contains(cgroupParent, string(v1.PodQOSBestEffort)) {
-		cpuNumber, err = getCpuLimitFromCgroup(cgroupParent)
+		cpuNumber, err = h.getCpuLimitFromCgroup(cgroupParent)
 		if err != nil {
 			return nil, err
 		}
-		memoryinMegabytes, err = getMemeoryLimitFromCgroup(cgroupParent)
+		memoryinMegabytes, err = h.getMemeoryLimitFromCgroup(cgroupParent)
 		if err != nil {
 			return nil, err
 		}
@@ -147,8 +147,8 @@ func buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod, error) {
 		// If pod level QoS is disabled, or this pod is a BE, use default value instead.
 		// NOTE: thus actually changes BE to guaranteed. But generally, HyperContainer should not be used for BE workload,
 		// and we now allow multiple runtime in one node.
-		cpuNumber = int32(defaultCPUNumber)
-		memoryinMegabytes = int32(defaultMemoryinMegabytes)
+		cpuNumber = h.defaultCPUNum
+		memoryinMegabytes = h.defaultMemoryMB
 	}
 
 	spec := &types.UserPod{
