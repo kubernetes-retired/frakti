@@ -23,7 +23,14 @@ cd $GOPATH/src/k8s.io/frakti
 make && make install
 ```
 
-Start hyperd with gRPC endpoint `127.0.0.1:22318`:
+Install docker and hyperd:
+
+```sh
+apt-get install qemu libvirt0 docker.io -y
+curl -sSL https://hypercontainer.io/install | bash
+```
+
+Configure hyperd with gRPC endpoint `127.0.0.1:22318`:
 
 ```sh
 cat >/etc/hyper/config <<EOF
@@ -34,7 +41,7 @@ Initrd=/var/lib/hyper/hyper-initrd.img
 # Storage driver for hyperd, valid value includes devicemapper, overlay, and aufs
 StorageDriver=overlay
 # Hypervisor to run containers and pods, valid values are: libvirt, qemu, kvm, xen
-Hypervisor=libvirt
+Hypervisor=qemu
 # The tcp endpoint of gRPC API
 gRPCHost=127.0.0.1:22318
 EOF
@@ -45,9 +52,9 @@ systemctl restart hyperd
 Setup CNI networking using bridge plugin
 
 ```sh
-$ go get -d github.com/containernetworking/cni
-$ cd $GOPATH/src/github.com/containernetworking/cni
-$ sudo mkdir -p /etc/cni/net.d
+$ sudo mkdir -p /etc/cni/net.d /opt/cni/bin
+$ curl -sSL https://github.com/containernetworking/cni/releases/download/v0.5.2/cni-amd64-v0.5.2.tgz -o cni-amd64-v0.5.2.tgz
+$ sudo tar zxvf cni-amd64-v0.5.2.tgz -C /opt/cni/bin && rm -f cni-amd64-v0.5.2.tgz
 $ sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conf <<-EOF
 {
     "cniVersion": "0.3.0",
@@ -71,35 +78,31 @@ $ sudo sh -c 'cat >/etc/cni/net.d/99-loopback.conf <<-EOF
     "type": "loopback"
 }
 EOF'
-$ ./build
-$ sudo mkdir -p /opt/cni/bin
-$ sudo cp bin/* /opt/cni/bin/
 ```
 
 Then start frakti:
 
 ```sh
-frakti --v=3 --logtostderr --listen=/var/run/frakti.sock --hyper-endpoint=127.0.0.1:22318
+frakti --v=3 --logtostderr --listen=/var/run/frakti.sock --hyper-endpoint=127.0.0.1:22318 &
 ```
 
 Finally, start kubernetes with frakti runtime:
 
 ```sh
 cd $GOPATH/src/k8s.io/kubernetes
+hack/install-etcd.sh
+export PATH=$GOPATH/src/k8s.io/kubernetes/third_party/etcd:${PATH}
 export KUBERNETES_PROVIDER=local
 export CONTAINER_RUNTIME=remote
 export CONTAINER_RUNTIME_ENDPOINT=/var/run/frakti.sock
 hack/local-up-cluster.sh
 ```
 
-To start using the cluster, open up another termimal and run:
+To start using the cluster, open up another terminal and run:
 
 ```sh
-export KUBERNETES_PROVIDER=local
-
-cluster/kubectl.sh config set-cluster local --server=http://127.0.0.1:8080 --insecure-skip-tls-verify=true
-cluster/kubectl.sh config set-context local --cluster=local
-cluster/kubectl.sh config use-context local
+cd $GOPATH/src/k8s.io/kubernetes
+export KUBECONFIG=/var/run/kubernetes/admin.kubeconfig
 cluster/kubectl.sh
 ```
 
