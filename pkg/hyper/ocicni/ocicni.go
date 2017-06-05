@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/containernetworking/cni/libcni"
@@ -40,7 +41,7 @@ type cniNetworkPlugin struct {
 
 type cniNetwork struct {
 	name          string
-	NetworkConfig *libcni.NetworkConfig
+	NetworkConfig *libcni.NetworkConfigList
 	CNIConfig     libcni.CNI
 }
 
@@ -82,19 +83,37 @@ func getDefaultCNINetwork(netDir string, pluginDirs []string, vendorCNIDirPrefix
 
 	sort.Strings(files)
 	for _, confFile := range files {
-		conf, err := libcni.ConfFromFile(confFile)
-		if err != nil {
-			glog.Warningf("Error loading CNI config file %s: %v", confFile, err)
+		var confList *libcni.NetworkConfigList
+		if strings.HasSuffix(confFile, ".conflist") {
+			confList, err = libcni.ConfListFromFile(confFile)
+			if err != nil {
+				glog.Warningf("Error loading CNI config list file %s: %v", confFile, err)
+				continue
+			}
+		} else {
+			conf, err := libcni.ConfFromFile(confFile)
+			if err != nil {
+				glog.Warningf("Error loading CNI config file %s: %v", confFile, err)
+				continue
+			}
+			confList, err = libcni.ConfListFromConf(conf)
+			if err != nil {
+				glog.Warningf("Error converting CNI config file %s to list: %v", confFile, err)
+				continue
+			}
+		}
+		if len(confList.Plugins) == 0 {
+			glog.Warningf("CNI config list %s has no networks, skipping", confFile)
 			continue
 		}
+		confType := confList.Plugins[0].Network.Type
 
 		// Search for vendor-specific plugins as well as default plugins in the CNI codebase.
-		vendorDir := vendorCNIDir(vendorCNIDirPrefix, conf.Network.Type)
+		vendorDir := vendorCNIDir(vendorCNIDirPrefix, confType)
 		cninet := &libcni.CNIConfig{
 			Path: append(pluginDirs, vendorDir),
 		}
-
-		network := &cniNetwork{name: conf.Network.Name, NetworkConfig: conf, CNIConfig: cninet}
+		network := &cniNetwork{name: confList.Name, NetworkConfig: confList, CNIConfig: cninet}
 		return network, nil
 	}
 	return nil, fmt.Errorf("No valid networks found in %s", netDir)
@@ -166,9 +185,9 @@ func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (cnit
 		return nil, err
 	}
 
-	netconf, cninet := network.NetworkConfig, network.CNIConfig
-	glog.V(4).Infof("About to run with conf.Network.Type=%v", netconf.Network.Type)
-	res, err := cninet.AddNetwork(netconf, rt)
+	netConf, cniNet := network.NetworkConfig, network.CNIConfig
+	glog.V(4).Infof("About to add CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
+	res, err := cniNet.AddNetworkList(netConf, rt)
 	if err != nil {
 		glog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
 		return nil, err
@@ -184,9 +203,10 @@ func (network *cniNetwork) deleteFromNetwork(podNetnsPath string, podID string) 
 		return err
 	}
 
-	netconf, cninet := network.NetworkConfig, network.CNIConfig
-	glog.V(4).Infof("About to run with conf.Network.Type=%v", netconf.Network.Type)
-	err = cninet.DelNetwork(netconf, rt)
+	netConf, cniNet := network.NetworkConfig, network.CNIConfig
+
+	glog.V(4).Infof("About to del CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
+	err = cniNet.DelNetworkList(netConf, rt)
 	if err != nil {
 		glog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
 		return err
