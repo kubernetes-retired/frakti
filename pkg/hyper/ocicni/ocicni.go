@@ -26,6 +26,7 @@ import (
 	"github.com/containernetworking/cni/libcni"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	"github.com/golang/glog"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 )
 
 // TODO: upgrade CNI Plugin to its stable realease
@@ -155,12 +156,12 @@ func (plugin *cniNetworkPlugin) Name() string {
 	return CNIPluginName
 }
 
-func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error) {
+func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, annotations map[string]string, capabilities map[string]interface{}) (cnitypes.Result, error) {
 	if err := plugin.checkInitialized(); err != nil {
 		return nil, err
 	}
 
-	res, err := plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID)
+	res, err := plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID, metadata, capabilities)
 	if err != nil {
 		glog.Errorf("Error while adding to cni network: %s", err)
 		return nil, err
@@ -170,16 +171,16 @@ func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string) (cni
 	return res, nil
 }
 
-func (plugin *cniNetworkPlugin) TearDownPod(podNetnsPath string, podID string) error {
+func (plugin *cniNetworkPlugin) TearDownPod(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, annotations map[string]string, capabilities map[string]interface{}) error {
 	if err := plugin.checkInitialized(); err != nil {
 		return err
 	}
 
-	return plugin.getDefaultNetwork().deleteFromNetwork(podNetnsPath, podID)
+	return plugin.getDefaultNetwork().deleteFromNetwork(podNetnsPath, podID, metadata, capabilities)
 }
 
-func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (cnitypes.Result, error) {
-	rt, err := buildCNIRuntimeConf(podNetnsPath, podID)
+func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, capabilities map[string]interface{}) (cnitypes.Result, error) {
+	rt, err := buildCNIRuntimeConf(podNetnsPath, podID, metadata, capabilities)
 	if err != nil {
 		glog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
 		return nil, err
@@ -196,8 +197,8 @@ func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string) (cnit
 	return res, nil
 }
 
-func (network *cniNetwork) deleteFromNetwork(podNetnsPath string, podID string) error {
-	rt, err := buildCNIRuntimeConf(podNetnsPath, podID)
+func (network *cniNetwork) deleteFromNetwork(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, capabilities map[string]interface{}) error {
+	rt, err := buildCNIRuntimeConf(podNetnsPath, podID, metadata, capabilities)
 	if err != nil {
 		glog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
 		return err
@@ -214,7 +215,7 @@ func (network *cniNetwork) deleteFromNetwork(podNetnsPath string, podID string) 
 	return nil
 }
 
-func buildCNIRuntimeConf(podNetnsPath string, podID string) (*libcni.RuntimeConf, error) {
+func buildCNIRuntimeConf(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, capabilities map[string]interface{}) (*libcni.RuntimeConf, error) {
 	glog.V(4).Infof("Got netns path %v", podNetnsPath)
 	glog.V(4).Infof("Using netns path %v", podNetnsPath)
 
@@ -225,7 +226,9 @@ func buildCNIRuntimeConf(podNetnsPath string, podID string) (*libcni.RuntimeConf
 		Args: [][2]string{
 			{"IgnoreUnknown", "1"},
 			{"K8S_POD_NAME", podID},
+			{"K8S_POD_NAMESPACE", metadata.GetNamespace()},
 		},
+		CapabilityArgs: capabilities,
 	}
 
 	return rt, nil

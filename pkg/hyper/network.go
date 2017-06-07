@@ -23,7 +23,18 @@ import (
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/vishvananda/netlink"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
 )
+
+// cniPortMapping maps to the standard CNI portmapping Capability
+// see: https://github.com/containernetworking/cni/blob/master/CONVENTIONS.md
+type cniPortMapping struct {
+	HostPort      int32  `json:"hostPort"`
+	ContainerPort int32  `json:"containerPort"`
+	Protocol      string `json:"protocol"`
+	HostIP        string `json:"hostIP"`
+}
 
 // The network information needed to create HyperContainer
 // network device from CNI Result
@@ -33,6 +44,41 @@ type NetworkInfo struct {
 	Ip         string
 	Gateway    string
 	BridgeName string
+}
+
+func (h *Runtime) GetPodPortMappings(podID string) ([]*hostport.PortMapping, error) {
+	// TODO: get portmappings from docker labels for backward compatibility
+	checkpoint, err := h.checkpointHandler.GetCheckpoint(podID)
+	if err != nil {
+		return nil, err
+
+	}
+
+	portMappings := make([]*hostport.PortMapping, 0, len(checkpoint.Data.PortMappings))
+	for _, pm := range checkpoint.Data.PortMappings {
+		proto := toAPIProtocol(*pm.Protocol)
+		portMappings = append(portMappings, &hostport.PortMapping{
+			HostPort:      *pm.HostPort,
+			ContainerPort: *pm.ContainerPort,
+			Protocol:      proto,
+		})
+
+	}
+	return portMappings, nil
+
+}
+
+func toAPIProtocol(protocol Protocol) v1.Protocol {
+	switch protocol {
+	case ProtocolTCP:
+		return v1.ProtocolTCP
+	case ProtocolUDP:
+		return v1.ProtocolUDP
+
+	}
+	glog.Warningf("Unknown protocol %q: defaulting to TCP", protocol)
+	return v1.ProtocolTCP
+
 }
 
 func convertCNIResult2NetworkInfo(result cnitypes.Result) *NetworkInfo {

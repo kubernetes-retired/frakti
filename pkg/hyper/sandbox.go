@@ -52,8 +52,22 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	userpod.Labels["NETNS"] = netNsPath
 
 	// Setup the network
+	portMappings := config.GetPortMappings()
+	portMappingsParam := make([]cniPortMapping, 0, len(portMappings))
+	for _, p := range portMappings {
+		protocol := kubeapi.Protocol_name[int32(p.Protocol)]
+		portMappingsParam = append(portMappingsParam, cniPortMapping{
+			HostPort:      p.HostPort,
+			ContainerPort: p.ContainerPort,
+			Protocol:      strings.ToLower(protocol),
+			HostIP:        p.HostIp,
+		})
+	}
+	capabilities := map[string]interface{}{
+		"portMappings": portMappingsParam,
+	}
 	podId := userpod.Id
-	result, err := h.netPlugin.SetUpPod(netNsPath, podId)
+	result, err := h.netPlugin.SetUpPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
 	if err != nil {
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 	}
@@ -93,7 +107,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 			glog.Warningf("Remove pod %q failed: %v", removeError)
 		}
 		// destroy the network namespace
-		if tearError := h.netPlugin.TearDownPod(netNsPath, podID); tearError != nil {
+		if tearError := h.netPlugin.TearDownPod(netNsPath, podID, config.GetMetadata(), config.GetAnnotations(), capabilities); tearError != nil {
 			glog.Errorf("Destroy pod %s network namespace failed: %v", podID, tearError)
 		}
 		unix.Unmount(netNsPath, unix.MNT_DETACH)
@@ -190,12 +204,30 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 		netNsPath = checkpoint.NetNsPath
 	}
 
+	// Get portMappings from checkpoint
+	portMappings, err := h.GetPodPortMappings(podSandboxID)
+	if err != nil {
+		return fmt.Errorf("could not retrieve port mappings: %v", err)
+	}
+	portMappingsParam := make([]cniPortMapping, 0, len(portMappings))
+	for _, p := range portMappings {
+		portMappingsParam = append(portMappingsParam, cniPortMapping{
+			HostPort:      p.HostPort,
+			ContainerPort: p.ContainerPort,
+			Protocol:      strings.ToLower(string(p.Protocol)),
+			HostIP:        p.HostIP,
+		})
+	}
+	capabilities := map[string]interface{}{
+		"portMappings": portMappingsParam,
+	}
+
 	code, cause, err := h.client.StopPod(podSandboxID)
 	if err != nil {
 		glog.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, code, cause, err)
 		if isPodNotFoundError(err, podSandboxID) {
 			// destroy the network namespace
-			err = h.netPlugin.TearDownPod(netNsPath, podSandboxID)
+			err = h.netPlugin.TearDownPod(netNsPath, podSandboxID, status.GetMetadata(), status.GetAnnotations(), capabilities)
 			if err != nil {
 				glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
 			}
@@ -213,7 +245,7 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	}
 
 	// destroy the network namespace
-	err = h.netPlugin.TearDownPod(netNsPath, podSandboxID)
+	err = h.netPlugin.TearDownPod(netNsPath, podSandboxID, status.GetMetadata(), status.GetAnnotations(), capabilities)
 	if err != nil {
 		glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
 	}
