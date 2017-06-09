@@ -18,6 +18,7 @@ package ocicni
 
 import (
 	cnitypes "github.com/containernetworking/cni/pkg/types"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
 )
 
 const (
@@ -34,10 +35,10 @@ type CNIPlugin interface {
 	Name() string
 
 	// SetUpPod is the method called when the pod is created
-	SetUpPod(podNetnsPath string, podID string) (cnitypes.Result, error)
+	SetUpPod(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, annotations map[string]string, capabilities map[string]interface{}) (cnitypes.Result, error)
 
 	// TearDownPod is the method called before pod stopped
-	TearDownPod(podNetnsPath string, podID string) error
+	TearDownPod(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, annotations map[string]string, capabilities map[string]interface{}) error
 
 	// NetworkStatus returns error if the network plugin is in error state
 	Status() error

@@ -52,29 +52,40 @@ systemctl restart hyperd
 Setup CNI networking using bridge plugin
 
 ```sh
-$ sudo mkdir -p /etc/cni/net.d /opt/cni/bin
-$ curl -sSL https://github.com/containernetworking/cni/releases/download/v0.5.2/cni-amd64-v0.5.2.tgz -o cni-amd64-v0.5.2.tgz
-$ sudo tar zxvf cni-amd64-v0.5.2.tgz -C /opt/cni/bin && rm -f cni-amd64-v0.5.2.tgz
-$ sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conf <<-EOF
+$ sudo mkdir -p /etc/cni/net.d  /opt/cni/bin
+$ git clone https://github.com/containernetworking/plugins $GOPATH/src/github.com/containernetworking/plugins
+$ cd $GOPATH/src/github.com/containernetworking/plugins
+$ ./build.sh
+$ sudo cp bin/* /opt/cni/bin/
+$ sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conflist <<-EOF
 {
-    "cniVersion": "0.3.0",
+    "cniVersion": "0.3.1",
     "name": "mynet",
-    "type": "bridge",
-    "bridge": "cni0",
-    "isGateway": true,
-    "ipMasq": true,
-    "ipam": {
-        "type": "host-local",
-        "subnet": "10.10.0.0/16",
-        "routes": [
-            { "dst": "0.0.0.0/0"  }
-        ]
-    }
+    "plugins": [
+        {
+            "type": "bridge",
+            "bridge": "cni0",
+            "isGateway": true,
+            "ipMasq": true,
+            "ipam": {
+                "type": "host-local",
+                "subnet": "10.30.0.0/16",
+                "routes": [
+                    { "dst": "0.0.0.0/0"   }
+                ]
+            }
+        },
+        {
+            "type": "portmap",
+            "capabilities": {"portMappings": true},
+            "snat": true
+        }
+    ]
 }
 EOF'
 $ sudo sh -c 'cat >/etc/cni/net.d/99-loopback.conf <<-EOF
 {
-    "cniVersion": "0.3.0",
+    "cniVersion": "0.3.1",
     "type": "loopback"
 }
 EOF'

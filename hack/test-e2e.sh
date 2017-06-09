@@ -88,32 +88,44 @@ function install_remote_hyperd() {
 function configure_cni() {
   # install cni
   sudo mkdir -p /etc/cni/net.d  /opt/cni/bin
-  curl -sSL https://github.com/containernetworking/cni/releases/download/${CNI_VERSION}/cni-amd64-${CNI_VERSION}.tgz -o cni.tgz
-  sudo tar zxvf cni.tgz -C /opt/cni/bin
-  rm -f cni.tgz
+  
+  git clone https://github.com/containernetworking/plugins $GOPATH/src/github.com/containernetworking/plugins
+  cd $GOPATH/src/github.com/containernetworking/plugins
+
+  ./build.sh
+  sudo cp bin/* /opt/cni/bin/
 
   # create network configure file
-  sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conf <<-EOF
+  sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conflist <<-EOF
 {
-    "cniVersion": "0.3.0",
+    "cniVersion": "0.3.1",
     "name": "mynet",
-    "type": "bridge",
-    "bridge": "cni0",
-    "isGateway": true,
-    "ipMasq": true,
-    "ipam": {
-        "type": "host-local",
-        "subnet": "10.30.0.0/16",
-        "routes": [
-            { "dst": "0.0.0.0/0"  }
-        ]
-    }
+    "plugins": [
+        {
+            "type": "bridge",
+            "bridge": "cni0",
+            "isGateway": true,
+            "ipMasq": true,
+            "ipam": {
+                "type": "host-local",
+                "subnet": "10.30.0.0/16",
+                "routes": [
+                    { "dst": "0.0.0.0/0"   }
+                ]
+            }
+        },
+        {
+            "type": "portmap",
+            "capabilities": {"portMappings": true},
+            "snat": true
+        }
+    ]
 }
 EOF'
 
   sudo sh -c 'cat >/etc/cni/net.d/99-loopback.conf <<-EOF
 {
-    "cniVersion": "0.3.0",
+    "cniVersion": "0.3.1",
     "type": "loopback"
 }
 EOF'
@@ -124,7 +136,7 @@ function test_cri() {
   go get github.com/kubernetes-incubator/cri-tools/cmd/critest
 
   # run critest
-  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="Conformance" --skip="container port" validation
+  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="Conformance" validation
 }
 
 FRAKTI_LISTEN_ADDR=${FRAKTI_LISTEN_ADDR:-/var/run/frakti.sock}
