@@ -18,7 +18,7 @@ package ocicni
 
 import (
 	cnitypes "github.com/containernetworking/cni/pkg/types"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
 const (

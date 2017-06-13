@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/kubernetes/cmd/kubelet/app/options"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
@@ -53,6 +54,7 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 	glog.Infof("Initialize alternative runtime: docker runtime\n")
 
 	extKubeCfg := &componentconfigv1alpha1.KubeletConfiguration{}
+	crOption := options.NewContainerRuntimeOptions()
 	componentconfigv1alpha1.SetDefaults_KubeletConfiguration(extKubeCfg)
 	kubeCfg := &componentconfig.KubeletConfiguration{}
 	if err := api.Scheme.Convert(extKubeCfg, kubeCfg, nil); err != nil {
@@ -62,7 +64,7 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 		// alternativeRuntimeEndpoint defaults to kubeCfg.DockerEndpoint
 		alternativeRuntimeEndpoint,
 		kubeCfg.RuntimeRequestTimeout.Duration,
-		kubeCfg.ImagePullProgressDeadline.Duration,
+		crOption.ImagePullProgressDeadline.Duration,
 	)
 	// TODO(resouer) is it fine to reuse the CNI plug-in?
 	pluginSettings := dockershim.NetworkPluginSettings{
@@ -88,14 +90,14 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 	ds, err := dockershim.NewDockerService(
 		dockerClient,
 		kubeCfg.SeccompProfileRoot,
-		kubeCfg.PodInfraContainerImage,
+		crOption.PodSandboxImage,
 		streamingConfig,
 		&pluginSettings,
 		kubeCfg.RuntimeCgroups,
 		cgroupDriver,
-		kubeCfg.DockerExecHandlerName,
+		crOption.DockerExecHandlerName,
 		alternativeRuntimeRootDir,
-		kubeCfg.DockerDisableSharedPID,
+		crOption.DockerDisableSharedPID,
 	)
 	if err != nil {
 		return nil, err

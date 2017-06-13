@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -34,8 +35,8 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/kubernetes/pkg/api/v1"
-	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
-	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	"k8s.io/kubernetes/pkg/credentialprovider"
+	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/security/apparmor"
 
@@ -128,7 +129,8 @@ func extractLabels(input map[string]string) (map[string]string, map[string]strin
 // '<HostPath>:<ContainerPath>:ro', if the path is read only, or
 // '<HostPath>:<ContainerPath>:Z', if the volume requires SELinux
 // relabeling and the pod provides an SELinux label
-func generateMountBindings(mounts []*runtimeapi.Mount) (result []string) {
+func generateMountBindings(mounts []*runtimeapi.Mount) []string {
+	result := make([]string, 0, len(mounts))
 	for _, m := range mounts {
 		bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
 		readOnly := m.Readonly
@@ -148,7 +150,7 @@ func generateMountBindings(mounts []*runtimeapi.Mount) (result []string) {
 		}
 		result = append(result, bind)
 	}
-	return
+	return result
 }
 
 func makePortsAndBindings(pm []*runtimeapi.PortMapping) (map[dockernat.Port]struct{}, map[dockernat.Port][]dockernat.PortBinding) {
@@ -274,27 +276,6 @@ func getNetworkNamespace(c *dockertypes.ContainerJSON) string {
 	return fmt.Sprintf(dockerNetNSFmt, c.State.Pid)
 }
 
-// getSysctlsFromAnnotations gets sysctls from annotations.
-func getSysctlsFromAnnotations(annotations map[string]string) (map[string]string, error) {
-	var results map[string]string
-
-	sysctls, unsafeSysctls, err := v1helper.SysctlsFromPodAnnotations(annotations)
-	if err != nil {
-		return nil, err
-	}
-	if len(sysctls)+len(unsafeSysctls) > 0 {
-		results = make(map[string]string, len(sysctls)+len(unsafeSysctls))
-		for _, c := range sysctls {
-			results[c.Name] = c.Value
-		}
-		for _, c := range unsafeSysctls {
-			results[c.Name] = c.Value
-		}
-	}
-
-	return results, nil
-}
-
 // dockerFilter wraps around dockerfilters.Args and provides methods to modify
 // the filter easily.
 type dockerFilter struct {
@@ -397,6 +378,11 @@ func getSecurityOptSeparator(v *semver.Version) rune {
 
 // ensureSandboxImageExists pulls the sandbox image when it's not present.
 func ensureSandboxImageExists(client libdocker.Interface, image string) error {
+	dockerCfgSearchPath := []string{"/.docker", filepath.Join(os.Getenv("HOME"), ".docker")}
+	return ensureSandboxImageExistsDockerCfg(client, image, dockerCfgSearchPath)
+}
+
+func ensureSandboxImageExistsDockerCfg(client libdocker.Interface, image string, dockerCfgSearchPath []string) error {
 	_, err := client.InspectImageByRef(image)
 	if err == nil {
 		return nil
@@ -404,8 +390,32 @@ func ensureSandboxImageExists(client libdocker.Interface, image string) error {
 	if !libdocker.IsImageNotFoundError(err) {
 		return fmt.Errorf("failed to inspect sandbox image %q: %v", image, err)
 	}
-	err = client.PullImage(image, dockertypes.AuthConfig{}, dockertypes.ImagePullOptions{})
+
+	// To support images in private registries, try to read docker config
+	authConfig := dockertypes.AuthConfig{}
+	keyring := &credentialprovider.BasicDockerKeyring{}
+	var cfgLoadErr error
+	if cfg, err := credentialprovider.ReadDockerConfigJSONFile(dockerCfgSearchPath); err == nil {
+		keyring.Add(cfg)
+	} else if cfg, err := credentialprovider.ReadDockercfgFile(dockerCfgSearchPath); err == nil {
+		keyring.Add(cfg)
+	} else {
+		cfgLoadErr = err
+	}
+	if creds, withCredentials := keyring.Lookup(image); withCredentials {
+		// Use the first one that matched our image
+		for _, cred := range creds {
+			authConfig.Username = cred.Username
+			authConfig.Password = cred.Password
+			break
+		}
+	}
+
+	err = client.PullImage(image, authConfig, dockertypes.ImagePullOptions{})
 	if err != nil {
+		if cfgLoadErr != nil {
+			glog.Warningf("Couldn't load Docker cofig. If sandbox image %q is in a private registry, this will cause further errors. Error: %v", image, cfgLoadErr)
+		}
 		return fmt.Errorf("unable to pull sandbox image %q: %v", image, err)
 	}
 	return nil

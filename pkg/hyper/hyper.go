@@ -23,7 +23,7 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/ocicni"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 

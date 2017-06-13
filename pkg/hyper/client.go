@@ -27,8 +27,8 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/frakti/pkg/hyper/types"
-	"k8s.io/kubernetes/pkg/client/unversioned/remotecommand"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )

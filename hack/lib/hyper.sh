@@ -83,7 +83,8 @@ frakti::hyper::preinstall() {
     return 0
   fi
   sudo apt-get update -qq
-  sudo apt-get install -y autoconf automake pkg-config libdevmapper-dev libsqlite3-dev libvirt-dev qemu libvirt-bin -qq
+  sudo apt-get install -y autoconf automake pkg-config libdevmapper-dev libsqlite3-dev libvirt-dev libvirt-bin -qq
+  wget https://s3-us-west-1.amazonaws.com/hypercontainer-download/qemu-hyper/qemu-hyper_2.4.1-1_amd64.deb && sudo dpkg -i --force-all qemu-hyper_2.4.1-1_amd64.deb
 }
 
 frakti::hyper::export_related_path() {

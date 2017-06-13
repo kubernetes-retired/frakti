@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/frakti/pkg/alternativeruntime"
 	"k8s.io/frakti/pkg/runtime"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )
@@ -570,6 +570,17 @@ func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImag
 func (s *FraktiManager) ImageFsInfo(ctx context.Context, req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error) {
 	glog.V(3).Infof("ImageFsInfo with request %s", req.String())
 
+	return nil, fmt.Errorf("not implemented")
+}
+
+// ContainerStats returns information of the container filesystem.
+func (s *FraktiManager) ContainerStats(ctx context.Context, req *kubeapi.ContainerStatsRequest) (*kubeapi.ContainerStatsResponse, error) {
+	glog.V(3).Infof("ContainerStats with request %s", req.String())
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *FraktiManager) ListContainerStats(ctx context.Context, req *kubeapi.ListContainerStatsRequest) (*kubeapi.ListContainerStatsResponse, error) {
+	glog.V(3).Infof("ListContainerStats with request %s", req.String())
 	return nil, fmt.Errorf("not implemented")
 }
 

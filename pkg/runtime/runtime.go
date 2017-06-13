@@ -19,7 +19,7 @@ package runtime
 import (
 	"time"
 
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
 // RuntimeService interface should be implemented by a container runtime.
@@ -86,7 +86,7 @@ type ImageService interface {
 	// It should return success if the image has already been removed.
 	RemoveImage(image *kubeapi.ImageSpec) error
 	// ImageFsInfo returns information of the filesystem that is used to store images.
-	ImageFsInfo() (*kubeapi.FsInfo, error)
+	ImageFsInfo(req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error)
 
 	// ServiceName method is used to log out with service's name
 	ServiceName() string
