@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
 // ListImages lists existing images.
@@ -112,6 +112,6 @@ func (h *Runtime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) 
 }
 
 // ImageFsInfo returns information of the filesystem that is used to store images.
-func (h *Runtime) ImageFsInfo() (*kubeapi.FsInfo, error) {
+func (h *Runtime) ImageFsInfo(req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
