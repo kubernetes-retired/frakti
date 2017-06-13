@@ -27,7 +27,7 @@ import (
 	"github.com/golang/glog"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1"
+	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim/errors"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
@@ -237,7 +237,7 @@ func (ds *dockerService) RemovePodSandbox(podSandboxID string) error {
 	}
 
 	// Remove the sandbox container.
-	if err := ds.client.RemoveContainer(podSandboxID, dockertypes.ContainerRemoveOptions{RemoveVolumes: true}); err != nil && !libdocker.IsContainerNotFoundError(err) {
+	if err := ds.client.RemoveContainer(podSandboxID, dockertypes.ContainerRemoveOptions{RemoveVolumes: true, Force: true}); err != nil && !libdocker.IsContainerNotFoundError(err) {
 		errs = append(errs, err)
 	}
 
@@ -305,7 +305,7 @@ func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeapi.PodS
 		return nil, err
 	}
 
-	// Parse the timstamps.
+	// Parse the timestamps.
 	createdAt, _, _, err := getContainerTimestamps(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse timestamp for container %q: %v", podSandboxID, err)
@@ -317,9 +317,15 @@ func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeapi.PodS
 	if r.State.Running {
 		state = runtimeapi.PodSandboxState_SANDBOX_READY
 	}
-	IP, err := ds.getIP(r)
-	if err != nil {
-		return nil, err
+
+	var IP string
+	// TODO: Remove this when sandbox is available on windows
+	// This is a workaround for windows, where sandbox is not in use, and pod IP is determined through containers belonging to the Pod.
+	if IP = ds.determinePodIPBySandboxID(podSandboxID); IP == "" {
+		IP, err = ds.getIP(r)
+		if err != nil {
+			return nil, err
+		}
 	}
 	network := &runtimeapi.PodSandboxNetworkStatus{Ip: IP}
 	hostNetwork := sharesHostNetwork(r)
@@ -477,6 +483,9 @@ func (ds *dockerService) applySandboxLinuxOptions(hc *dockercontainer.HostConfig
 		return err
 	}
 
+	// Set sysctls.
+	hc.Sysctls = lc.Sysctls
+
 	return nil
 }
 
@@ -508,13 +517,6 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeapi.PodSandboxConfig,
 		HostConfig: hc,
 	}
 
-	// Set sysctls if requested
-	sysctls, err := getSysctlsFromAnnotations(c.Annotations)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get sysctls from annotations %v for sandbox %q: %v", c.Annotations, c.Metadata.Name, err)
-	}
-	hc.Sysctls = sysctls
-
 	// Apply linux-specific options.
 	if lc := c.GetLinux(); lc != nil {
 		if err := ds.applySandboxLinuxOptions(hc, lc, createConfig, image, securityOptSep); err != nil {
@@ -541,7 +543,7 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeapi.PodSandboxConfig,
 	}
 
 	// Set security options.
-	securityOpts, err := getSeccompSecurityOpts(sandboxContainerName, c, ds.seccompProfileRoot, securityOptSep)
+	securityOpts, err := ds.getSecurityOpts(sandboxContainerName, c, securityOptSep)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate sandbox security options for sandbox %q: %v", c.Metadata.Name, err)
 	}
