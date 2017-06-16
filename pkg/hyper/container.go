@@ -51,9 +51,11 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 
 // buildUserContainer builds hyperd's UserContainer based kubelet ContainerConfig.
 func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (*types.UserContainer, error) {
-	var privilege bool
+	privilege := false
+	readonlyRootfs := false
 	if securityContext := config.GetLinux().GetSecurityContext(); securityContext != nil {
 		privilege = securityContext.Privileged
+		readonlyRootfs = securityContext.ReadonlyRootfs
 	}
 
 	if privilege {
@@ -74,6 +76,7 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 		Entrypoint: config.Command,
 		Labels:     buildLabelsWithAnnotations(config.Labels, config.Annotations),
 		LogPath:    logPath,
+		ReadOnly:   readonlyRootfs,
 	}
 
 	// make volumes
