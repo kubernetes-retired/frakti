@@ -55,6 +55,10 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	portMappings := config.GetPortMappings()
 	portMappingsParam := make([]cniPortMapping, 0, len(portMappings))
 	for _, p := range portMappings {
+		if p.HostPort == 0 {
+			continue
+		}
+
 		protocol := kubeapi.Protocol_name[int32(p.Protocol)]
 		portMappingsParam = append(portMappingsParam, cniPortMapping{
 			HostPort:      p.HostPort,
@@ -211,6 +215,10 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	}
 	portMappingsParam := make([]cniPortMapping, 0, len(portMappings))
 	for _, p := range portMappings {
+		if p.HostPort == 0 {
+			continue
+		}
+
 		portMappingsParam = append(portMappingsParam, cniPortMapping{
 			HostPort:      p.HostPort,
 			ContainerPort: p.ContainerPort,
