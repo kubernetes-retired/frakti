@@ -217,7 +217,7 @@ systemctl daemon-reload
 ### Setting up the master node
 
 ```sh
-kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version latest
+kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version stable
 ```
 
 Optional: enable schedule pods on the master
