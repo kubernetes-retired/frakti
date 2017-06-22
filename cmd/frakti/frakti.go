@@ -24,7 +24,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 
-	"k8s.io/frakti/pkg/alternativeruntime"
+	"k8s.io/frakti/pkg/docker"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
 	"k8s.io/frakti/pkg/util/flags"
@@ -36,7 +36,7 @@ const (
 	fraktiVersion = "0.2"
 
 	// use port 22522 for dockershim streaming
-	alternativeStreamingServerPort = 22522
+	privilegedStreamingServerPort = 22522
 )
 
 var (
@@ -53,13 +53,13 @@ var (
 		"The directory for putting cni configuration file")
 	cniPluginDir = pflag.String("cni-plugin-dir", "/opt/cni/bin",
 		"The directory for putting cni plugin binary file")
-	alternativeRuntimeEndpoint = pflag.String("docker-endpoint", "unix:///var/run/docker.sock",
-		"The endpoint of alternative runtime to communicate with")
-	enableAlternativeRuntime = pflag.Bool("enable-alternative-runtime", true, "Enable alternative runtime to handle OS containers, default is true")
-	cgroupDriver             = pflag.String("cgroup-driver", "cgroupfs", "Driver that the frakti uses to manipulate cgroups on the host. *SHOULD BE SAME AS* kubelet cgroup driver configuration.  Possible values: 'cgroupfs', 'systemd'")
-	rootDir                  = pflag.String("root-directory", "/var/lib/frakti", "Path to the frakti root directory")
-	defaultCPUNum            = pflag.Int32("cpu", 1, "Default CPU in number for HyperVM when cpu limit is not specified for the pod")
-	defaultMemoryMB          = pflag.Int32("memory", 64, "Default memory in MB for HyperVM when memory limit is not specified for the pod")
+	privilegedRuntimeEndpoint = pflag.String("docker-endpoint", "unix:///var/run/docker.sock",
+		"The endpoint of privileged runtime to communicate with")
+	enablePrivilegedRuntime = pflag.Bool("enable-privileged-runtime", true, "Enable privileged runtime to handle OS containers, default is true")
+	cgroupDriver            = pflag.String("cgroup-driver", "cgroupfs", "Driver that the frakti uses to manipulate cgroups on the host. *SHOULD BE SAME AS* kubelet cgroup driver configuration.  Possible values: 'cgroupfs', 'systemd'")
+	rootDir                 = pflag.String("root-directory", "/var/lib/frakti", "Path to the frakti root directory")
+	defaultCPUNum           = pflag.Int32("cpu", 1, "Default CPU in number for HyperVM when cpu limit is not specified for the pod")
+	defaultMemoryMB         = pflag.Int32("memory", 64, "Default memory in MB for HyperVM when memory limit is not specified for the pod")
 )
 
 func main() {
@@ -85,22 +85,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 2. Initialize alternative runtime and start its own streaming server
-	alternativeRuntime, err := alternativeruntime.NewAlternativeRuntimeService(
-		*alternativeRuntimeEndpoint,
-		getAlternativeStreamingConfig(),
+	// 2. Initialize privileged runtime and start its own streaming server
+	privilegedRuntime, err := docker.NewPrivilegedRuntimeService(
+		*privilegedRuntimeEndpoint,
+		getprivilegedStreamingConfig(),
 		*cniNetDir,
 		*cniPluginDir,
 		*cgroupDriver,
-		filepath.Join(*rootDir, "alternative"),
+		filepath.Join(*rootDir, "privileged"),
 	)
-	if err != nil && *enableAlternativeRuntime {
-		glog.Errorf("Initialize alternative runtime failed: %v", err)
+	if err != nil && *enablePrivilegedRuntime {
+		glog.Errorf("Initialize privileged runtime failed: %v", err)
 		os.Exit(1)
 	}
 
 	// 3. Initialize frakti manager with two runtimes above
-	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer, alternativeRuntime, alternativeRuntime)
+	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer, privilegedRuntime, privilegedRuntime)
 	if err != nil {
 		glog.Errorf("Initialize frakti server failed: %v", err)
 		os.Exit(1)
@@ -126,9 +126,9 @@ func getStreamingConfig() *streaming.Config {
 	return config
 }
 
-// Gets the streaming server configuration to use with in-process alternative shims.
-func getAlternativeStreamingConfig() *streaming.Config {
+// Gets the streaming server configuration to use with in-process privileged shims.
+func getprivilegedStreamingConfig() *streaming.Config {
 	config := generateStreamingConfigInternal()
-	config.Addr = fmt.Sprintf("%s:%d", *streamingServerAddress, alternativeStreamingServerPort)
+	config.Addr = fmt.Sprintf("%s:%d", *streamingServerAddress, privilegedStreamingServerPort)
 	return config
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package alternativeruntime
+package docker
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/frakti/pkg/util/alternativeruntime"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
@@ -41,17 +42,17 @@ const (
 	networkPluginMTU  = 1460
 )
 
-type AternativeRuntime struct {
+type PrivilegedRuntime struct {
 	dockershim.DockerService
 }
 
-func (a *AternativeRuntime) ServiceName() string {
-	return "alternative runtime service"
+func (p *PrivilegedRuntime) ServiceName() string {
+	return alternativeruntime.PrivilegedRuntimeName
 }
 
-func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, cgroupDriver, alternativeRuntimeRootDir string) (*AternativeRuntime, error) {
-	// For now we use docker as the only supported alternative runtime
-	glog.Infof("Initialize alternative runtime: docker runtime\n")
+func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, cgroupDriver, privilegedRuntimeRootDir string) (*PrivilegedRuntime, error) {
+	// For now we use docker as the only supported privileged runtime
+	glog.Infof("Initialize privileged runtime: docker runtime\n")
 
 	extKubeCfg := &componentconfigv1alpha1.KubeletConfiguration{}
 	crOption := options.NewContainerRuntimeOptions()
@@ -61,8 +62,8 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 		return nil, err
 	}
 	dockerClient := libdocker.ConnectToDockerOrDie(
-		// alternativeRuntimeEndpoint defaults to kubeCfg.DockerEndpoint
-		alternativeRuntimeEndpoint,
+		// privilegedRuntimeEndpoint defaults to kubeCfg.DockerEndpoint
+		privilegedRuntimeEndpoint,
 		kubeCfg.RuntimeRequestTimeout.Duration,
 		crOption.ImagePullProgressDeadline.Duration,
 	)
@@ -96,7 +97,7 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 		kubeCfg.RuntimeCgroups,
 		cgroupDriver,
 		crOption.DockerExecHandlerName,
-		alternativeRuntimeRootDir,
+		privilegedRuntimeRootDir,
 		crOption.DockerDisableSharedPID,
 	)
 	if err != nil {
@@ -104,19 +105,19 @@ func NewAlternativeRuntimeService(alternativeRuntimeEndpoint string, streamingCo
 	}
 
 	// start streaming server by using dockerService
-	startAlternativeStreamingServer(streamingConfig, ds)
+	startPrivilegedStreamingServer(streamingConfig, ds)
 
-	return &AternativeRuntime{ds}, nil
+	return &PrivilegedRuntime{ds}, nil
 }
 
-func startAlternativeStreamingServer(streamingConfig *streaming.Config, ds dockershim.DockerService) {
+func startPrivilegedStreamingServer(streamingConfig *streaming.Config, ds dockershim.DockerService) {
 	httpServer := &http.Server{
 		Addr:    streamingConfig.Addr,
 		Handler: ds,
 	}
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {
-			glog.Errorf("Failed to start streaming server for alternative runtime: %v", err)
+			glog.Errorf("Failed to start streaming server for privileged runtime: %v", err)
 			os.Exit(1)
 		}
 	}()
