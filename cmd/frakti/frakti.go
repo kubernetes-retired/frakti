@@ -27,6 +27,7 @@ import (
 	"k8s.io/frakti/pkg/docker"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
+	"k8s.io/frakti/pkg/unikernel"
 	"k8s.io/frakti/pkg/util/flags"
 	"k8s.io/frakti/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
@@ -56,6 +57,7 @@ var (
 	privilegedRuntimeEndpoint = pflag.String("docker-endpoint", "unix:///var/run/docker.sock",
 		"The endpoint of privileged runtime to communicate with")
 	enablePrivilegedRuntime = pflag.Bool("enable-privileged-runtime", true, "Enable privileged runtime to handle OS containers, default is true")
+	enableUnikernelRuntime  = pflag.Bool("enable-unikernel-runtime", false, "Enable unikernel runtime to run containers using unikernel image, default is false. Still under development.")
 	cgroupDriver            = pflag.String("cgroup-driver", "cgroupfs", "Driver that the frakti uses to manipulate cgroups on the host. *SHOULD BE SAME AS* kubelet cgroup driver configuration.  Possible values: 'cgroupfs', 'systemd'")
 	rootDir                 = pflag.String("root-directory", "/var/lib/frakti", "Path to the frakti root directory")
 	defaultCPUNum           = pflag.Int32("cpu", 1, "Default CPU in number for HyperVM when cpu limit is not specified for the pod")
@@ -99,8 +101,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. Initialize frakti manager with two runtimes above
-	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer, privilegedRuntime, privilegedRuntime)
+	// 3. Initialize unikernel runtime if enabled
+	var unikernelRuntime *unikernel.UnikernelRuntime
+	if *enableUnikernelRuntime {
+		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir)
+		if err != nil {
+			glog.Errorf("Initialize unikernel runtime failed: %v", err)
+			os.Exit(1)
+		}
+	}
+
+	// 4. Initialize frakti manager with two runtimes above
+	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer, privilegedRuntime, privilegedRuntime, unikernelRuntime, unikernelRuntime)
 	if err != nil {
 		glog.Errorf("Initialize frakti server failed: %v", err)
 		os.Exit(1)
