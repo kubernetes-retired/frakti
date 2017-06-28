@@ -1,5 +1,10 @@
 <!-- TOC -->
 
+- [v0.3](#v03)
+    - [Features and updates](#features-and-updates)
+    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
+    - [External Dependency Version Information](#external-dependency-version-information)
+    - [Known issues](#known-issues)
 - [v0.2](#v02)
     - [Features and updates](#features-and-updates)
     - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
@@ -12,6 +17,39 @@
     - [Known issues](#known-issues-1)
 
 <!-- /TOC -->
+
+# v0.3
+
+This release includes enhances and bug fixes.
+
+## Features and updates
+
+- Have passed full node e2e conformance tests
+- Enhanced deployment steps and scripts
+- [#144](https://github.com/kubernetes/frakti/pull/144) Fix logpath in container status
+- [#145](https://github.com/kubernetes/frakti/pull/145) Fix CodeExitError in streaming exec
+- [#147](https://github.com/kubernetes/frakti/pull/147) Set force when removing image
+- [#152](https://github.com/kubernetes/frakti/pull/152) Make default cpu and memory configurable
+
+## External Dependency Version Information
+
+Frakti v0.3 has been tested against:
+
+- Kubernetes v1.6.4
+- Hyperd v0.8.1
+- Docker v1.12.6
+
+## Kubelet Node e2e tests
+
+Frakti has passed 120 of 121 node e2e tests. ALl failed cases are related with upstream hyperd issues.
+
+See [#109](https://github.com/kubernetes/frakti/issues/109) for more details.
+
+## Known issues
+
+- [#161](https://github.com/kubernetes/frakti/issues/161) readonly rootfs is not supported because hyperd (hyperhq/hyperd#638)
+
+
 
 # v0.2
 
