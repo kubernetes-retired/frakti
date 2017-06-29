@@ -28,8 +28,8 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/frakti/pkg/alternativeruntime"
 	"k8s.io/frakti/pkg/runtime"
+	"k8s.io/frakti/pkg/util/alternativeruntime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
@@ -56,10 +56,10 @@ type FraktiManager struct {
 	hyperRuntimeService runtime.RuntimeService
 	hyperImageService   runtime.ImageService
 
-	alternativeRuntimeService runtime.RuntimeService
-	alternativeImageService   runtime.ImageService
+	privilegedRuntimeService runtime.RuntimeService
+	privilegedImageService   runtime.ImageService
 
-	// The pod sets need to be processed by alternative runtime
+	// The pod sets need to be processed by privileged runtime
 	cachedAlternativeRuntimeItems *alternativeruntime.AlternativeRuntimeSets
 }
 
@@ -68,36 +68,36 @@ func NewFraktiManager(
 	hyperRuntimeService runtime.RuntimeService,
 	hyperImageService runtime.ImageService,
 	streamingServer streaming.Server,
-	alternativeRuntimeService runtime.RuntimeService,
-	alternativeImageService runtime.ImageService,
+	privilegedRuntimeService runtime.RuntimeService,
+	privilegedImageService runtime.ImageService,
 ) (*FraktiManager, error) {
 	s := &FraktiManager{
 		server:                        grpc.NewServer(),
 		hyperRuntimeService:           hyperRuntimeService,
 		hyperImageService:             hyperImageService,
 		streamingServer:               streamingServer,
-		alternativeRuntimeService:     alternativeRuntimeService,
-		alternativeImageService:       alternativeImageService,
+		privilegedRuntimeService:      privilegedRuntimeService,
+		privilegedImageService:        privilegedImageService,
 		cachedAlternativeRuntimeItems: alternativeruntime.NewAlternativeRuntimeSets(),
 	}
-	if alternativeRuntimeService != nil {
-		sandboxes, err := s.alternativeRuntimeService.ListPodSandbox(nil)
+	if privilegedRuntimeService != nil {
+		sandboxes, err := s.privilegedRuntimeService.ListPodSandbox(nil)
 		if err != nil {
-			glog.Errorf("Failed to initialize frakti manager: ListPodSandbox from alternative runtime service failed: %v", err)
+			glog.Errorf("Failed to initialize frakti manager: ListPodSandbox from privileged runtime service failed: %v", err)
 			return nil, err
 		}
-		containers, err := s.alternativeRuntimeService.ListContainers(nil)
+		containers, err := s.privilegedRuntimeService.ListContainers(nil)
 		if err != nil {
-			glog.Errorf("Failed to initialize frakti manager: ListContainers from alternative runtime service failed: %v", err)
+			glog.Errorf("Failed to initialize frakti manager: ListContainers from privileged runtime service failed: %v", err)
 			return nil, err
 		}
 		for _, sandbox := range sandboxes {
-			s.cachedAlternativeRuntimeItems.Add(sandbox.Id)
+			s.cachedAlternativeRuntimeItems.Add(sandbox.Id, alternativeruntime.PrivilegedRuntimeName)
 		}
 		for _, container := range containers {
-			s.cachedAlternativeRuntimeItems.Add(container.Id)
+			s.cachedAlternativeRuntimeItems.Add(container.Id, alternativeruntime.PrivilegedRuntimeName)
 		}
-		glog.Infof("Restored alternative runtime managed sandboxes and containers to cache")
+		glog.Infof("Restored privileged runtime managed sandboxes and containers to cache")
 	}
 	s.registerServer()
 
@@ -106,9 +106,11 @@ func NewFraktiManager(
 
 // getRuntimeService returns corresponding runtime service based on given sandbox or container ID
 func (s *FraktiManager) getRuntimeService(id string) (runtime.RuntimeService, runtime.ImageService) {
-	if s.cachedAlternativeRuntimeItems.Has(id) {
-		return s.alternativeRuntimeService, s.alternativeImageService
-	} else {
+	runtimeName := s.cachedAlternativeRuntimeItems.GetRuntime(id)
+	switch runtimeName {
+	case alternativeruntime.PrivilegedRuntimeName:
+		return s.privilegedRuntimeService, s.privilegedImageService
+	default:
 		return s.hyperRuntimeService, s.hyperImageService
 	}
 }
@@ -159,24 +161,17 @@ func (s *FraktiManager) Version(ctx context.Context, req *kubeapi.VersionRequest
 // RunPodSandbox creates and start a hyper Pod.
 func (s *FraktiManager) RunPodSandbox(ctx context.Context, req *kubeapi.RunPodSandboxRequest) (*kubeapi.RunPodSandboxResponse, error) {
 	glog.V(3).Infof("RunPodSandbox from runtime service with request %s", req.String())
-	var (
-		podID       string
-		err         error
-		runtimeName string
-	)
-	if isOSContainerRuntimeRequired(req.GetConfig()) {
-		runtimeName = s.alternativeRuntimeService.ServiceName()
-		podID, err = s.alternativeRuntimeService.RunPodSandbox(req.Config)
-	} else {
-		runtimeName = s.hyperRuntimeService.ServiceName()
-		podID, err = s.hyperRuntimeService.RunPodSandbox(req.Config)
-	}
+
+	runtimeService := s.getRuntimeServiceBySandboxConfig(req.GetConfig())
+	runtimeName := runtimeService.ServiceName()
+	podID, err := runtimeService.RunPodSandbox(req.Config)
 	if err != nil {
 		glog.Errorf("RunPodSandbox from %s failed: %v", runtimeName, err)
 		return nil, err
 	}
-	if isOSContainerRuntimeRequired(req.GetConfig()) {
-		s.cachedAlternativeRuntimeItems.Add(podID)
+
+	if runtimeService != s.hyperRuntimeService {
+		s.cachedAlternativeRuntimeItems.Add(podID, runtimeName)
 	}
 	return &kubeapi.RunPodSandboxResponse{PodSandboxId: podID}, nil
 }
@@ -205,8 +200,8 @@ func (s *FraktiManager) RemovePodSandbox(ctx context.Context, req *kubeapi.Remov
 		glog.Errorf("RemovePodSandbox from %s failed: %v", runtimeService.ServiceName(), err)
 		return nil, err
 	}
-	if s.cachedAlternativeRuntimeItems.Has(req.PodSandboxId) {
-		s.cachedAlternativeRuntimeItems.Remove(req.PodSandboxId)
+	if runtimeService != s.hyperRuntimeService {
+		s.cachedAlternativeRuntimeItems.Remove(req.PodSandboxId, runtimeService.ServiceName())
 	}
 	return &kubeapi.RemovePodSandboxResponse{}, nil
 }
@@ -234,10 +229,10 @@ func (s *FraktiManager) ListPodSandbox(ctx context.Context, req *kubeapi.ListPod
 		return nil, err
 	}
 
-	if s.alternativeRuntimeService != nil {
-		podsInOsContainerRuntime, err := s.alternativeRuntimeService.ListPodSandbox(req.GetFilter())
+	if s.privilegedRuntimeService != nil {
+		podsInOsContainerRuntime, err := s.privilegedRuntimeService.ListPodSandbox(req.GetFilter())
 		if err != nil {
-			glog.Errorf("ListPodSandbox from alternative runtime service failed: %v", err)
+			glog.Errorf("ListPodSandbox from privileged runtime service failed: %v", err)
 			return nil, err
 		}
 		items = append(items, podsInOsContainerRuntime...)
@@ -252,14 +247,15 @@ func (s *FraktiManager) CreateContainer(ctx context.Context, req *kubeapi.Create
 
 	runtimeService, _ := s.getRuntimeService(req.PodSandboxId)
 	containerID, err := runtimeService.CreateContainer(req.PodSandboxId, req.Config, req.SandboxConfig)
+	runtimeName := runtimeService.ServiceName()
 
 	if err != nil {
-		glog.Errorf("CreateContainer from %s failed: %v", runtimeService.ServiceName(), err)
+		glog.Errorf("CreateContainer from %s failed: %v", runtimeName, err)
 		return nil, err
 	}
-	if s.cachedAlternativeRuntimeItems.Has(req.PodSandboxId) {
-		s.cachedAlternativeRuntimeItems.Add(containerID)
-		glog.V(3).Infof("added container: %s to alternative runtime container sets", containerID)
+	if s.cachedAlternativeRuntimeItems.Has(req.PodSandboxId, runtimeName) {
+		s.cachedAlternativeRuntimeItems.Add(containerID, runtimeName)
+		glog.V(3).Infof("added container: %s to %s container sets", containerID, runtimeName)
 	}
 	return &kubeapi.CreateContainerResponse{ContainerId: containerID}, nil
 }
@@ -295,14 +291,16 @@ func (s *FraktiManager) RemoveContainer(ctx context.Context, req *kubeapi.Remove
 	glog.V(3).Infof("RemoveContainer with request %s", req.String())
 
 	runtimeService, _ := s.getRuntimeService(req.ContainerId)
+	runtimeName := runtimeService.ServiceName()
 	err := runtimeService.RemoveContainer(req.ContainerId)
 	if err != nil {
-		glog.Errorf("RemoveContainer from %s failed: %v", runtimeService.ServiceName(), err)
+		glog.Errorf("RemoveContainer from %s failed: %v", runtimeName, err)
 		return nil, err
 	}
-	if s.cachedAlternativeRuntimeItems.Has(req.ContainerId) {
-		s.cachedAlternativeRuntimeItems.Remove(req.ContainerId)
-		glog.V(3).Infof("removed container: %s from alternative runtime container sets", req.ContainerId)
+	if runtimeService != s.hyperRuntimeService {
+		s.cachedAlternativeRuntimeItems.Remove(req.ContainerId, runtimeName)
+		glog.V(3).Infof("removed container: %s from %s container sets", req.ContainerId, runtimeName)
+
 	}
 	return &kubeapi.RemoveContainerResponse{}, nil
 }
@@ -322,10 +320,10 @@ func (s *FraktiManager) ListContainers(ctx context.Context, req *kubeapi.ListCon
 	}
 	containers = append(containers, vmContainers...)
 
-	if s.alternativeRuntimeService != nil {
-		osContainers, err := s.alternativeRuntimeService.ListContainers(req.GetFilter())
+	if s.privilegedRuntimeService != nil {
+		osContainers, err := s.privilegedRuntimeService.ListContainers(req.GetFilter())
 		if err != nil {
-			glog.Errorf("ListContainers from alternative runtime service failed: %v", err)
+			glog.Errorf("ListContainers from privileged runtime service failed: %v", err)
 			return nil, err
 		}
 		containers = append(containers, osContainers...)
@@ -440,12 +438,12 @@ func (s *FraktiManager) Status(ctx context.Context, req *kubeapi.StatusRequest) 
 		return nil, err
 	}
 
-	if s.alternativeRuntimeService != nil {
-		alternativeResp, err := s.alternativeRuntimeService.Status()
+	if s.privilegedRuntimeService != nil {
+		privilegedResp, err := s.privilegedRuntimeService.Status()
 		if err != nil {
-			return nil, fmt.Errorf("Status request succeed for hyper, but failed for alternative runtime: %v", err)
+			return nil, fmt.Errorf("Status request succeed for hyper, but failed for privileged runtime: %v", err)
 		}
-		glog.V(3).Infof("Status of alternative runtime service is %v", alternativeResp)
+		glog.V(3).Infof("Status of privileged runtime service is %v", privilegedResp)
 	}
 
 	return &kubeapi.StatusResponse{
@@ -459,7 +457,7 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 
 	errs := []error{}
 
-	imageServiceList := []runtime.ImageService{s.hyperImageService, s.alternativeImageService}
+	imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
 	imageMapList := make([]map[string]*kubeapi.Image, 2)
 
 	listImageFunc := func(i int) {
@@ -481,7 +479,7 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 		return nil, errs[0]
 	}
 
-	// NOTE: we show intersection of image list of hyper and alternative runtime
+	// NOTE: we show intersection of image list of hyper and privileged runtime
 	intersectList := getImageListIntersection(imageMapList[0], imageMapList[1])
 
 	// if there is different in two sides, print the different if log lever is high enough
@@ -499,7 +497,7 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 func (s *FraktiManager) ImageStatus(ctx context.Context, req *kubeapi.ImageStatusRequest) (*kubeapi.ImageStatusResponse, error) {
 	glog.V(3).Infof("ImageStatus with request %s", req.String())
 
-	// NOTE: we only show image status of hyper runtime and assume alternative runtime image are the same
+	// NOTE: we only show image status of hyper runtime and assume privileged runtime image are the same
 	status, err := s.hyperImageService.ImageStatus(req.Image)
 	if err != nil {
 		glog.Errorf("ImageStatus from hyper image service failed: %v", err)
@@ -522,9 +520,9 @@ func (s *FraktiManager) PullImage(ctx context.Context, req *kubeapi.PullImageReq
 			}
 			images = append(images, imageRef)
 		} else {
-			imageRef, err := s.alternativeImageService.PullImage(req.Image, req.Auth)
+			imageRef, err := s.privilegedImageService.PullImage(req.Image, req.Auth)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("PullImage from alternative image service failed: %v", err))
+				errs = append(errs, fmt.Errorf("PullImage from privileged image service failed: %v", err))
 			}
 			images = append(images, imageRef)
 		}
@@ -547,7 +545,7 @@ func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImag
 
 	errs := []error{}
 
-	imageServiceList := []runtime.ImageService{s.hyperImageService, s.alternativeImageService}
+	imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
 
 	removeImageFunc := func(i int) {
 		err := imageServiceList[i].RemoveImage(req.Image)
@@ -582,6 +580,14 @@ func (s *FraktiManager) ContainerStats(ctx context.Context, req *kubeapi.Contain
 func (s *FraktiManager) ListContainerStats(ctx context.Context, req *kubeapi.ListContainerStatsRequest) (*kubeapi.ListContainerStatsResponse, error) {
 	glog.V(3).Infof("ListContainerStats with request %s", req.String())
 	return nil, fmt.Errorf("not implemented")
+}
+
+// getRuntimeServiceBySandboxConfig returns corresponding runtime service by sandbox config
+func (s *FraktiManager) getRuntimeServiceBySandboxConfig(podConfig *kubeapi.PodSandboxConfig) runtime.RuntimeService {
+	if isOSContainerRuntimeRequired(podConfig) {
+		return s.privilegedRuntimeService
+	}
+	return s.hyperRuntimeService
 }
 
 // isOSContainerRuntimeRequired check if this pod requires to run with os container runtime.
