@@ -1,22 +1,46 @@
 <!-- TOC -->
 
-- [v0.3](#v03)
+- [v1.0](#v10)
     - [Features and updates](#features-and-updates)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
     - [External Dependency Version Information](#external-dependency-version-information)
+- [v0.3](#v03)
+    - [Features and updates](#features-and-updates-1)
+    - [External Dependency Version Information](#external-dependency-version-information-1)
+    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
     - [Known issues](#known-issues)
 - [v0.2](#v02)
-    - [Features and updates](#features-and-updates)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
-    - [Known issues](#known-issues)
+    - [Features and updates](#features-and-updates-2)
+    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests-1)
+    - [Known issues](#known-issues-1)
 - [v0.1](#v01)
     - [Features](#features)
     - [HyperContainer specific notes](#hypercontainer-specific-notes)
-    - [External Dependency Version Information](#external-dependency-version-information)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests-1)
-    - [Known issues](#known-issues-1)
+    - [External Dependency Version Information](#external-dependency-version-information-2)
+    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests-2)
+    - [Known issues](#known-issues-2)
 
 <!-- /TOC -->
+
+# v1.0
+
+This release includes enhances and bug fixes. It has also passed all node e2e conformance tests.
+
+## Features and updates
+
+- Upgrade to hyperd v1.0 and kubernetes v1.7
+- Have passed full node e2e conformance tests and CRI validation tests
+- Enhanced deployment steps and scripts
+- [#160](https://github.com/kubernetes/frakti/pull/160) Add support for CNI plugin chaining
+- [#162](https://github.com/kubernetes/frakti/pull/162) Add support for port mapping
+- [#170](https://github.com/kubernetes/frakti/pull/170) Add support for container readonly rootfs
+
+## External Dependency Version Information
+
+Frakti v1.0 has been tested against:
+
+- Kubernetes v1.7
+- Hyperd v1.0
+- Docker v1.12.6
 
 # v0.3
 
