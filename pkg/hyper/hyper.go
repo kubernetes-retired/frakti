@@ -29,7 +29,7 @@ import (
 
 const (
 	hyperRuntimeName    = "hyper"
-	minimumHyperVersion = "0.6.0"
+	minimumHyperVersion = "0.8.1"
 	secondToNano        = 1e9
 
 	// timeout in second for interacting with hyperd's gRPC API.
