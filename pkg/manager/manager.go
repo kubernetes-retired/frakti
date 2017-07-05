@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"reflect"
 	"syscall"
 	"time"
 
@@ -59,6 +60,9 @@ type FraktiManager struct {
 	privilegedRuntimeService runtime.RuntimeService
 	privilegedImageService   runtime.ImageService
 
+	unikernelRuntimeService runtime.RuntimeService
+	unikernelImageService   runtime.ImageService
+
 	// The pod sets need to be processed by privileged runtime
 	cachedAlternativeRuntimeItems *alternativeruntime.AlternativeRuntimeSets
 }
@@ -70,6 +74,8 @@ func NewFraktiManager(
 	streamingServer streaming.Server,
 	privilegedRuntimeService runtime.RuntimeService,
 	privilegedImageService runtime.ImageService,
+	unikernelRuntimeService runtime.RuntimeService,
+	unikernelImageService runtime.ImageService,
 ) (*FraktiManager, error) {
 	s := &FraktiManager{
 		server:                        grpc.NewServer(),
@@ -78,26 +84,32 @@ func NewFraktiManager(
 		streamingServer:               streamingServer,
 		privilegedRuntimeService:      privilegedRuntimeService,
 		privilegedImageService:        privilegedImageService,
+		unikernelRuntimeService:       unikernelRuntimeService,
+		unikernelImageService:         unikernelImageService,
 		cachedAlternativeRuntimeItems: alternativeruntime.NewAlternativeRuntimeSets(),
 	}
-	if privilegedRuntimeService != nil {
-		sandboxes, err := s.privilegedRuntimeService.ListPodSandbox(nil)
-		if err != nil {
-			glog.Errorf("Failed to initialize frakti manager: ListPodSandbox from privileged runtime service failed: %v", err)
-			return nil, err
+	for _, runtimeService := range []runtime.RuntimeService{privilegedRuntimeService, unikernelRuntimeService} {
+		// NOTE: Check the real value of interface, see https://golang.org/doc/faq#nil_error
+		if runtimeService != nil && !reflect.ValueOf(runtimeService).IsNil() {
+			runtimeName := runtimeService.ServiceName()
+			sandboxes, err := runtimeService.ListPodSandbox(nil)
+			if err != nil {
+				glog.Errorf("Failed to initialize frakti manager: ListPodSandbox from %s service failed: %v", runtimeName, err)
+				return nil, err
+			}
+			containers, err := runtimeService.ListContainers(nil)
+			if err != nil {
+				glog.Errorf("Failed to initialize frakti manager: ListContainers from %s service failed: %v", runtimeName, err)
+				return nil, err
+			}
+			for _, sandbox := range sandboxes {
+				s.cachedAlternativeRuntimeItems.Add(sandbox.Id, runtimeName)
+			}
+			for _, container := range containers {
+				s.cachedAlternativeRuntimeItems.Add(container.Id, runtimeName)
+			}
+			glog.Infof("Restored %s managed sandboxes and containers to cache", runtimeName)
 		}
-		containers, err := s.privilegedRuntimeService.ListContainers(nil)
-		if err != nil {
-			glog.Errorf("Failed to initialize frakti manager: ListContainers from privileged runtime service failed: %v", err)
-			return nil, err
-		}
-		for _, sandbox := range sandboxes {
-			s.cachedAlternativeRuntimeItems.Add(sandbox.Id, alternativeruntime.PrivilegedRuntimeName)
-		}
-		for _, container := range containers {
-			s.cachedAlternativeRuntimeItems.Add(container.Id, alternativeruntime.PrivilegedRuntimeName)
-		}
-		glog.Infof("Restored privileged runtime managed sandboxes and containers to cache")
 	}
 	s.registerServer()
 

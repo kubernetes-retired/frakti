@@ -25,16 +25,24 @@ import (
 const (
 	// internal represent of privileged runtime name
 	PrivilegedRuntimeName = "privileged runtime"
+	// internal represent of unikernel runtime name
+	UnikernelRuntimeName = "unikernel runtime"
 )
 
 type AlternativeRuntimeSets struct {
+	// privilegedStore store privileged runtime sandbox/container id set.
 	privilegedStore sets.String
+	// unikernelStore store unikernel runtime sandbox/container id set.
+	unikernelStore sets.String
 	// Lock to protect this sets
 	sync.RWMutex
 }
 
 func NewAlternativeRuntimeSets() *AlternativeRuntimeSets {
-	return &AlternativeRuntimeSets{privilegedStore: sets.NewString()}
+	return &AlternativeRuntimeSets{
+		privilegedStore: sets.NewString(),
+		unikernelStore:  sets.NewString(),
+	}
 }
 
 // GetRuntime return name of runtime it belongs to, return "" if none matched.
@@ -43,6 +51,8 @@ func (f *AlternativeRuntimeSets) GetRuntime(id string) string {
 	defer f.RUnlock()
 	if f.privilegedStore.Has(id) {
 		return PrivilegedRuntimeName
+	} else if f.unikernelStore.Has(id) {
+		return UnikernelRuntimeName
 	}
 	return ""
 }
@@ -54,6 +64,8 @@ func (f *AlternativeRuntimeSets) Has(id string, runtimeType string) bool {
 	switch runtimeType {
 	case PrivilegedRuntimeName:
 		return f.privilegedStore.Has(id)
+	case UnikernelRuntimeName:
+		return f.unikernelStore.Has(id)
 	}
 	return false
 }
@@ -66,6 +78,8 @@ func (f *AlternativeRuntimeSets) Remove(id string, runtimeType string) {
 	switch runtimeType {
 	case PrivilegedRuntimeName:
 		f.privilegedStore.Delete(id)
+	case UnikernelRuntimeName:
+		f.unikernelStore.Delete(id)
 	}
 }
 
@@ -77,6 +91,8 @@ func (f *AlternativeRuntimeSets) Add(id string, runtimeType string) {
 	switch runtimeType {
 	case PrivilegedRuntimeName:
 		f.privilegedStore.Insert(id)
+	case UnikernelRuntimeName:
+		f.unikernelStore.Insert(id)
 	}
 }
 
@@ -88,6 +104,8 @@ func (f *AlternativeRuntimeSets) IsNotEmpty(runtimeType string) bool {
 	switch runtimeType {
 	case PrivilegedRuntimeName:
 		return (f.privilegedStore.Len() != 0)
+	case UnikernelRuntimeName:
+		return (f.unikernelStore.Len() != 0)
 	}
 	// Return empty if none is matched
 	return true
