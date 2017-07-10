@@ -225,8 +225,9 @@ func buildCNIRuntimeConf(podNetnsPath string, podID string, metadata *kubeapi.Po
 		IfName:      DefaultInterfaceName,
 		Args: [][2]string{
 			{"IgnoreUnknown", "1"},
-			{"K8S_POD_NAME", podID},
+			{"K8S_POD_NAME", metadata.GetName()},
 			{"K8S_POD_NAMESPACE", metadata.GetNamespace()},
+			{"K8S_POD_INFRA_CONTAINER_ID", podID},
 		},
 		CapabilityArgs: capabilities,
 	}

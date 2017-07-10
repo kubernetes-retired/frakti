@@ -74,6 +74,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	result, err := h.netPlugin.SetUpPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
 	if err != nil {
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
+		return "", err
 	}
 
 	// set down all network interfaces in net ns
@@ -202,10 +203,10 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	} else {
 		checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
 		if err != nil {
-			glog.Errorf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
-			return fmt.Errorf("Failed to get sandbox status: %v", statusErr)
+			glog.Warningf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
+		} else {
+			netNsPath = checkpoint.NetNsPath
 		}
-		netNsPath = checkpoint.NetNsPath
 	}
 
 	// Get portMappings from checkpoint
