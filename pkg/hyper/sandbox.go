@@ -44,6 +44,12 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		return "", err
 	}
 	netNsPath := netns.Path()
+	defer func() {
+		if err != nil {
+			unix.Unmount(netNsPath, unix.MNT_DETACH)
+			os.Remove(netNsPath)
+		}
+	}()
 
 	// Persist network namespace in pod label
 	if userpod.Labels == nil {
@@ -76,6 +82,14 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 		return "", err
 	}
+	defer func() {
+		if err != nil {
+			// destroy the network namespace
+			if tearError := h.netPlugin.TearDownPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities); tearError != nil {
+				glog.Errorf("Destroy pod %s network namespace failed: %v", podId, tearError)
+			}
+		}
+	}()
 
 	// set down all network interfaces in net ns
 	err = setDownLinksInNs(netns)
@@ -111,13 +125,6 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		if removeError := h.client.RemovePod(podID); removeError != nil {
 			glog.Warningf("Remove pod %q failed: %v", removeError)
 		}
-		// destroy the network namespace
-		if tearError := h.netPlugin.TearDownPod(netNsPath, podID, config.GetMetadata(), config.GetAnnotations(), capabilities); tearError != nil {
-			glog.Errorf("Destroy pod %s network namespace failed: %v", podID, tearError)
-		}
-		unix.Unmount(netNsPath, unix.MNT_DETACH)
-		os.Remove(netNsPath)
-
 		// delete sandbox checkpoint
 		if removeCheckpointError := h.checkpointHandler.RemoveCheckpoint(podID); removeCheckpointError != nil {
 			glog.Errorf("Remove checkpoint of pod %s failed: %v", podID, removeCheckpointError)
