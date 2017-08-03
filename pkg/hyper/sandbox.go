@@ -24,6 +24,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/cni/pkg/types/current"
 	"golang.org/x/sys/unix"
 	"k8s.io/frakti/pkg/hyper/types"
 	"k8s.io/kubernetes/pkg/api/v1"
@@ -90,6 +91,30 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 			}
 		}
 	}()
+
+	cniResult, err := current.GetResult(result)
+	if err != nil {
+		glog.Errorf("Get CNI result for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+
+	err = delNetConfigInNs(netns, cniResult)
+	if err != nil {
+		glog.Errorf("Delete network configuration of net ns for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+
+	hostVeth, err = setupRelayBridgeInNs(netns, cniResult)
+	if err != nil {
+		glog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+
+	bridgeName, err = setupRelayBridgeInHost(hostVeth)
+	if err != nil {
+		glog.Errorf("Set up relay bridge in host for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
 
 	// set down all network interfaces in net ns
 	err = setDownLinksInNs(netns)
