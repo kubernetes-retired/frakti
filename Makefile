@@ -21,6 +21,7 @@ LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/frakti/ | grep k8s.io 
 .PHONY: frakti
 frakti: $(shell $(LOCALKUBEFILES))
 	go build -a -o ${BUILD_DIR}/frakti ./cmd/frakti
+	go build -a -o ${BUILD_DIR}/flexvolume_driver ./cmd/flexvolume_driver
 
 .PHONY: install
 install:

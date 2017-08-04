@@ -19,12 +19,15 @@ package hyper
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/types"
+	utiljson "k8s.io/frakti/pkg/util/json"
+	"k8s.io/frakti/pkg/util/knownflags"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
@@ -80,23 +83,75 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	}
 
 	// make volumes
-	// TODO: support adding device in upstream hyperd when creating container.
 	volumes := make([]*types.UserVolumeReference, len(config.Mounts))
 	for i, m := range config.Mounts {
 		hostPath := m.HostPath
+
 		_, volName := filepath.Split(hostPath)
-		volDetail := &types.UserVolume{
-			Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
-			// kuberuntime will set HostPath to the abs path of volume directory on host
-			Source: hostPath,
-			Format: volDriver,
+
+		// In frakti, we can both use normal container volumes (-v host:path), and also cinder-flexvolume
+		isCinderFlexvolume := false
+		// 1. host path is a directory (filter out bind mounted files)
+		if hostPathInfo, _ := os.Stat(hostPath); hostPathInfo.IsDir() {
+			// 2. tag file exists in host path
+			if _, err := os.Stat(filepath.Join(hostPath, knownflags.FlexvolumeDataFile)); !os.IsNotExist(err) {
+				// 3. then this is a cinder-flexvolume
+				isCinderFlexvolume = true
+			}
 		}
-		volumes[i] = &types.UserVolumeReference{
-			// use the generated volume name above
-			Volume:   volDetail.Name,
-			Path:     m.ContainerPath,
-			ReadOnly: m.Readonly,
-			Detail:   volDetail,
+
+		if isCinderFlexvolume {
+			// this is a cinder-flexvolume
+			optsData, err := utiljson.ReadJsonOptsFile(hostPath)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"buildUserContainer() failed: can't read flexvolume data file in %q: %v",
+					hostPath, err,
+				)
+			}
+
+			if optsData != nil && optsData["volume_type"].(string) == "rbd" {
+				monitors := make([]string, 0, 1)
+				for _, host := range optsData["hosts"].([]interface{}) {
+					for _, port := range optsData["ports"].([]interface{}) {
+						monitors = append(monitors, fmt.Sprintf("%s:%s", host.(string), port.(string)))
+					}
+				}
+				volDetail := &types.UserVolume{
+					Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
+					// kuberuntime will set HostPath to the abs path of volume directory on host
+					Source: "rbd:" + optsData["name"].(string),
+					Format: optsData["volume_type"].(string),
+					Fstype: optsData["fsType"].(string),
+					Option: &types.UserVolumeOption{
+						User:     optsData["auth_username"].(string),
+						Keyring:  optsData["keyring"].(string),
+						Monitors: monitors,
+					},
+				}
+				volumes[i] = &types.UserVolumeReference{
+					// use the generated volume name above
+					Volume:   volDetail.Name,
+					Path:     m.ContainerPath,
+					ReadOnly: m.Readonly,
+					Detail:   volDetail,
+				}
+			}
+		} else {
+			// this is a normal volume
+			volDetail := &types.UserVolume{
+				Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
+				// kuberuntime will set HostPath to the abs path of volume directory on host
+				Source: hostPath,
+				Format: volDriver,
+			}
+			volumes[i] = &types.UserVolumeReference{
+				// use the generated volume name above
+				Volume:   volDetail.Name,
+				Path:     m.ContainerPath,
+				ReadOnly: m.Readonly,
+				Detail:   volDetail,
+			}
 		}
 	}
 
