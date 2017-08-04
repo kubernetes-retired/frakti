@@ -104,17 +104,26 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		return "", err
 	}
 
-	hostVeth, err = setupRelayBridgeInNs(netns, cniResult)
+	hostVeth, err := setupRelayBridgeInNs(netns, cniResult)
 	if err != nil {
 		glog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 
-	bridgeName, err = setupRelayBridgeInHost(hostVeth)
+	bridgeName, err := setupRelayBridgeInHost(hostVeth)
 	if err != nil {
 		glog.Errorf("Set up relay bridge in host for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
+	userpod.Labels["HOSTBRIDGE"] = bridgeName
+
+	defer func() {
+		if err != nil {
+			if tearError := teardownRelayBridgeInHost(bridgeName); tearError != nil {
+				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podId, err)
+			}
+		}
+	}()
 
 	networkInfo := buildNetworkInfo(bridgeName, cniResult)
 
@@ -215,11 +224,13 @@ func (h *Runtime) buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod
 func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	// Get the pod's net ns info first
 	var netNsPath string
+	var hostBridge string
 
 	status, statusErr := h.PodSandboxStatus(podSandboxID)
 	if statusErr == nil {
 		labels := status.GetLabels()
 		netNsPath, _ = labels["NETNS"]
+		hostBridge, _ = labels["HOSTBRIDGE"]
 	} else {
 		checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
 		if err != nil {
@@ -268,6 +279,12 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 				glog.Errorf("Failed to remove checkpoint for sandbox %q: %v", podSandboxID, err)
 				return err
 			}
+
+			err = teardownRelayBridgeInHost(hostBridge)
+			if err != nil {
+				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
+			}
+
 			return nil
 		}
 		return err
@@ -281,6 +298,11 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 
 	unix.Unmount(netNsPath, unix.MNT_DETACH)
 	os.Remove(netNsPath)
+
+	err = teardownRelayBridgeInHost(hostBridge)
+	if err != nil {
+		glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
+	}
 
 	return nil
 }

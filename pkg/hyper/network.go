@@ -345,7 +345,7 @@ func setupRelayBridgeInNs(netns ns.NetNS, cniResult *current.Result) (netlink.Li
 
 	_, containerLink, err := findContainerLinkInNs(netns, cniResult)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := netns.Do(func(hostNS ns.NetNS) error {
@@ -418,6 +418,19 @@ func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 	}
 
 	return brName, nil
+}
+
+func teardownRelayBridgeInHost(bridgeName string) error {
+	br, err := bridgeByName(bridgeName)
+	if err != nil {
+		return err
+	}
+
+	if err := netlink.LinkDel(br); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func buildNetworkInfo(bridgeName string, cniResult *current.Result) *NetworkInfo {
