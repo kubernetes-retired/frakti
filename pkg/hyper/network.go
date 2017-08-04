@@ -26,7 +26,6 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/containernetworking/cni/pkg/ns"
-	cnitypes "github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/vishvananda/netlink"
 	"k8s.io/kubernetes/pkg/api/v1"
@@ -87,40 +86,6 @@ func toAPIProtocol(protocol Protocol) v1.Protocol {
 
 }
 
-func convertCNIResult2NetworkInfo(result cnitypes.Result) *NetworkInfo {
-	ret := &NetworkInfo{}
-
-	r, err := current.GetResult(result)
-
-	if err != nil {
-		glog.Errorf("Convert CNI Result failed: %v", err)
-		return nil
-	}
-
-	// only handle bridge plugin now
-	// TODO: support other plugins in the future
-	for _, iface := range r.Interfaces {
-		if iface.Sandbox != "" {
-			// interface information in net ns
-			ret.IfName = iface.Name
-			ret.Mac = iface.Mac
-			continue
-		}
-		l, err := netlink.LinkByName(iface.Name)
-		if err != nil {
-			continue
-		}
-		if _, ok := l.(*netlink.Bridge); ok {
-			// find the bridge name
-			ret.BridgeName = iface.Name
-		}
-	}
-	ret.Ip = r.IPs[0].Address.String()
-	ret.Gateway = r.IPs[0].Gateway.String()
-
-	return ret
-}
-
 func findContainerLinkInNs(netns ns.NetNS, cniResult *current.Result) (string, netlink.Link, error) {
 	var err error
 	var ifName string
@@ -153,7 +118,7 @@ func GenRandomHwAddr() (net.HardwareAddr, error) {
 
 	if err != nil {
 		glog.Errorf("get random number faild")
-		return "", err
+		return nil, err
 	}
 
 	for i, b := range bytes {
@@ -161,7 +126,7 @@ func GenRandomHwAddr() (net.HardwareAddr, error) {
 	}
 
 	tmp := []string{"52:54", string(bytes[0:2]), string(bytes[2:4]), string(bytes[4:6]), string(bytes[6:8])}
-	return net.ParseMAC(strings.Join(tmp, ":")), nil
+	return net.ParseMAC(strings.Join(tmp, ":"))
 }
 
 func delNetConfigInNs(netns ns.NetNS, cniResult *current.Result) error {
@@ -203,7 +168,7 @@ func delNetConfigInNs(netns ns.NetNS, cniResult *current.Result) error {
 		}
 
 		// change hardware address of container link to avoid collision
-		hwAddr, err := GenRandomMac()
+		hwAddr, err := GenRandomHwAddr()
 		if err != nil {
 			glog.Errorf("Failed to generate hardware address for container link: %v", err)
 			return err
@@ -455,21 +420,22 @@ func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 	return brName, nil
 }
 
-func setDownLinksInNs(netns ns.NetNS) error {
-	if err := netns.Do(func(_ ns.NetNS) error {
-		links, err := netlink.LinkList()
-		if err != nil {
-			return err
-		}
+func buildNetworkInfo(bridgeName string, cniResult *current.Result) *NetworkInfo {
+	ret := &NetworkInfo{}
 
-		for _, link := range links {
-			netlink.LinkSetDown(link)
-		}
+	ret.BridgeName = bridgeName
+	ret.IfName = strings.Replace(bridgeName, "br", "tap", 1)
 
-		return nil
-	}); err != nil {
-		return err
+	for _, iface := range cniResult.Interfaces {
+		if iface.Sandbox != "" {
+			// interface information in net ns
+			ret.Mac = iface.Mac
+			break
+		}
 	}
 
-	return nil
+	ret.Ip = cniResult.IPs[0].Address.String()
+	ret.Gateway = cniResult.IPs[0].Gateway.String()
+
+	return ret
 }
