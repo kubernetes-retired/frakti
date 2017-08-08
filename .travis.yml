@@ -23,8 +23,8 @@ install:
 
 jobs:
   include:
-    - stage: Unit Test
-      script: hack/test-go.sh
-    - stage: End to End Test
-      script: hack/test-e2e.sh
+    - stage: Test
+      script:
+        - hack/test-go.sh
+        - hack/test-e2e.sh
 
