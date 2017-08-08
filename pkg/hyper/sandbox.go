@@ -24,6 +24,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/cni/pkg/types/current"
 	"golang.org/x/sys/unix"
 	"k8s.io/frakti/pkg/hyper/types"
 	"k8s.io/kubernetes/pkg/api/v1"
@@ -91,22 +92,43 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		}
 	}()
 
-	// set down all network interfaces in net ns
-	err = setDownLinksInNs(netns)
+	cniResult, err := current.GetResult(result)
 	if err != nil {
-		glog.Errorf("Set down network interfaces in net ns for sandbox %q failed: %v", config.String(), err)
+		glog.Errorf("Get CNI result for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 
-	var networkInfo *NetworkInfo
-	if result != nil {
-		networkInfo = convertCNIResult2NetworkInfo(result)
+	err = delNetConfigInNs(netns, cniResult)
+	if err != nil {
+		glog.Errorf("Delete network configuration of net ns for sandbox %q failed: %v", config.String(), err)
+		return "", err
 	}
 
-	if networkInfo != nil {
-		// Add network configuration of sandbox net ns to userpod
-		addNetworkInterfaceForPod(userpod, networkInfo)
+	hostVeth, err := setupRelayBridgeInNs(netns, cniResult)
+	if err != nil {
+		glog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
+		return "", err
 	}
+
+	bridgeName, err := setupRelayBridgeInHost(hostVeth)
+	if err != nil {
+		glog.Errorf("Set up relay bridge in host for sandbox %q failed: %v", config.String(), err)
+		return "", err
+	}
+	userpod.Labels["HOSTBRIDGE"] = bridgeName
+
+	defer func() {
+		if err != nil {
+			if tearError := teardownRelayBridgeInHost(bridgeName); tearError != nil {
+				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podId, err)
+			}
+		}
+	}()
+
+	networkInfo := buildNetworkInfo(bridgeName, cniResult)
+
+	// Add network configuration of sandbox net ns to userpod
+	addNetworkInterfaceForPod(userpod, networkInfo)
 
 	podID, err := h.client.CreatePod(userpod)
 	if err != nil {
@@ -202,11 +224,13 @@ func (h *Runtime) buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod
 func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	// Get the pod's net ns info first
 	var netNsPath string
+	var hostBridge string
 
 	status, statusErr := h.PodSandboxStatus(podSandboxID)
 	if statusErr == nil {
 		labels := status.GetLabels()
 		netNsPath, _ = labels["NETNS"]
+		hostBridge, _ = labels["HOSTBRIDGE"]
 	} else {
 		checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
 		if err != nil {
@@ -255,6 +279,12 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 				glog.Errorf("Failed to remove checkpoint for sandbox %q: %v", podSandboxID, err)
 				return err
 			}
+
+			err = teardownRelayBridgeInHost(hostBridge)
+			if err != nil {
+				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
+			}
+
 			return nil
 		}
 		return err
@@ -268,6 +298,11 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 
 	unix.Unmount(netNsPath, unix.MNT_DETACH)
 	os.Remove(netNsPath)
+
+	err = teardownRelayBridgeInHost(hostBridge)
+	if err != nil {
+		glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
+	}
 
 	return nil
 }
