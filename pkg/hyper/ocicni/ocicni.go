@@ -209,6 +209,10 @@ func (network *cniNetwork) deleteFromNetwork(podNetnsPath string, podID string, 
 	glog.V(4).Infof("About to del CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
 	err = cniNet.DelNetworkList(netConf, rt)
 	if err != nil {
+		// ignore the error that ns has already not existed
+		if strings.Contains(err.Error(), "no such file or directory") {
+			return nil
+		}
 		glog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
 		return err
 	}
