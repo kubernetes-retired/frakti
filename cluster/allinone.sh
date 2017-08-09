@@ -148,7 +148,7 @@ EOF
 }
 
 setup-master() {
-    kubeadm init kubeadm init --pod-network-cidr ${CLUSTER_CIDR} --kubernetes-version stable
+    kubeadm init --pod-network-cidr ${CLUSTER_CIDR} --kubernetes-version stable
     # Also enable schedule pods on the master for allinone.
     export KUBECONFIG=/etc/kubernetes/admin.conf
     kubectl taint nodes --all node-role.kubernetes.io/master-
