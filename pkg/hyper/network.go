@@ -23,13 +23,16 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
-
 	"github.com/containernetworking/cni/pkg/ns"
-	"github.com/containernetworking/cni/pkg/types/current"
+	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
+
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
+)
+
+const (
+	defaultContainerBridgeName = "br-netns"
 )
 
 // cniPortMapping maps to the standard CNI portmapping Capability
@@ -51,10 +54,22 @@ type NetworkInfo struct {
 	BridgeName string
 }
 
+type containerInterface struct {
+	Name    string
+	Mac     net.HardwareAddr
+	Addr    *net.IPNet
+	Gateway string
+	Link    *netlink.Link
+}
+
 func (h *Runtime) GetPodPortMappings(podID string) ([]*hostport.PortMapping, error) {
 	// TODO: get portmappings from docker labels for backward compatibility
 	checkpoint, err := h.checkpointHandler.GetCheckpoint(podID)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
 		return nil, err
 
 	}
@@ -83,35 +98,9 @@ func toAPIProtocol(protocol Protocol) v1.Protocol {
 	}
 	glog.Warningf("Unknown protocol %q: defaulting to TCP", protocol)
 	return v1.ProtocolTCP
-
 }
 
-func findContainerLinkInNs(netns ns.NetNS, cniResult *current.Result) (string, netlink.Link, error) {
-	var err error
-	var ifName string
-	var containerLink netlink.Link
-
-	if err := netns.Do(func(_ ns.NetNS) error {
-		for _, iface := range cniResult.Interfaces {
-			if iface.Sandbox != "" {
-				ifName = iface.Name
-				containerLink, err = netlink.LinkByName(ifName)
-				if err != nil {
-					return fmt.Errorf("Could not find link of container by name %q: %v", ifName, err)
-				}
-				break
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return "", nil, err
-	}
-
-	return ifName, containerLink, err
-}
-
-func GenRandomHwAddr() (net.HardwareAddr, error) {
+func generateMacAddress() (net.HardwareAddr, error) {
 	const alphanum = "0123456789abcdef"
 	var bytes = make([]byte, 8)
 	_, err := rand.Read(bytes)
@@ -129,135 +118,92 @@ func GenRandomHwAddr() (net.HardwareAddr, error) {
 	return net.ParseMAC(strings.Join(tmp, ":"))
 }
 
-func delNetConfigInNs(netns ns.NetNS, cniResult *current.Result) error {
-	ifName, containerLink, err := findContainerLinkInNs(netns, cniResult)
-	if err != nil {
-		return err
-	}
+func scanContainerInterfaces(netns ns.NetNS) ([]*containerInterface, error) {
+	results := make([]*containerInterface, 0)
 
 	if err := netns.Do(func(_ ns.NetNS) error {
-		// delete all routes
-		for _, r := range cniResult.Routes {
-			route := &netlink.Route{
-				LinkIndex: containerLink.Attrs().Index,
-				Scope:     netlink.SCOPE_UNIVERSE,
-				Dst:       &r.Dst,
-				Gw:        r.GW,
-			}
-
-			if err := netlink.RouteDel(route); err != nil {
-				glog.Errorf("Could not delete route associated with %q: %v", ifName, err)
-				return err
-			}
-		}
-
-		// delete all ip configs
-		for _, ipc := range cniResult.IPs {
-			intIdx := ipc.Interface
-
-			if cniResult.Interfaces[intIdx].Name != ifName {
-				return fmt.Errorf("Failed to del IP addr %v from %q: invalid interface index", ipc, ifName)
-			}
-
-			addr := &netlink.Addr{IPNet: &ipc.Address, Label: ""}
-
-			if err := netlink.AddrDel(containerLink, addr); err != nil {
-				glog.Errorf("Could not delete IP address of %q: %v", ifName, err)
-				return err
-			}
-		}
-
-		// change hardware address of container link to avoid collision
-		hwAddr, err := GenRandomHwAddr()
+		links, err := netlink.LinkList()
 		if err != nil {
-			glog.Errorf("Failed to generate hardware address for container link: %v", err)
 			return err
 		}
 
-		if err := netlink.LinkSetHardwareAddr(containerLink, hwAddr); err != nil {
-			glog.Errorf("Failed to change hardware address of container link: %v", err)
-			return nil
+		for _, link := range links {
+			linkName := link.Attrs().Name
+			if linkName == "lo" || link.Type() == "ipip" {
+				continue
+			}
+
+			// Only ipv4 is supported now.
+			var ip *net.IPNet
+			addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+			if err != nil {
+				glog.Errorf("Get address list of link %s failed: %v", linkName, err)
+				continue
+			}
+			if addrs != nil {
+				ip = addrs[0].IPNet
+			}
+
+			gateway := ""
+			routes, err := netlink.RouteList(link, netlink.FAMILY_V4)
+			if err != nil {
+				glog.Errorf("Get route list of link %s failed: %v", linkName, err)
+				continue
+			}
+			for _, route := range routes {
+				if route.Gw != nil && route.Dst == nil {
+					gateway = route.Gw.String()
+					break
+				}
+			}
+
+			// Fix gateway for /32 IP addresses.
+			maskSize, _ := ip.Mask.Size()
+			if maskSize == 32 {
+				gateway = ip.IP.String()
+			}
+
+			results = append(results, &containerInterface{
+				Name:    linkName,
+				Mac:     link.Attrs().HardwareAddr,
+				Addr:    ip,
+				Gateway: gateway,
+				Link:    &link,
+			})
 		}
 
 		return nil
 	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// RandomVethName returns string "veth" with random prefix (hashed from entropy)
-func RandomVethName() (string, error) {
-	entropy := make([]byte, 4)
-	_, err := rand.Reader.Read(entropy)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate random veth name: %v", err)
-	}
-
-	// NetworkManager (recent versions) will ignore veth devices that start with "veth"
-	return fmt.Sprintf("veth%x", entropy), nil
-}
-
-func makeVethPair(name, peer string) (netlink.Link, error) {
-	veth := &netlink.Veth{
-		LinkAttrs: netlink.LinkAttrs{
-			Name:  name,
-			Flags: net.FlagUp,
-		},
-		PeerName: peer,
-	}
-	if err := netlink.LinkAdd(veth); err != nil {
 		return nil, err
 	}
 
-	return veth, nil
+	return results, nil
 }
 
-func peerExists(name string) bool {
-	if _, err := netlink.LinkByName(name); err != nil {
-		return false
-	}
-	return true
-}
-
-func makeVeth(name string) (peerName string, veth netlink.Link, err error) {
-	for i := 0; i < 10; i++ {
-		peerName, err = RandomVethName()
-		if err != nil {
-			return
-		}
-
-		veth, err = makeVethPair(name, peerName)
-		switch {
-		case err == nil:
-			return
-
-		case os.IsExist(err):
-			if peerExists(peerName) {
-				continue
-			}
-			err = fmt.Errorf("container veth name provided (%v) already exists", name)
-			return
-
-		default:
-			err = fmt.Errorf("failed to make veth pair: %v", err)
-			return
-		}
-	}
-
-	// should really never be hit
-	err = fmt.Errorf("failed to find a unique veth name")
-	return
-}
-
-func setupVeth(contVethName string, hostNS ns.NetNS) (netlink.Link, netlink.Link, error) {
-	hostVethName, contVeth, err := makeVeth(contVethName)
+// generateVethPair returns a veth pair.
+func generateVethPair() (string, string, error) {
+	entropy := make([]byte, 4)
+	_, err := rand.Reader.Read(entropy)
 	if err != nil {
+		return "", "", fmt.Errorf("failed to generate random veth name: %v", err)
+	}
+
+	return fmt.Sprintf("veth%x", entropy), fmt.Sprintf("ceth%x", entropy), nil
+}
+
+func setupVeth(contVethName, hostVethName string, hostNS ns.NetNS) (netlink.Link, netlink.Link, error) {
+	contVeth := &netlink.Veth{
+		LinkAttrs: netlink.LinkAttrs{
+			Name:  contVethName,
+			Flags: net.FlagUp,
+		},
+		PeerName: hostVethName,
+	}
+	if err := netlink.LinkAdd(contVeth); err != nil {
 		return nil, nil, err
 	}
 
-	if err = netlink.LinkSetUp(contVeth); err != nil {
+	if err := netlink.LinkSetUp(contVeth); err != nil {
 		return nil, nil, fmt.Errorf("failed to set %q up: %v", contVethName, err)
 	}
 
@@ -287,7 +233,7 @@ func setupVeth(contVethName string, hostNS ns.NetNS) (netlink.Link, netlink.Link
 	return hostVeth, contVeth, nil
 }
 
-func RandomBridgeName() (string, error) {
+func generageBridgeName() (string, error) {
 	entropy := make([]byte, 4)
 	_, err := rand.Reader.Read(entropy)
 	if err != nil {
@@ -340,39 +286,27 @@ func setupBridge(brName string) (*netlink.Bridge, error) {
 	return br, nil
 }
 
-func setupRelayBridgeInNs(netns ns.NetNS, cniResult *current.Result) (netlink.Link, error) {
+func setupRelayBridgeInNs(netns ns.NetNS, containerInterfaces []*containerInterface) (netlink.Link, error) {
 	var hostVeth netlink.Link
-
-	_, containerLink, err := findContainerLinkInNs(netns, cniResult)
-	if err != nil {
-		return nil, err
-	}
 
 	if err := netns.Do(func(hostNS ns.NetNS) error {
 		var err error
 		var containerVeth netlink.Link
 
-		// setup bridge in ns
-		brName, err := RandomBridgeName()
-		if err != nil {
-			glog.Errorf("Failed to generate bridge name in ns: %v", err)
-			return err
-		}
-
-		br, err := setupBridge(brName)
+		br, err := setupBridge(defaultContainerBridgeName)
 		if err != nil {
 			glog.Errorf("Failed to setup bridge in ns: %v", err)
 			return err
 		}
 
 		// create the veth pair in the container and move host end to host netns
-		vethName, err := RandomVethName()
+		vethName, pairName, err := generateVethPair()
 		if err != nil {
 			glog.Errorf("Failed to generate veth name in ns: %v", err)
 			return err
 		}
 
-		hostVeth, containerVeth, err = setupVeth(vethName, hostNS)
+		hostVeth, containerVeth, err = setupVeth(vethName, pairName, hostNS)
 		if err != nil {
 			glog.Errorf("Failed to create veth pair in ns: %v", err)
 			return err
@@ -384,9 +318,26 @@ func setupRelayBridgeInNs(netns ns.NetNS, cniResult *current.Result) (netlink.Li
 			return err
 		}
 
-		if err := netlink.LinkSetMaster(containerLink, br); err != nil {
-			glog.Errorf("Failed to connect link of container to the bridge in ns: %v", err)
-			return err
+		for _, iface := range containerInterfaces {
+			// remove addr on the iface, which will be set inside hypercontainer.
+			if err := netlink.AddrDel(*iface.Link, &netlink.Addr{
+				IPNet: iface.Addr,
+			}); err != nil {
+				return fmt.Errorf("error of removing addr on iface: %v", err)
+			}
+
+			// set a new mac address, whose old one will be used in hypercontainer.
+			mac, err := generateMacAddress()
+			if err != nil {
+				return fmt.Errorf("error of generating mac address: %v", err)
+			}
+			if err := netlink.LinkSetHardwareAddr(*iface.Link, mac); err != nil {
+				return fmt.Errorf("error of setting mac on iface: %v", err)
+			}
+
+			if err := netlink.LinkSetMaster(*iface.Link, br); err != nil {
+				return fmt.Errorf("error of setting iface master: %v", err)
+			}
 		}
 
 		return nil
@@ -399,7 +350,7 @@ func setupRelayBridgeInNs(netns ns.NetNS, cniResult *current.Result) (netlink.Li
 
 func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 	// setup bridge in host
-	brName, err := RandomBridgeName()
+	brName, err := generageBridgeName()
 	if err != nil {
 		glog.Errorf("Failed to generate bridge name in host: %v", err)
 		return "", err
@@ -423,6 +374,14 @@ func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 func teardownRelayBridgeInHost(bridgeName string) error {
 	br, err := bridgeByName(bridgeName)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+
+		return err
+	}
+
+	if err := netlink.LinkSetDown(br); err != nil {
 		return err
 	}
 
@@ -433,22 +392,12 @@ func teardownRelayBridgeInHost(bridgeName string) error {
 	return nil
 }
 
-func buildNetworkInfo(bridgeName string, cniResult *current.Result) *NetworkInfo {
-	ret := &NetworkInfo{}
-
-	ret.BridgeName = bridgeName
-	ret.IfName = strings.Replace(bridgeName, "br", "tap", 1)
-
-	for _, iface := range cniResult.Interfaces {
-		if iface.Sandbox != "" {
-			// interface information in net ns
-			ret.Mac = iface.Mac
-			break
-		}
+func buildNetworkInfo(bridgeName string, interfaces []*containerInterface) *NetworkInfo {
+	return &NetworkInfo{
+		BridgeName: bridgeName,
+		IfName:     strings.Replace(bridgeName, "br", "tap", 1),
+		Mac:        interfaces[0].Mac.String(),
+		Ip:         interfaces[0].Addr.String(),
+		Gateway:    interfaces[0].Gateway,
 	}
-
-	ret.Ip = cniResult.IPs[0].Address.String()
-	ret.Gateway = cniResult.IPs[0].Gateway.String()
-
-	return ret
 }

@@ -21,11 +21,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
-
 	"github.com/containernetworking/cni/pkg/ns"
-	"github.com/containernetworking/cni/pkg/types/current"
+	"github.com/golang/glog"
 	"golang.org/x/sys/unix"
+
 	"k8s.io/frakti/pkg/hyper/types"
 	"k8s.io/kubernetes/pkg/api/v1"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
@@ -78,7 +77,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		"portMappings": portMappingsParam,
 	}
 	podId := userpod.Id
-	result, err := h.netPlugin.SetUpPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
+	_, err = h.netPlugin.SetUpPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
 	if err != nil {
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 		return "", err
@@ -92,19 +91,15 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		}
 	}()
 
-	cniResult, err := current.GetResult(result)
+	containerInterfaces, err := scanContainerInterfaces(netns)
 	if err != nil {
 		glog.Errorf("Get CNI result for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 
-	err = delNetConfigInNs(netns, cniResult)
-	if err != nil {
-		glog.Errorf("Delete network configuration of net ns for sandbox %q failed: %v", config.String(), err)
-		return "", err
-	}
+	glog.V(3).Infof("Get container interfaces in netns %q: %#v", netNsPath, containerInterfaces)
 
-	hostVeth, err := setupRelayBridgeInNs(netns, cniResult)
+	hostVeth, err := setupRelayBridgeInNs(netns, containerInterfaces)
 	if err != nil {
 		glog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
 		return "", err
@@ -125,9 +120,8 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		}
 	}()
 
-	networkInfo := buildNetworkInfo(bridgeName, cniResult)
-
 	// Add network configuration of sandbox net ns to userpod
+	networkInfo := buildNetworkInfo(bridgeName, containerInterfaces)
 	addNetworkInterfaceForPod(userpod, networkInfo)
 
 	podID, err := h.client.CreatePod(userpod)
