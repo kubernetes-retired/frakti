@@ -146,7 +146,7 @@ Further information could be found at:
   - frakti is fully based on CNI (bridge mode only for now), so there's no big difference here
   - We are working on making `Fannel` & `Calico` work out-of-box with `frakti` based Kubernetes
 
-Besides the lists above, all behaviors of frakti is 100% the same with other Liunx container runtimes like Docker, please enjoy it!
+Besides the lists above, all behaviors of frakti are 100% the same with other Liunx container runtimes like Docker, please enjoy it!
 
 ## License
 
