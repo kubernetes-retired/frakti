@@ -227,6 +227,14 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule-
 ```
 
+Optional: approve kubelet's certificate signing requests (csr) on the master
+
+Kubernetes v1.7 introduces [csrapproving](https://kubernetes.io/docs/admin/kubelet-tls-bootstrapping/#approval-controller) but the signing controller does not immediately sign all certificate requests. For the alpha version, it should be done manually by a cluster administrator using kubectl, e.g. approving all csr:
+
+```sh
+kubectl certificate approve $(kubectl get csr | awk '/^csr/{print $1}')
+```
+
 ### Setting up the worker nodes
 
 ```sh
