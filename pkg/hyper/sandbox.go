@@ -85,8 +85,9 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	defer func() {
 		if err != nil {
 			// destroy the network namespace
-			if tearError := h.netPlugin.TearDownPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities); tearError != nil {
-				glog.Errorf("Destroy pod %s network namespace failed: %v", podId, tearError)
+			err := h.netPlugin.TearDownPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
+			if err != nil {
+				glog.Errorf("Destroy pod %s network namespace failed: %v", podId, err)
 			}
 		}
 	}()
@@ -268,15 +269,16 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 
 			unix.Unmount(netNsPath, unix.MNT_DETACH)
 			os.Remove(netNsPath)
-			err = h.checkpointHandler.RemoveCheckpoint(podSandboxID)
-			if err != nil {
-				glog.Errorf("Failed to remove checkpoint for sandbox %q: %v", podSandboxID, err)
-				return err
-			}
 
 			err = teardownRelayBridgeInHost(hostBridge)
 			if err != nil {
 				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
+			}
+
+			err = h.checkpointHandler.RemoveCheckpoint(podSandboxID)
+			if err != nil {
+				glog.Errorf("Failed to remove checkpoint for sandbox %q: %v", podSandboxID, err)
+				return err
 			}
 
 			return nil
