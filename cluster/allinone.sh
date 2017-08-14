@@ -152,6 +152,8 @@ setup-master() {
     # Also enable schedule pods on the master for allinone.
     export KUBECONFIG=/etc/kubernetes/admin.conf
     kubectl taint nodes --all node-role.kubernetes.io/master-
+    # approve kublelet's csr for the node.
+    kubectl certificate approve $(kubectl get csr | awk '/^csr/{print $1}')
 }
 
 command_exists() {
