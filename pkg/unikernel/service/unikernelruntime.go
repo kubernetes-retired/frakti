@@ -14,17 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package unikernel
+package service
 
 import (
 	"github.com/golang/glog"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 
+	"k8s.io/frakti/pkg/unikernel/metadata"
 	"k8s.io/frakti/pkg/util/alternativeruntime"
+	"k8s.io/frakti/pkg/util/registrar"
 )
 
 type UnikernelRuntime struct {
+	// rootDir is the directory for managing unikernel runtime files
+	rootDir string
+	// sandboxStore stores all sandbox metadata.
+	sandboxStore metadata.SandboxStore
+	// sandboxNameIndex stores all unique sandbox names.
+	sandboxNameIndex *registrar.Registrar
+	// sandboxIDIndex stores all unique sandbox names.
+	sandboxIDIndex *registrar.Registrar
 }
 
 func (u *UnikernelRuntime) ServiceName() string {
