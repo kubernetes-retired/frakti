@@ -154,6 +154,8 @@ setup-master() {
     kubectl taint nodes --all node-role.kubernetes.io/master-
     # approve kublelet's csr for the node.
     kubectl certificate approve $(kubectl get csr | awk '/^csr/{print $1}')
+    # increase memory limits for kube-dns
+    kubectl -n kube-system patch deployment kube-dns -p '{"spec":{"template":{"spec":{"containers":[{"name":"kubedns","resources":{"limits":{"memory":"256Mi"}}},{"name":"dnsmasq","resources":{"limits":{"memory":"128Mi"}}},{"name":"sidecar","resources":{"limits":{"memory":"64Mi"}}}]}}}}'
 }
 
 command_exists() {
