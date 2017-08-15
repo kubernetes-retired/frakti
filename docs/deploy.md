@@ -271,3 +271,10 @@ ip route add 10.244.3.0/24 via 10.140.0.3
 ip route add 10.244.1.0/24 via 10.140.0.1
 ip route add 10.244.2.0/24 via 10.140.0.2
 ```
+
+## Use `frakti` in production environment
+In a production environment, we recommend user to have their own CNI plugin (Flannel, Calico, Neutron etc), and persistent volume provider (GlusterFS, Cephfs, NFS etc). Please follow Kubernetes admin doc for  details about integration, and it makes no difference if you are using `frakti`.
+
+On the other hand, https://github.com/openstack/stackube is a production ready upstream Kubernetes cluster with `frakti` as container runtime, standalone Neutron, Cinder and Keystone to provide multi-tenancy, networking and storage. Please feel free to explore.
+
+And, if you would like to try `frakti` with more integrations in your own environment, contribution will always be appreciated!
