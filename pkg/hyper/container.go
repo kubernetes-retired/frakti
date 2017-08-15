@@ -19,12 +19,15 @@ package hyper
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/types"
+	utiljson "k8s.io/frakti/pkg/util/json"
+	"k8s.io/frakti/pkg/util/knownflags"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
@@ -47,6 +50,24 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 	}
 
 	return containerID, nil
+}
+
+// VolumeOptsData is the struct of json file
+type VolumeOptsData struct {
+	AccessMode   string   `json:"access_mode"`
+	AuthUserName string   `json:"auth_username"`
+	AuthEnabled  bool     `json:"auth_enabled"`
+	ClusterName  string   `json:"cluster_name"`
+	Encrypted    bool     `json:"encrypted"`
+	FsType       string   `json:"fsType"`
+	Hosts        []string `json:"hosts"`
+	Keyring      string   `json:"keyring"`
+	Name         string   `json:"name"`
+	Ports        []string `json:"ports"`
+	SecretUUID   string   `json:"secret_uuid"`
+	SecretType   string   `json:"secret_type"`
+	VolumeID     string   `json:"volumeID"`
+	VolumeType   string   `json:"volume_type"`
 }
 
 // buildUserContainer builds hyperd's UserContainer based kubelet ContainerConfig.
@@ -80,26 +101,10 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	}
 
 	// make volumes
-	// TODO: support adding device in upstream hyperd when creating container.
-	volumes := make([]*types.UserVolumeReference, len(config.Mounts))
-	for i, m := range config.Mounts {
-		hostPath := m.HostPath
-		_, volName := filepath.Split(hostPath)
-		volDetail := &types.UserVolume{
-			Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
-			// kuberuntime will set HostPath to the abs path of volume directory on host
-			Source: hostPath,
-			Format: volDriver,
-		}
-		volumes[i] = &types.UserVolumeReference{
-			// use the generated volume name above
-			Volume:   volDetail.Name,
-			Path:     m.ContainerPath,
-			ReadOnly: m.Readonly,
-			Detail:   volDetail,
-		}
+	volumes, err := makeContainerVolumes(config)
+	if err != nil {
+		return nil, err
 	}
-
 	containerSpec.Volumes = volumes
 
 	// make environments
@@ -113,6 +118,82 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	containerSpec.Envs = environments
 
 	return containerSpec, nil
+}
+
+func makeContainerVolumes(config *kubeapi.ContainerConfig) ([]*types.UserVolumeReference, error) {
+	volumes := make([]*types.UserVolumeReference, len(config.Mounts))
+	for i, m := range config.Mounts {
+		hostPath := m.HostPath
+
+		_, volName := filepath.Split(hostPath)
+
+		// In frakti, we can both use normal container volumes (-v host:path), and also cinder-flexvolume
+		isCinderFlexvolume := false
+		volumeOptsFile := filepath.Join(hostPath, knownflags.FlexvolumeDataFile)
+		// 1. host path is a directory (filter out bind mounted files like /etc/hosts)
+		if hostPathInfo, _ := os.Stat(hostPath); hostPathInfo.IsDir() {
+			// 2. tag file exists in host path
+			if _, err := os.Stat(volumeOptsFile); !os.IsNotExist(err) {
+				// 3. then this is a cinder-flexvolume
+				isCinderFlexvolume = true
+			}
+		}
+
+		if isCinderFlexvolume {
+			// this is a cinder-flexvolume
+			optsData := VolumeOptsData{}
+			if err := utiljson.ReadJson(volumeOptsFile, &optsData); err != nil {
+				return nil, fmt.Errorf(
+					"buildUserContainer() failed: can't read flexvolume data file in %q: %v",
+					hostPath, err,
+				)
+			}
+
+			if optsData.VolumeType == "rbd" {
+				monitors := make([]string, 0, 1)
+				for _, host := range optsData.Hosts {
+					for _, port := range optsData.Ports {
+						monitors = append(monitors, fmt.Sprintf("%s:%s", host, port))
+					}
+				}
+				volDetail := &types.UserVolume{
+					Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
+					// kuberuntime will set HostPath to the abs path of volume directory on host
+					Source: "rbd:" + optsData.Name,
+					Format: optsData.VolumeType,
+					Fstype: optsData.FsType,
+					Option: &types.UserVolumeOption{
+						User:     optsData.AuthUserName,
+						Keyring:  optsData.Keyring,
+						Monitors: monitors,
+					},
+				}
+				volumes[i] = &types.UserVolumeReference{
+					// use the generated volume name above
+					Volume:   volDetail.Name,
+					Path:     m.ContainerPath,
+					ReadOnly: m.Readonly,
+					Detail:   volDetail,
+				}
+			}
+		} else {
+			// this is a normal volume
+			volDetail := &types.UserVolume{
+				Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
+				// kuberuntime will set HostPath to the abs path of volume directory on host
+				Source: hostPath,
+				Format: volDriver,
+			}
+			volumes[i] = &types.UserVolumeReference{
+				// use the generated volume name above
+				Volume:   volDetail.Name,
+				Path:     m.ContainerPath,
+				ReadOnly: m.Readonly,
+				Detail:   volDetail,
+			}
+		}
+	}
+	return volumes, nil
 }
 
 // StartContainer starts the container.
