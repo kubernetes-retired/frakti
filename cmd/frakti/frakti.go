@@ -27,7 +27,7 @@ import (
 	"k8s.io/frakti/pkg/docker"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
-	"k8s.io/frakti/pkg/unikernel"
+	unikernel "k8s.io/frakti/pkg/unikernel/service"
 	"k8s.io/frakti/pkg/util/flags"
 	"k8s.io/frakti/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
