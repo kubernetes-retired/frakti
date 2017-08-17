@@ -233,7 +233,7 @@ func setupVeth(contVethName, hostVethName string, hostNS ns.NetNS) (netlink.Link
 	return hostVeth, contVeth, nil
 }
 
-func generageBridgeName() (string, error) {
+func generateBridgeName() (string, error) {
 	entropy := make([]byte, 4)
 	_, err := rand.Reader.Read(entropy)
 	if err != nil {
@@ -243,7 +243,7 @@ func generageBridgeName() (string, error) {
 	return fmt.Sprintf("br%x", entropy), nil
 }
 
-func bridgeByName(name string) (*netlink.Bridge, error) {
+func getBridgeByName(name string) (*netlink.Bridge, error) {
 	l, err := netlink.LinkByName(name)
 	if err != nil {
 		return nil, fmt.Errorf("Could not look up %q: %v", name, err)
@@ -274,7 +274,7 @@ func setupBridge(brName string) (*netlink.Bridge, error) {
 		return nil, fmt.Errorf("could not add %q: %v", brName, err)
 	}
 
-	br, err = bridgeByName(brName)
+	br, err = getBridgeByName(brName)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func setupRelayBridgeInNs(netns ns.NetNS, containerInterfaces []*containerInterf
 
 func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 	// setup bridge in host
-	brName, err := generageBridgeName()
+	brName, err := generateBridgeName()
 	if err != nil {
 		glog.Errorf("Failed to generate bridge name in host: %v", err)
 		return "", err
@@ -372,7 +372,7 @@ func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 }
 
 func teardownRelayBridgeInHost(bridgeName string) error {
-	br, err := bridgeByName(bridgeName)
+	br, err := getBridgeByName(bridgeName)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return nil
