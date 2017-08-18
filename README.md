@@ -130,21 +130,21 @@ Further information could be found at:
 ## The differences between `frakti` with other Linux container runtimes
 
 - Better Security and Isolation
-  - frakti provides hardware virtualization based Pod sandbox for Kubernetes
+  - frakti provides hardware virtualization based Pod sandbox for Kubernetes.
 - No Kernel Sharing
   - Every Pod in frakti has its own kernel (Bring Your Own Kernel), LinuxKit image support is on the way
-- Match k8s QoS Classes
-  - frakti is best to run Pod with `resources.limits` being set (i.e. all Guaranteed and most Burstable Pods), otherwise, frakti will set default resource limit for Pod
+- Match k8s QoS Classes.
+  - frakti is best to run Pod with `resources.limits` being set (i.e. all Guaranteed and most Burstable Pods), otherwise, frakti will set default resource limit for Pod.
   - This behavior is configurable by `--defaultCPUNum` and `--defaultMemoryMB`  of frakti
-- Mixed Runtimes Mode
-  - frakti support mixed runtimes on the same Node (HyperContainer and Docker). We recommend user to run `BestEffort` Pods, daemon Pods in Docker runtime by adding `runtime.frakti.alpha.kubernetes.io/OSContainer` annotation to them
-  - Additionally, special cases like privileged Pods, host network Pods etc will be automatically run in Docker runtime
+- Mixed Runtimes Mode.
+  - frakti support mixed runtimes on the same Node (HyperContainer and Docker). We recommend user to run `BestEffort` Pods, daemon Pods in Docker runtime by adding `runtime.frakti.alpha.kubernetes.io/OSContainer` annotation to them.
+  - Additionally, special cases like privileged Pods, host network Pods etc will be automatically run in Docker runtime.
 - Persistent Volume
-  - All k8s PVs are supported in frakti
-  - We are also working on another build-in PV plugin for frakti and it will attach block devices to Pod as volumes directly to achieve much higher performance.
+  - All k8s PVs are supported in frakti.
+  - **Block device as volume directly**: in this way, frakti will mount block device directly to VM based Pod, which gives you better performance than first approach. For now Cinder RBD is the mainly supported volume provider, please check [Stackube](https://github.com/openstack/stackube) for the whole deployment (k8s + frakti + Cinder + Keystone + Neutron). 
 - Cross-host Networking
-  - frakti is fully based on CNI (bridge mode only for now), so there's no big difference here
-  - We are working on making `Fannel` & `Calico` work out-of-box with `frakti` based Kubernetes
+  - frakti is fully based on CNI (bridge mode only for now), so there's no big difference here.
+  - Network plug-ins like `Fannel` & `Calico` can work out-of-box with `frakti` based Kubernetes.
 
 Besides the lists above, all behaviors of frakti are 100% the same with other Liunx container runtimes like Docker, please enjoy it!
 
