@@ -26,9 +26,6 @@ import (
 	"github.com/containernetworking/cni/pkg/ns"
 	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
-
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
 )
 
 const (
@@ -60,44 +57,6 @@ type containerInterface struct {
 	Addr    *net.IPNet
 	Gateway string
 	Link    *netlink.Link
-}
-
-func (h *Runtime) GetPodPortMappings(podID string) ([]*hostport.PortMapping, error) {
-	// TODO: get portmappings from docker labels for backward compatibility
-	checkpoint, err := h.checkpointHandler.GetCheckpoint(podID)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-
-		return nil, err
-
-	}
-
-	portMappings := make([]*hostport.PortMapping, 0, len(checkpoint.Data.PortMappings))
-	for _, pm := range checkpoint.Data.PortMappings {
-		proto := toAPIProtocol(*pm.Protocol)
-		portMappings = append(portMappings, &hostport.PortMapping{
-			HostPort:      *pm.HostPort,
-			ContainerPort: *pm.ContainerPort,
-			Protocol:      proto,
-		})
-
-	}
-	return portMappings, nil
-
-}
-
-func toAPIProtocol(protocol Protocol) v1.Protocol {
-	switch protocol {
-	case ProtocolTCP:
-		return v1.ProtocolTCP
-	case ProtocolUDP:
-		return v1.ProtocolUDP
-
-	}
-	glog.Warningf("Unknown protocol %q: defaulting to TCP", protocol)
-	return v1.ProtocolTCP
 }
 
 func generateMacAddress() (net.HardwareAddr, error) {
@@ -346,6 +305,66 @@ func setupRelayBridgeInNs(netns ns.NetNS, containerInterfaces []*containerInterf
 	}
 
 	return hostVeth, nil
+}
+
+func teardownRelayBridgeInNetns(netnsPath string, interfaces []*ContainerInterfaceInfo) error {
+	netns, err := ns.GetNS(netnsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		return fmt.Errorf("error of getting netns %q: %v", netnsPath, err)
+	}
+
+	if err = netns.Do(func(hostNS ns.NetNS) error {
+		br, err := getBridgeByName(defaultContainerBridgeName)
+		if err != nil && !strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("error of getting bridge: %v", err)
+		}
+
+		// remove the bridge.
+		if br != nil {
+			if err := netlink.LinkSetDown(br); err != nil {
+				return err
+			}
+
+			if err := netlink.LinkDel(br); err != nil {
+				return err
+			}
+		}
+
+		// set back address for interfaces.
+		// This is required for some network plugins, e.g. bridge.
+		links, err := netlink.LinkList()
+		if err != nil {
+			return err
+		}
+		for _, link := range links {
+			linkName := link.Attrs().Name
+
+			for _, it := range interfaces {
+				if it.Name != linkName {
+					continue
+				}
+
+				addr, err := netlink.ParseAddr(it.Addr.String())
+				if err != nil {
+					glog.Warningf("Parsing addr %q failed: %v", it.Addr.String(), err)
+					continue
+				}
+				if err := netlink.AddrAdd(link, addr); err != nil {
+					glog.Warningf("Adding addr %q failed: %v", it.Addr.String(), err)
+				}
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {

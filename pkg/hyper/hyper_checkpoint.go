@@ -18,6 +18,7 @@ package hyper
 
 import (
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -45,9 +46,18 @@ type PortMapping struct {
 	HostPort *int32 `json:"host_port,omitempty"`
 }
 
+// ContainerInterfaceInfo contains a network interface inside the container.
+type ContainerInterfaceInfo struct {
+	// Name of the interface.
+	Name string `json:"name,omitempty"`
+	// IP address of the interface.
+	Addr *net.IPNet `json:"addr,omitempty"`
+}
+
 // CheckpointData contains all types of data that can be stored in the checkpoint.
 type CheckpointData struct {
-	PortMappings []*PortMapping `json:"port_mappings,omitempty"`
+	PortMappings []*PortMapping            `json:"port_mappings,omitempty"`
+	Interfaces   []*ContainerInterfaceInfo `json:"interfaces,omitempty"`
 }
 
 // PodSandboxCheckpoint is the checkpoint structure for a sandbox
@@ -60,6 +70,8 @@ type PodSandboxCheckpoint struct {
 	Namespace string `json:"namespace"`
 	// Pod netnspath of sandbox.
 	NetNsPath string `json:"netnspath"`
+	// Host bridge of sandbox.
+	HostBridge string `json:"hostBridge,omitempty"`
 	// Data to checkpoint for pod sandbox.
 	Data *CheckpointData `json:"data,omitempty"`
 }
@@ -131,6 +143,9 @@ func NewPodSandboxCheckpoint(namespace, name string) *PodSandboxCheckpoint {
 		Version:   schemaVersion,
 		Namespace: namespace,
 		Name:      name,
-		Data:      &CheckpointData{},
+		Data: &CheckpointData{
+			PortMappings: make([]*PortMapping, 0),
+			Interfaces:   make([]*ContainerInterfaceInfo, 0),
+		},
 	}
 }
