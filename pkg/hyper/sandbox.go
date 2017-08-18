@@ -84,10 +84,10 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	}
 	defer func() {
 		if err != nil {
-			// destroy the network namespace
-			err := h.netPlugin.TearDownPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
-			if err != nil {
-				glog.Errorf("Destroy pod %s network namespace failed: %v", podId, err)
+			// tear down sandbox's network
+			teardownError := h.netPlugin.TearDownPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
+			if teardownError != nil {
+				glog.Errorf("Tear down network for pod %s failed: %v", podId, teardownError)
 			}
 		}
 	}()
@@ -105,6 +105,13 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		glog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
+	defer func() {
+		if err != nil {
+			if tearError := teardownRelayBridgeInNetns(netNsPath, toContainerInterfaceInfos(containerInterfaces)); tearError != nil {
+				glog.Errorf("Tear down bridge inside netns %q failed: %v", netNsPath, err)
+			}
+		}
+	}()
 
 	bridgeName, err := setupRelayBridgeInHost(hostVeth)
 	if err != nil {
@@ -112,7 +119,6 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		return "", err
 	}
 	userpod.Labels["HOSTBRIDGE"] = bridgeName
-
 	defer func() {
 		if err != nil {
 			if tearError := teardownRelayBridgeInHost(bridgeName); tearError != nil {
@@ -130,22 +136,30 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		glog.Errorf("Create pod for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
+	defer func() {
+		if err != nil {
+			if removeError := h.client.RemovePod(podID); removeError != nil {
+				glog.Warningf("Remove pod %q failed: %v", removeError)
+			}
+		}
+	}()
 
 	// Create sandbox checkpoint
-	if err = h.checkpointHandler.CreateCheckpoint(podID, constructPodSandboxCheckpoint(config, netNsPath)); err != nil {
+	err = h.checkpointHandler.CreateCheckpoint(podID, constructPodSandboxCheckpoint(config, netNsPath, bridgeName, containerInterfaces))
+	if err != nil {
 		return podID, err
 	}
+	defer func() {
+		if err != nil {
+			if removeCheckpointError := h.checkpointHandler.RemoveCheckpoint(podID); removeCheckpointError != nil {
+				glog.Errorf("Remove checkpoint of pod %s failed: %v", podID, removeCheckpointError)
+			}
+		}
+	}()
 
 	err = h.client.StartPod(podID)
 	if err != nil {
 		glog.Errorf("Start pod %q failed: %v", podID, err)
-		if removeError := h.client.RemovePod(podID); removeError != nil {
-			glog.Warningf("Remove pod %q failed: %v", removeError)
-		}
-		// delete sandbox checkpoint
-		if removeCheckpointError := h.checkpointHandler.RemoveCheckpoint(podID); removeCheckpointError != nil {
-			glog.Errorf("Remove checkpoint of pod %s failed: %v", podID, removeCheckpointError)
-		}
 		return "", err
 	}
 
@@ -221,83 +235,75 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	var netNsPath string
 	var hostBridge string
 
+	// Get sandbox status.
 	status, statusErr := h.PodSandboxStatus(podSandboxID)
 	if statusErr == nil {
 		labels := status.GetLabels()
 		netNsPath, _ = labels["NETNS"]
 		hostBridge, _ = labels["HOSTBRIDGE"]
-	} else {
-		checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
-		if err != nil {
-			glog.Warningf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
-		} else {
-			netNsPath = checkpoint.NetNsPath
-		}
 	}
 
-	// Get portMappings from checkpoint
-	portMappings, err := h.GetPodPortMappings(podSandboxID)
+	checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
 	if err != nil {
-		return fmt.Errorf("could not retrieve port mappings: %v", err)
+		glog.Warningf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
+	} else {
+		netNsPath = checkpoint.NetNsPath
+		hostBridge = checkpoint.HostBridge
 	}
-	portMappingsParam := make([]cniPortMapping, 0, len(portMappings))
-	for _, p := range portMappings {
-		if p.HostPort == 0 {
-			continue
-		}
 
-		portMappingsParam = append(portMappingsParam, cniPortMapping{
-			HostPort:      p.HostPort,
-			ContainerPort: p.ContainerPort,
-			Protocol:      strings.ToLower(string(p.Protocol)),
-			HostIP:        p.HostIP,
-		})
+	// Get portMappings from checkpoint.
+	portMappingsParam := make([]cniPortMapping, 0)
+	if checkpoint != nil {
+		for _, p := range checkpoint.Data.PortMappings {
+			if p.HostPort == nil || *p.HostPort == 0 {
+				continue
+			}
+
+			portMappingsParam = append(portMappingsParam, cniPortMapping{
+				HostPort:      *p.HostPort,
+				ContainerPort: *p.ContainerPort,
+				Protocol:      strings.ToLower(string(*p.Protocol)),
+			})
+		}
 	}
 	capabilities := map[string]interface{}{
 		"portMappings": portMappingsParam,
 	}
 
+	// 1: stop the sandbox.
 	code, cause, err := h.client.StopPod(podSandboxID)
-	if err != nil {
-		glog.Errorf("Stop pod %s failed, code: %d, cause: %s, error: %v", podSandboxID, code, cause, err)
-		if isPodNotFoundError(err, podSandboxID) {
-			// destroy the network namespace
-			err = h.netPlugin.TearDownPod(netNsPath, podSandboxID, status.GetMetadata(), status.GetAnnotations(), capabilities)
-			if err != nil {
-				glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
-			}
-
-			unix.Unmount(netNsPath, unix.MNT_DETACH)
-			os.Remove(netNsPath)
-
-			err = teardownRelayBridgeInHost(hostBridge)
-			if err != nil {
-				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
-			}
-
-			err = h.checkpointHandler.RemoveCheckpoint(podSandboxID)
-			if err != nil {
-				glog.Errorf("Failed to remove checkpoint for sandbox %q: %v", podSandboxID, err)
-				return err
-			}
-
-			return nil
-		}
-		return err
+	if err != nil && !isPodNotFoundError(err, podSandboxID) {
+		return fmt.Errorf("error of stopping sandbox %q, code: %d, cause: %q, error: %v", podSandboxID, code, cause, err)
 	}
 
-	// destroy the network namespace
+	// 2: teardown relay bridge inside netns.
+	if checkpoint != nil {
+		err = teardownRelayBridgeInNetns(netNsPath, checkpoint.Data.Interfaces)
+		if err != nil {
+			return fmt.Errorf("error of teardown relay bridge inside netns %q: %v", netNsPath, err)
+		}
+	}
+
+	// 3: tear down the host relay bridge.
+	err = teardownRelayBridgeInHost(hostBridge)
+	if err != nil {
+		return fmt.Errorf("error of teardown relay bridge for sandbox %q: %v", podSandboxID, err)
+	}
+
+	// 4: tear down the cni network.
 	err = h.netPlugin.TearDownPod(netNsPath, podSandboxID, status.GetMetadata(), status.GetAnnotations(), capabilities)
 	if err != nil {
-		glog.Errorf("Destroy pod %s network namespace failed: %v", podSandboxID, err)
+		return fmt.Errorf("error of teardown network for sandbox %q: %v", podSandboxID, err)
 	}
 
+	// 5: umount and remove the netns.
 	unix.Unmount(netNsPath, unix.MNT_DETACH)
 	os.Remove(netNsPath)
 
-	err = teardownRelayBridgeInHost(hostBridge)
+	// 6: remove the checkpoint.
+	err = h.checkpointHandler.RemoveCheckpoint(podSandboxID)
 	if err != nil {
-		glog.Errorf("Destroy pod %s host relay bridge failed: %v", podSandboxID, err)
+		return fmt.Errorf("error of removing checkpoint for sandbox %q: %v", podSandboxID, err)
 	}
 
 	return nil
@@ -420,9 +426,11 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 	return items, nil
 }
 
-func constructPodSandboxCheckpoint(config *kubeapi.PodSandboxConfig, netnspath string) *PodSandboxCheckpoint {
+func constructPodSandboxCheckpoint(config *kubeapi.PodSandboxConfig, netnspath, hostBridge string, interfaces []*containerInterface) *PodSandboxCheckpoint {
 	checkpoint := NewPodSandboxCheckpoint(config.GetMetadata().Namespace, config.GetMetadata().Name)
 	checkpoint.NetNsPath = netnspath
+	checkpoint.HostBridge = hostBridge
+	checkpoint.Data.Interfaces = toContainerInterfaceInfos(interfaces)
 	for _, pm := range config.GetPortMappings() {
 		proto := toCheckpointProtocol(pm.Protocol)
 		checkpoint.Data.PortMappings = append(checkpoint.Data.PortMappings, &PortMapping{
@@ -431,7 +439,20 @@ func constructPodSandboxCheckpoint(config *kubeapi.PodSandboxConfig, netnspath s
 			Protocol:      &proto,
 		})
 	}
+
 	return checkpoint
+}
+
+func toContainerInterfaceInfos(interfaces []*containerInterface) []*ContainerInterfaceInfo {
+	result := make([]*ContainerInterfaceInfo, len(interfaces))
+	for i := range interfaces {
+		result[i] = &ContainerInterfaceInfo{
+			Name: interfaces[i].Name,
+			Addr: interfaces[i].Addr,
+		}
+	}
+
+	return result
 }
 
 func toCheckpointProtocol(protocol kubeapi.Protocol) Protocol {
