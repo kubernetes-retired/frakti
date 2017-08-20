@@ -1217,6 +1217,11 @@
 			"Rev": "9ff6c6923cfffbcd502984b8e0c80539a94968b7"
 		},
 		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0",
+			"Rev": "232e8563676cd15c3a36ba5e675ad4312ac4cb11"
+		},
+		{
 			"ImportPath": "github.com/syndtr/gocapability/capability",
 			"Rev": "e7cb7fa329f456b3855136a2642b197bad7366ba"
 		},
