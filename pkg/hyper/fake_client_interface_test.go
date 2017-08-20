@@ -18,25 +18,53 @@ package hyper
 
 import (
 	"fmt"
+	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/frakti/pkg/hyper/types"
 )
 
 // fakeClientInterface mocks the types.PublicAPIClient interface for testing purpose.
 type fakeClientInterface struct {
+	Clock clock.Clock
 	sync.Mutex
-	called        []string
-	err           error
-	containerInfo types.ContainerInfo
-	containerList []*types.ContainerListResult
-	podInfo       types.PodInfo
+	called           []string
+	err              error
+	containerInfoMap map[string]*types.ContainerInfo
+	podInfoMap       map[string]*types.PodInfo
 }
 
-func newFakeClientInterface() *fakeClientInterface {
-	return &fakeClientInterface{}
+func newFakeClientInterface(c clock.Clock) *fakeClientInterface {
+	return &fakeClientInterface{
+		Clock:            c,
+		containerInfoMap: make(map[string]*types.ContainerInfo),
+		podInfoMap:       make(map[string]*types.PodInfo),
+	}
+}
+
+type FakePod struct {
+	PodID     string
+	PodVolume []*types.PodVolume
+}
+
+func (f *fakeClientInterface) SetFakePod(pods []*FakePod) {
+	f.Lock()
+	defer f.Unlock()
+	for i := range pods {
+		p := pods[i]
+		podSpec := types.PodSpec{
+			Volumes: p.PodVolume,
+		}
+		podInfo := types.PodInfo{
+			Spec: &podSpec,
+		}
+
+		f.podInfoMap[p.PodID] = &podInfo
+	}
 }
 
 func (f *fakeClientInterface) CleanCalls() {
@@ -57,8 +85,12 @@ func (f *fakeClientInterface) PodInfo(ctx context.Context, in *types.PodInfoRequ
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "PodInfo")
-
-	return &types.PodInfoResponse{PodInfo: &f.podInfo}, f.err
+	PodID := in.PodID
+	podInfo, ok := f.podInfoMap[PodID]
+	if !ok {
+		return nil, fmt.Errorf("pod doesn't existed")
+	}
+	return &types.PodInfoResponse{PodInfo: podInfo}, f.err
 }
 
 func (f *fakeClientInterface) PodRemove(ctx context.Context, in *types.PodRemoveRequest, opts ...grpc.CallOption) (*types.PodRemoveResponse, error) {
@@ -93,25 +125,31 @@ func (f *fakeClientInterface) ContainerList(ctx context.Context, in *types.Conta
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "ContainerList")
-	return &types.ContainerListResponse{ContainerList: f.containerList}, f.err
+	containerList := []*types.ContainerListResult{}
+	for _, value := range f.containerInfoMap {
+		container := types.ContainerListResult{
+			ContainerID:   value.Status.ContainerID,
+			ContainerName: value.Container.Name,
+			PodID:         value.PodID,
+			Status:        value.Status.Phase,
+		}
+		containerList = append(containerList, &container)
+	}
+	return &types.ContainerListResponse{ContainerList: containerList}, f.err
 }
 
 func (f *fakeClientInterface) ContainerInfo(ctx context.Context, in *types.ContainerInfoRequest, opts ...grpc.CallOption) (*types.ContainerInfoResponse, error) {
+
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "ContainerInfo")
-	//the following 'if' is used to TestListContainer
-	if len(f.containerList) != 0 {
-		for _, container := range f.containerList {
-			if container.ContainerID == in.Container {
-				containerStatus := types.ContainerStatus{
-					Phase: container.Status,
-				}
-				f.containerInfo.Status = &containerStatus
-			}
-		}
+	containerID := in.Container
+	containerInfo, ok := f.containerInfoMap[containerID]
+	if !ok {
+		return nil, fmt.Errorf("container doesn't existed")
 	}
-	return &types.ContainerInfoResponse{ContainerInfo: &f.containerInfo}, f.err
+	return &types.ContainerInfoResponse{ContainerInfo: containerInfo}, f.err
+
 }
 
 func (f *fakeClientInterface) ImageList(ctx context.Context, in *types.ImageListRequest, opts ...grpc.CallOption) (*types.ImageListResponse, error) {
@@ -135,13 +173,59 @@ func (f *fakeClientInterface) ContainerLogs(ctx context.Context, in *types.Conta
 }
 
 func (f *fakeClientInterface) ContainerCreate(ctx context.Context, in *types.ContainerCreateRequest, opts ...grpc.CallOption) (*types.ContainerCreateResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ContainerCreate")
+	timestamp := f.Clock.Now()
+
+	volumeMounts := []*types.VolumeMount{}
+	for i := range in.ContainerSpec.Volumes {
+		valumeMount := types.VolumeMount{
+			Name:      in.ContainerSpec.Volumes[i].Volume,
+			MountPath: in.ContainerSpec.Volumes[i].Path,
+		}
+		volumeMounts = append(volumeMounts, &valumeMount)
+	}
+	containerNameSplit := strings.Split(in.ContainerSpec.Name, "_")
+	//Create containerID
+	containerID := containerNameSplit[len(containerNameSplit)-1]
+	container := types.Container{
+		Name:         in.ContainerSpec.Name,
+		ContainerID:  containerID,
+		Labels:       in.ContainerSpec.Labels,
+		ImageID:      in.ContainerSpec.Image,
+		VolumeMounts: volumeMounts,
+	}
+	runningStatus := types.RunningStatus{
+		StartedAt: dockerTimestampToString(timestamp),
+	}
+	containerStatus := types.ContainerStatus{
+		ContainerID: containerID,
+		Phase:       "running",
+		Waiting:     nil,
+		Running:     &runningStatus,
+	}
+
+	containerInfo := types.ContainerInfo{
+		Container: &container,
+		Status:    &containerStatus,
+		PodID:     in.PodID,
+	}
+
+	f.containerInfoMap[containerID] = &containerInfo
+	return &types.ContainerCreateResponse{ContainerID: containerID}, f.err
 }
 
 func (f *fakeClientInterface) ContainerStart(ctx context.Context, in *types.ContainerStartRequest, opts ...grpc.CallOption) (*types.ContainerStartResponse, error) {
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "ContainerStart")
+	containerID := in.ContainerId
+	containerInfo, ok := f.containerInfoMap[containerID]
+	if !ok {
+		return nil, fmt.Errorf("container doesn't existed")
+	}
+	containerInfo.Status.Phase = "running"
 	return &types.ContainerStartResponse{}, f.err
 }
 
@@ -157,6 +241,19 @@ func (f *fakeClientInterface) ContainerStop(ctx context.Context, in *types.Conta
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "ContainerStop")
+	containerID := in.ContainerID
+	containerInfo, ok := f.containerInfoMap[containerID]
+	if !ok {
+		return nil, fmt.Errorf("container doesn't existed")
+	}
+	containerInfo.Status.Phase = "failed"
+	startedAt := containerInfo.Status.Running.StartedAt
+	timestamp := f.Clock.Now()
+	termStatus := types.TermStatus{
+		StartedAt:  startedAt,
+		FinishedAt: dockerTimestampToString(timestamp),
+	}
+	containerInfo.Status.Terminated = &termStatus
 	return &types.ContainerStopResponse{}, f.err
 }
 
@@ -164,6 +261,7 @@ func (f *fakeClientInterface) ContainerRemove(ctx context.Context, in *types.Con
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "ContainerRemove")
+	delete(f.containerInfoMap, in.ContainerId)
 	return &types.ContainerRemoveResponse{}, f.err
 }
 
@@ -229,4 +327,9 @@ func (f *fakeClientInterface) Info(ctx context.Context, in *types.InfoRequest, o
 
 func (f *fakeClientInterface) Version(ctx context.Context, in *types.VersionRequest, opts ...grpc.CallOption) (*types.VersionResponse, error) {
 	return nil, fmt.Errorf("Not implemented")
+}
+
+// dockerTimestampToString converts the timestamp to string
+func dockerTimestampToString(t time.Time) string {
+	return t.Format(time.RFC3339Nano)
 }

@@ -17,380 +17,259 @@ limitations under the License.
 package hyper
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
-func TestStartContainer(t *testing.T) {
-	clientfake := newFakeClientInterface()
-	client := &Client{
-		client: clientfake,
-	}
-	r := &Runtime{client: client}
-	tests := []struct {
-		containerID     string
-		containerStatus string
-	}{
-		{
-			"87654321",
-			"running",
+func makeContainerConfig(sConfig *kubeapi.PodSandboxConfig, name, image string, attempt uint32, labels, annotations map[string]string, mounts []*kubeapi.Mount) *kubeapi.ContainerConfig {
+	return &kubeapi.ContainerConfig{
+		Metadata: &kubeapi.ContainerMetadata{
+			Name:    name,
+			Attempt: attempt,
 		},
-		{
-			"12345678",
-			"failed",
-		},
-	}
-
-	for _, test := range tests {
-		containerStatus := types.ContainerStatus{
-			Phase: test.containerStatus,
-		}
-		clientfake.containerInfo = types.ContainerInfo{
-			Status: &containerStatus,
-		}
-
-		err := r.StartContainer(test.containerID)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-		clientfake.CleanCalls()
+		Image:       &kubeapi.ImageSpec{Image: image},
+		Mounts:      mounts,
+		Labels:      labels,
+		Annotations: annotations,
 	}
 }
 
-func TestStopContainer(t *testing.T) {
-	var timeOut int64 = 10
-	clientfake := newFakeClientInterface()
-	client := &Client{
-		client: clientfake,
-	}
-	r := &Runtime{client: client}
-	tests := []struct {
-		containerID     string
-		containerStatus string
-	}{
-		{
-			"87654321",
-			"failed",
-		},
-		{
-			"12345678",
-			"failed",
-		},
-	}
+func TestCreateContainer(t *testing.T) {
+	r, fakeClient, fakeClock := newTestRuntime()
+	podName, namespace := "foo", "bar"
+	containerName, image := "sidecar", "logger"
+	//'hostPath' has to be existed ,select current file
+	containerPath, hostPath := "/var/log/", "container_test.go"
+	sandbox := "sandboxid"
+	labelKey, labelValue := "abc.xyz", "label"
+	annotationKey, annotationValue := "foo.bar", "annotation"
+	configs := []*kubeapi.ContainerConfig{}
+	sConfigs := []*kubeapi.PodSandboxConfig{}
+	//Initialize to create three test cases
+	for i := 0; i < 3; i++ {
+		s := makeSandboxConfig(fmt.Sprintf("%s%d", podName, i),
+			fmt.Sprintf("%s%d", namespace, i), fmt.Sprintf("%d", i), 0)
 
-	for _, test := range tests {
-		containerStatus := types.ContainerStatus{
-			Phase: test.containerStatus,
-		}
-		clientfake.containerInfo = types.ContainerInfo{
-			Status: &containerStatus,
-		}
-
-		err := r.StopContainer(test.containerID, timeOut)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-		clientfake.CleanCalls()
-	}
-}
-
-func TestRemoveContainer(t *testing.T) {
-	clientfake := newFakeClientInterface()
-	client := &Client{
-		client: clientfake,
-	}
-	r := &Runtime{client: client}
-	tests := []struct {
-		containerID     string
-		containerStatus string
-	}{
-		{
-			"87654321",
-			"running",
-		},
-		{
-			"12345678",
-			"failed",
-		},
-	}
-
-	for _, test := range tests {
-		containerStatus := types.ContainerStatus{
-			Phase: test.containerStatus,
-		}
-		clientfake.containerInfo = types.ContainerInfo{
-			Status: &containerStatus,
-		}
-
-		err := r.RemoveContainer(test.containerID)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-		clientfake.CleanCalls()
-	}
-}
-
-func TestListContainer(t *testing.T) {
-	clientfake := newFakeClientInterface()
-	client := &Client{
-		client: clientfake,
-	}
-	r := &Runtime{client: client}
-
-	containerStateValue := kubeapi.ContainerStateValue{
-		State: kubeapi.ContainerState_CONTAINER_RUNNING,
-	}
-
-	tests := []struct {
-		image      string
-		labels     map[string]string
-		containers []*types.ContainerListResult
-		expected   []*kubeapi.Container
-		fliter     *kubeapi.ContainerFilter
-	}{
-		{
-			"image12345678",
-			map[string]string{
-				"testLabels":          "testAnnotations",
-				fraktiAnnotationLabel: "{\"test\":\"true\"}",
+		labels := map[string]string{labelKey: fmt.Sprintf("%s%d", labelValue, i)}
+		annotations := map[string]string{annotationKey: fmt.Sprintf("%s%d", annotationValue, i)}
+		mounts := []*kubeapi.Mount{
+			{
+				ContainerPath: fmt.Sprintf("%s%d%s", containerPath, i, ".go"),
+				HostPath:      hostPath,
 			},
-			[]*types.ContainerListResult{
-				{
-					ContainerID:   "12345678", //fliter
-					ContainerName: "k8s_container1_pod1_podnamespace_pod87654321_test",
-					PodID:         "pod87654321",
-					Status:        "running",
-				},
-				{
-					ContainerID:   "87654321",
-					ContainerName: "k8s_container2_pod2_podnamespace_pod12345678_test",
-					PodID:         "pod12345678", //fliter
-					Status:        "running",
-				},
-				{
-					ContainerID:   "87654321",
-					ContainerName: "k8s_container3_pod1_podnamespace_pod87654321_test",
-					PodID:         "pod87654321",
-					Status:        "pending", //fliter
-				},
-				{
-					ContainerID:   "87654321",
-					ContainerName: "k8s_container4_pod1_podnamespace_pod87654321_test",
-					PodID:         "pod87654321",
-					Status:        "running",
-				},
-			},
-			[]*kubeapi.Container{
-				{
-					Id:           "87654321",
-					PodSandboxId: "pod87654321",
-					ImageRef:     "image12345678",
-					State:        kubeapi.ContainerState_CONTAINER_RUNNING,
-					Labels: map[string]string{
-						"testLabels": "testAnnotations",
-					},
-					Annotations: map[string]string{
-						"test": "true",
-					},
-				},
-			},
-
-			&kubeapi.ContainerFilter{
-				Id:            "87654321",
-				State:         &containerStateValue,
-				PodSandboxId:  "pod87654321",
-				LabelSelector: nil,
-			},
-		},
+		}
+		c := makeContainerConfig(s, fmt.Sprintf("%s%d", containerName, i),
+			fmt.Sprintf("%s:v%d", image, i), uint32(i), labels, annotations, mounts)
+		sConfigs = append(sConfigs, s)
+		configs = append(configs, c)
 	}
 
-	for _, test := range tests {
+	createdAt := dockerTimestampToString(fakeClock.Now())
+	for i := range configs {
+		sandboxID := fmt.Sprintf("%s%d", sandbox, i)
+		containerID, err := r.CreateContainer(sandboxID, configs[i], sConfigs[i])
+		assert.NoError(t, err)
+
+		volumeMounts := []*types.VolumeMount{
+			{
+				//We don't know the name until it's created
+				Name:      fakeClient.containerInfoMap[containerID].Container.VolumeMounts[0].Name,
+				MountPath: fmt.Sprintf("%s%d%s", containerPath, i, ".go"),
+			},
+		}
+		labels := map[string]string{
+			labelKey: fmt.Sprintf("%s%d", labelValue, i),
+			"io.kubernetes.container.logpath":  "",
+			"io.kubernetes.frakti.annotations": "{\"foo.bar\":\"" + fmt.Sprintf("%s%d", annotationValue, i) + "\"}",
+		}
 		container := types.Container{
-			Labels:  test.labels,
-			ImageID: test.image,
-		}
-		clientfake.containerInfo = types.ContainerInfo{
-			Container: &container,
-		}
-		clientfake.containerList = test.containers
-		containers, err := r.ListContainers(test.fliter)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-		if len(containers) != 1 {
-			t.Errorf("Expected: %q, but got %q", "In theory, only the last test case can be passed", "To many test case can be passed")
-			break
-		}
-		if containers[0].Id != test.expected[0].Id {
-			t.Errorf("Id expected: %q, but got %q", test.expected[0].Id, containers[0].Id)
-		}
-		if containers[0].PodSandboxId != test.expected[0].PodSandboxId {
-			t.Errorf("PodSandboxId expected: %q, but got %q", test.expected[0].PodSandboxId, containers[0].PodSandboxId)
-		}
-		if containers[0].ImageRef != test.expected[0].ImageRef {
-			t.Errorf("ImageRef expected: %q, but got %q", test.expected[0].ImageRef, containers[0].ImageRef)
-		}
-		if containers[0].State != test.expected[0].State {
-			t.Errorf("State expected: %q, but got %q", test.expected[0].State, containers[0].State)
-		}
-		_, exist := containers[0].Labels["testLabels"]
-		if !exist || len(containers[0].Labels) != 1 {
-			t.Errorf("State expected: %q, but got %q", test.expected[0].Labels, containers[0].Labels)
-		}
-		_, exist = containers[0].Annotations["test"]
-		if !exist || len(containers[0].Annotations) != 1 {
-			t.Errorf("State expected: %q, but got %q", test.expected[0].Annotations, containers[0].Annotations)
-		}
-
-		clientfake.CleanCalls()
-	}
-}
-
-func TestContainerStatus(t *testing.T) {
-	clientfake := newFakeClientInterface()
-	client := &Client{
-		client: clientfake,
-	}
-	r := &Runtime{client: client}
-	tests := []struct {
-		containerID     string
-		containerName   string
-		containerStatus string
-		startedAt       string
-		finishedAt      string
-		imageID         string
-		podID           string
-		labels          map[string]string
-		valumeMount     []*types.VolumeMount
-		expected        kubeapi.ContainerStatus
-	}{
-		{
-			"container87654321",
-			"k8s_container1.5_pod1_podnamespace_pod87654321_test",
-			"running",
-			"2017-08-20T08:01:00+00:00",
-			"",
-			"image12345678",
-			"pod87654321",
-			map[string]string{
-				"testLabels":             "testAnnotations",
-				fraktiAnnotationLabel:    "{\"test\":\"true\"}",
-				containerLogPathLabelKey: "/var/log",
-			},
-			[]*types.VolumeMount{
-				{
-					Name:      "mount1",
-					MountPath: "/var/mount1",
-					ReadOnly:  true,
-				},
-				{
-					Name:      "mount2",
-					MountPath: "/var/mount2",
-					ReadOnly:  false,
-				},
-			},
-			kubeapi.ContainerStatus{
-				Id:        "container87654321",
-				State:     kubeapi.ContainerState_CONTAINER_RUNNING,
-				StartedAt: 1503216060000000000,
-				ImageRef:  "image12345678",
-				Labels: map[string]string{
-					"testLabels": "testAnnotations",
-				},
-				Annotations: map[string]string{
-					"test": "true",
-				},
-				Mounts: []*kubeapi.Mount{
-					{
-						ContainerPath:  "mount1",
-						HostPath:       "/var/mount1",
-						Readonly:       true,
-						SelinuxRelabel: true,
-					},
-					{
-						ContainerPath:  "mount2",
-						HostPath:       "/var/mount2",
-						Readonly:       false,
-						SelinuxRelabel: true,
-					},
-				},
-				LogPath: "/var/log",
-			},
-		},
-	}
-	for _, test := range tests {
-		container := types.Container{
-			Labels:       test.labels,
-			ImageID:      test.imageID,
-			VolumeMounts: test.valumeMount,
-			Name:         test.containerName,
-			ContainerID:  test.containerID,
+			//We don't know the name until it's created
+			Name:         fakeClient.containerInfoMap[containerID].Container.Name,
+			ContainerID:  containerID,
+			Labels:       labels,
+			ImageID:      image + fmt.Sprintf(":v%d", i),
+			VolumeMounts: volumeMounts,
 		}
 		runningStatus := types.RunningStatus{
-			StartedAt: test.startedAt,
+			StartedAt: createdAt,
 		}
 		containerStatus := types.ContainerStatus{
-			ContainerID: test.containerID,
-			Phase:       test.containerStatus,
+			ContainerID: containerID,
+			Phase:       "running",
 			Waiting:     nil,
 			Running:     &runningStatus,
 		}
-		podVolume := []*types.PodVolume{
-			{
-				Name:   "mount1",
-				Source: "/var/mount1",
-			},
-			{
-				Name:   "mount2",
-				Source: "/var/mount2",
-			},
-		}
-		podSpec := types.PodSpec{
-			Volumes: podVolume,
-		}
-		clientfake.containerInfo = types.ContainerInfo{
+		expected := types.ContainerInfo{
 			Container: &container,
 			Status:    &containerStatus,
-			PodID:     test.podID,
+			PodID:     sandboxID,
 		}
-		clientfake.podInfo = types.PodInfo{
-			Spec: &podSpec,
-		}
-		containerStatusReturn, err := r.ContainerStatus(test.containerID)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-
-		if containerStatusReturn.Id != test.expected.Id {
-			t.Errorf("Id expected: %q, but got %q", test.expected.Id, containerStatusReturn.Id)
-		}
-		if containerStatusReturn.State != test.expected.State {
-			t.Errorf("State expected: %q, but got %q", test.expected.State, containerStatusReturn.State)
-		}
-		if containerStatusReturn.StartedAt != test.expected.StartedAt {
-			t.Errorf("StartedAt expected: %q, but got %q", test.expected.StartedAt, containerStatusReturn.StartedAt)
-		}
-		if containerStatusReturn.ImageRef != test.expected.ImageRef {
-			t.Errorf("ImageRef expected: %q, but got %q", test.expected.ImageRef, containerStatusReturn.ImageRef)
-		}
-		_, exist := containerStatusReturn.Labels["testLabels"]
-		if !exist || len(containerStatusReturn.Labels) != 1 {
-			t.Errorf("Labels expected: %q, but got %q", test.expected.Labels, containerStatusReturn.Labels)
-		}
-		_, exist = containerStatusReturn.Annotations["test"]
-		if !exist || len(containerStatusReturn.Annotations) != 1 {
-			t.Errorf("Annotations expected: %q, but got %q", test.expected.Annotations, containerStatusReturn.Annotations)
-		}
-		if len(containerStatusReturn.Mounts) != 2 {
-			t.Errorf("Mounts expected: %q, but got %q", test.expected.Mounts, containerStatusReturn.Mounts)
-
-		} else if containerStatusReturn.Mounts[0].HostPath != test.expected.Mounts[0].HostPath {
-			t.Errorf("MountsHostPath expected: %q, but got %q", test.expected.Mounts[0].HostPath, containerStatusReturn.Mounts[0].HostPath)
-		}
-
-		clientfake.CleanCalls()
-
+		assert.Equal(t, expected, *fakeClient.containerInfoMap[containerID])
 	}
+
+}
+
+func TestListContainer(t *testing.T) {
+	r, fakeClient, _ := newTestRuntime()
+	podName, namespace := "foo", "bar"
+	containerName, image := "sidecar", "logger"
+	//'hostPath' has to be existed ,select current file
+	containerPath, hostPath := "/var/log/", "container_test.go"
+	sandbox := "sandboxid"
+	labelKey, labelValue := "abc.xyz", "label"
+	annotationKey, annotationValue := "foo.bar", "annotation"
+	configs := []*kubeapi.ContainerConfig{}
+	sConfigs := []*kubeapi.PodSandboxConfig{}
+	//Initialize to create three test cases
+	for i := 0; i < 3; i++ {
+		s := makeSandboxConfig(fmt.Sprintf("%s%d", podName, i),
+			fmt.Sprintf("%s%d", namespace, i), fmt.Sprintf("%d", i), 0)
+
+		labels := map[string]string{labelKey: fmt.Sprintf("%s%d", labelValue, i)}
+		annotations := map[string]string{annotationKey: fmt.Sprintf("%s%d", annotationValue, i)}
+		mounts := []*kubeapi.Mount{
+			{
+				ContainerPath: fmt.Sprintf("%s%d%s", containerPath, i, ".go"),
+				HostPath:      hostPath,
+			},
+		}
+		c := makeContainerConfig(s, fmt.Sprintf("%s%d", containerName, i),
+			fmt.Sprintf("%s:v%d", image, i), uint32(i), labels, annotations, mounts)
+		sConfigs = append(sConfigs, s)
+		configs = append(configs, c)
+	}
+	containerIDs := []string{}
+	for i := range configs {
+		sandboxID := fmt.Sprintf("%s%d", sandbox, i)
+		containerID, err := r.CreateContainer(sandboxID, configs[i], sConfigs[i])
+		assert.NoError(t, err)
+		containerIDs = append(containerIDs, containerID)
+	}
+	//Filter the running containers
+	containerStateValue := kubeapi.ContainerStateValue{
+		State: kubeapi.ContainerState_CONTAINER_RUNNING,
+	}
+	fliter := kubeapi.ContainerFilter{
+		State: &containerStateValue,
+	}
+	//Test list containers
+	containers, err := r.ListContainers(&fliter)
+	assert.NoError(t, err)
+	assert.Len(t, containers, 3)
+	assert.Len(t, fakeClient.containerInfoMap, 3)
+	expected := []*kubeapi.Container{}
+	for i := 0; i < 3; i++ {
+		attempt := containers[i].Metadata.Attempt
+		container := kubeapi.Container{
+			//We don't know the id until it's created
+			Id:           containers[i].Id,
+			PodSandboxId: fmt.Sprintf("%s%d", sandbox, attempt),
+			ImageRef:     fmt.Sprintf("%s%s%d", image, ":v", attempt),
+			Image:        &kubeapi.ImageSpec{Image: ""},
+			Metadata: &kubeapi.ContainerMetadata{
+				Name:    fmt.Sprintf("%s%d", containerName, attempt),
+				Attempt: attempt,
+			},
+			State: kubeapi.ContainerState_CONTAINER_RUNNING,
+			Labels: map[string]string{
+				labelKey: fmt.Sprintf("%s%d", labelValue, attempt),
+			},
+			Annotations: map[string]string{
+				annotationKey: fmt.Sprintf("%s%d", annotationValue, attempt),
+			},
+		}
+		expected = append(expected, &container)
+	}
+	assert.Equal(t, expected, containers)
+	//Test stop container
+	err = r.StopContainer(containerIDs[0], 0)
+	assert.NoError(t, err)
+	containers, err = r.ListContainers(&fliter)
+	assert.NoError(t, err)
+	assert.Len(t, containers, 2)
+	assert.Len(t, fakeClient.containerInfoMap, 3)
+	//Test remove container
+	err = r.RemoveContainer(containerIDs[1])
+	assert.NoError(t, err)
+	containers, err = r.ListContainers(&fliter)
+	assert.NoError(t, err)
+	assert.Len(t, containers, 1)
+	assert.Len(t, fakeClient.containerInfoMap, 2)
+
+}
+
+func TestContainerStatus(t *testing.T) {
+	r, fakeClient, fakeClock := newTestRuntime()
+	podName, namespace := "foo", "bar"
+	containerName, image := "sidecar", "logger"
+	//'hostPath' has to be existed ,select current file
+	containerPath, hostPath := "/var/log/", "container_test.go"
+	sandbox := "sandboxid"
+	labelKey, labelValue := "abc.xyz", "label"
+	annotationKey, annotationValue := "foo.bar", "annotation"
+	sConfig := makeSandboxConfig(fmt.Sprintf("%s%d", podName, 0),
+		fmt.Sprintf("%s%d", namespace, 0), fmt.Sprintf("%d", 0), 0)
+
+	labels := map[string]string{labelKey: fmt.Sprintf("%s%d", labelValue, 0)}
+	annotations := map[string]string{annotationKey: fmt.Sprintf("%s%d", annotationValue, 0)}
+	mounts := []*kubeapi.Mount{
+		{
+			ContainerPath: fmt.Sprintf("%s%d%s", containerPath, 0, ".go"),
+			HostPath:      hostPath,
+		},
+	}
+	config := makeContainerConfig(sConfig, fmt.Sprintf("%s%d", containerName, 0),
+		fmt.Sprintf("%s:v%d", image, 0), uint32(0), labels, annotations, mounts)
+
+	sandboxID := fmt.Sprintf("%s%d", sandbox, 0)
+	containerID, err := r.CreateContainer(sandboxID, config, sConfig)
+	assert.NoError(t, err)
+	//We don't know the Name until it's created
+	volumName := fakeClient.containerInfoMap[containerID].Container.VolumeMounts[0].Name
+	pods := []*FakePod{}
+	podVolumes := []*types.PodVolume{
+		{
+			Name:   volumName,
+			Source: "/var/mount1",
+		},
+	}
+	fakePod := FakePod{
+		PodID:     sandboxID,
+		PodVolume: podVolumes,
+	}
+	pods = append(pods, &fakePod)
+	fakeClient.SetFakePod(pods)
+	containerStatusReturn, err := r.ContainerStatus(containerID)
+	//Convert time to nanoseconds
+	timestamp := fakeClock.Now().UTC().UnixNano()
+	expected := kubeapi.ContainerStatus{
+		Id:        containerID,
+		State:     kubeapi.ContainerState_CONTAINER_RUNNING,
+		StartedAt: timestamp,
+		ImageRef:  fmt.Sprintf("%s%s%d", image, ":v", 0),
+		Image:     &kubeapi.ImageSpec{Image: ""},
+		Metadata: &kubeapi.ContainerMetadata{
+			Name:    fmt.Sprintf("%s%d", containerName, 0),
+			Attempt: 0,
+		},
+
+		Labels: map[string]string{
+			labelKey: fmt.Sprintf("%s%d", labelValue, 0),
+		},
+		Annotations: map[string]string{
+			annotationKey: fmt.Sprintf("%s%d", annotationValue, 0),
+		},
+		Mounts: []*kubeapi.Mount{
+			{
+				ContainerPath: fmt.Sprintf("%s%d%s", containerPath, 0, ".go"),
+				HostPath:      "/var/mount1",
+			},
+		},
+	}
+	assert.NoError(t, err)
+	assert.Equal(t, &expected, containerStatusReturn)
 }
