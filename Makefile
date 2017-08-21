@@ -26,7 +26,7 @@ frakti: $(shell $(LOCALKUBEFILES))
 .PHONY: docker
 docker:
 	cp ${BUILD_DIR}/flexvolume_driver deployment/flexvolume/
-	sudo docker build -t stackube/flex-volume:v1.0 deployment/flexvolume/
+	sudo docker build -t stackube/flex-volume:v0.1 deployment/flexvolume/
 
 .PHONY: install
 install:
