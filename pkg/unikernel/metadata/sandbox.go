@@ -35,6 +35,16 @@ type SandboxMetadata struct {
 	CreatedAt int64
 	// NetConfig is the cni network config used by the sandbox.
 	NetConfig []byte
+	// VMConfig is the vm config.
+	VMConfig *VMMetadata
+}
+
+// VMMetadata is the vm metadata.
+type VMMetadata struct {
+	// CPUNum is the vcpu num of VM
+	CPUNum int32
+	// Memory is the size of memory in MB
+	Memory int32
 }
 
 // SandboxUpdateFunc is the function used to update SandboxMetadata.
