@@ -77,7 +77,12 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 		"portMappings": portMappingsParam,
 	}
 	podId := userpod.Id
-	_, err = h.netPlugin.SetUpPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
+	sandboxID := podId
+	// workaroud for weave netwprk plugin because it creates a veth pair based on a truncated sandboxID.
+	if h.netPlugin.Name() == "weave" {
+		sandboxID = getMD5Hash(podId)
+	}
+	_, err = h.netPlugin.SetUpPod(netNsPath, sandboxID, config.GetMetadata(), config.GetAnnotations(), capabilities)
 	if err != nil {
 		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 		return "", err
@@ -85,7 +90,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	defer func() {
 		if err != nil {
 			// tear down sandbox's network
-			teardownError := h.netPlugin.TearDownPod(netNsPath, podId, config.GetMetadata(), config.GetAnnotations(), capabilities)
+			teardownError := h.netPlugin.TearDownPod(netNsPath, sandboxID, config.GetMetadata(), config.GetAnnotations(), capabilities)
 			if teardownError != nil {
 				glog.Errorf("Tear down network for pod %s failed: %v", podId, teardownError)
 			}
@@ -291,7 +296,12 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 	}
 
 	// 4: tear down the cni network.
-	err = h.netPlugin.TearDownPod(netNsPath, podSandboxID, status.GetMetadata(), status.GetAnnotations(), capabilities)
+	sandboxID := podSandboxID
+	// workaroud for weave netwprk plugin because it creates a veth pair based on a truncated sandboxID.
+	if h.netPlugin.Name() == "weave" {
+		sandboxID = getMD5Hash(podSandboxID)
+	}
+	err = h.netPlugin.TearDownPod(netNsPath, sandboxID, status.GetMetadata(), status.GetAnnotations(), capabilities)
 	if err != nil {
 		return fmt.Errorf("error of teardown network for sandbox %q: %v", podSandboxID, err)
 	}
