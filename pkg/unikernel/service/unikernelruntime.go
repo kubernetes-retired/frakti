@@ -17,13 +17,24 @@ limitations under the License.
 package service
 
 import (
+	"path/filepath"
+
 	"github.com/golang/glog"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 
+	"github.com/docker/docker/pkg/truncindex"
+	"k8s.io/frakti/pkg/unikernel/libvirt"
 	"k8s.io/frakti/pkg/unikernel/metadata"
+	"k8s.io/frakti/pkg/unikernel/metadata/store"
 	"k8s.io/frakti/pkg/util/alternativeruntime"
+	"k8s.io/frakti/pkg/util/indexset"
 	"k8s.io/frakti/pkg/util/registrar"
+)
+
+const (
+	// TODO(Crazykev): make this configurable
+	defaultLibvirtdEndpoint string = "qemu:///system"
 )
 
 type UnikernelRuntime struct {
@@ -31,26 +42,57 @@ type UnikernelRuntime struct {
 	rootDir string
 	// sandboxStore stores all sandbox metadata.
 	sandboxStore metadata.SandboxStore
+	// containerStore stores all container metadata.
+	containerStore metadata.ContainerStore
 	// sandboxNameIndex stores all unique sandbox names.
 	sandboxNameIndex *registrar.Registrar
-	// sandboxIDIndex stores all unique sandbox names.
-	sandboxIDIndex *registrar.Registrar
+	// sandboxIDIndex stores all unique sandbox IDs.
+	sandboxIDIndex *indexset.IndexSet
+	// containerNameIndex stores all unique container names.
+	containerNameIndex *registrar.Registrar
+	// containerIDIndex stores all unique container IDs.
+	containerIDIndex *truncindex.TruncIndex
+	// defaultCPU is the default cpu num of vm.
+	defaultCPU int32
+	// defaultMem is the default memory num of vm in MB.
+	defaultMem int32
+	// vmTool is the tools set to manipulate VM related operation.
+	vmTool *libvirt.VMTool
 }
 
 func (u *UnikernelRuntime) ServiceName() string {
 	return alternativeruntime.UnikernelRuntimeName
 }
 
-func NewUnikernelRuntimeService(cniNetDir, cniPluginDir string) (*UnikernelRuntime, error) {
+func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defaultCPU, defaultMem int32) (*UnikernelRuntime, error) {
 	glog.Infof("Initialize unikernel runtime\n")
 
+	// Init VMTools
+	conn, err := libvirt.NewLibvirtConnect(defaultLibvirtdEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(Crazykev): Refactor CNI related code to a common lib.
 	// TODO(Crazykev): Init CNI plugin.
 
 	// TODO(Crazykev): Init checkpoint handler.
 
 	// TODO(Crazykev): Init and start streaming server.
 
-	return &UnikernelRuntime{}, nil
+	runtime := &UnikernelRuntime{
+		rootDir:            filepath.Join(fraktiRoot, "unikernel"),
+		sandboxStore:       metadata.NewSandboxStore(store.NewMetadataStore()),
+		containerStore:     metadata.NewContainerStore(store.NewMetadataStore()),
+		sandboxNameIndex:   registrar.NewRegistrar(),
+		sandboxIDIndex:     indexset.NewIndexSet(),
+		containerNameIndex: registrar.NewRegistrar(),
+		containerIDIndex:   truncindex.NewTruncIndex(nil),
+		defaultCPU:         defaultCPU,
+		defaultMem:         defaultMem,
+		vmTool:             libvirt.NewVMTool(conn),
+	}
+	return runtime, nil
 }
 
 // Version returns the runtime name, runtime version and runtime API version
