@@ -17,6 +17,8 @@ limitations under the License.
 package hyper
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -412,4 +414,11 @@ func isPodNotFoundError(err error, podID string) bool {
 		}
 	}
 	return false
+}
+
+// getMD5Hash gets the md5 hash for the text.
+func getMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
