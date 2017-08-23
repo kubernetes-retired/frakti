@@ -5,6 +5,7 @@ Frakti is using CNI for setting up pod's networking. A list of validated plugins
 - Bridge
 - Flannel
 - Calico
+- Weave
 
 ## [Bridge](https://github.com/containernetworking/plugins/tree/master/plugins/main/bridge)
 
@@ -82,4 +83,18 @@ Then setup calico plugin by running:
 
 ```sh
 kubectl apply -f https://docs.projectcalico.org/v2.4/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+```
+
+## [Weave](https://www.weave.works/)
+
+Remove other cni network configure if they are already configured:
+
+```sh
+rm -f /etc/cni/net.d/*
+```
+
+Then setup weave plugin by running:
+
+```sh
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 ```
