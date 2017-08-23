@@ -104,7 +104,7 @@ func main() {
 	// 3. Initialize unikernel runtime if enabled
 	var unikernelRuntime *unikernel.UnikernelRuntime
 	if *enableUnikernelRuntime {
-		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir)
+		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB)
 		if err != nil {
 			glog.Errorf("Initialize unikernel runtime failed: %v", err)
 			os.Exit(1)
