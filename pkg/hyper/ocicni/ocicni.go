@@ -153,7 +153,11 @@ func (plugin *cniNetworkPlugin) checkInitialized() error {
 }
 
 func (plugin *cniNetworkPlugin) Name() string {
-	return CNIPluginName
+	if err := plugin.checkInitialized(); err != nil {
+		return CNIPluginName
+	}
+
+	return plugin.getDefaultNetwork().name
 }
 
 func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, annotations map[string]string, capabilities map[string]interface{}) (cnitypes.Result, error) {
