@@ -141,10 +141,10 @@ Further information could be found at:
   - Additionally, special cases like privileged Pods, host network Pods etc will be automatically run in Docker runtime.
 - Persistent Volume
   - All k8s PVs are supported in frakti.
-  - **Block device as volume directly**: in this way, frakti will mount block device directly to VM based Pod, which gives you better performance than first approach. For now Cinder RBD is the mainly supported volume provider, please check [Stackube](https://github.com/openstack/stackube) for the whole deployment (k8s + frakti + Cinder + Keystone + Neutron). 
+  - **Block device as volume directly**: in this way, frakti will mount block device directly to VM based Pod, which gives you better performance than first approach. For now Cinder RBD is the mainly supported volume provider, please check [Stackube](https://github.com/openstack/stackube) for the whole deployment (k8s + frakti + Cinder + Keystone + Neutron).
 - Cross-host Networking
   - frakti is fully based on CNI (bridge mode only for now), so there's no big difference here.
-  - Network plug-ins like `Fannel` & `Calico` can work out-of-box with `frakti` based Kubernetes.
+  - Network plug-ins like `Flannel` & `Calico` can work out-of-box with `frakti` based Kubernetes.
 
 Besides the lists above, all behaviors of frakti are 100% the same with other Liunx container runtimes like Docker, please enjoy it!
 
