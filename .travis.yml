@@ -15,9 +15,9 @@ before_install:
 
 install:
   - docker run -v /usr/local/bin:/target jpetazzo/nsenter
-  - go install -v $(go list ./... | grep -v /vendor/)
   - hack/install-protoc.sh
   - hack/install-hypercontainer.sh
+  - go install -v $(go list ./... | grep -v /vendor/)
   - make ginkgo && make frakti
   - hack/verify-all.sh -v
 
