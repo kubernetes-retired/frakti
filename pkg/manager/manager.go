@@ -44,6 +44,10 @@ const (
 	OSContainerAnnotationKey = "runtime.frakti.alpha.kubernetes.io/OSContainer"
 	// The annotation value specifying this pod will run by OS container runtime.
 	OSContainerAnnotationTrue = "true"
+	// The annotation key specifying this pod will run by unikernel runtime.
+	UnikernelAnnotationKey = "runtime.frakti.alpha.kubernetes.io/Unikernel"
+	// The annotation value specifying this pod will run by unikernel runtime.
+	UnikernelAnnotationTrue = "true"
 )
 
 // FraktiManager serves the kubelet runtime gRPC api which will be
@@ -88,9 +92,17 @@ func NewFraktiManager(
 		unikernelImageService:         unikernelImageService,
 		cachedAlternativeRuntimeItems: alternativeruntime.NewAlternativeRuntimeSets(),
 	}
-	for _, runtimeService := range []runtime.RuntimeService{privilegedRuntimeService, unikernelRuntimeService} {
-		// NOTE: Check the real value of interface, see https://golang.org/doc/faq#nil_error
-		if runtimeService != nil && !reflect.ValueOf(runtimeService).IsNil() {
+	// NOTE: Check the real value of interface, see https://golang.org/doc/faq#nil_error
+	if privilegedRuntimeService == nil || reflect.ValueOf(privilegedRuntimeService).IsNil() {
+		s.privilegedRuntimeService = nil
+		s.privilegedImageService = nil
+	}
+	if unikernelRuntimeService == nil || reflect.ValueOf(unikernelRuntimeService).IsNil() {
+		s.unikernelRuntimeService = nil
+		s.unikernelImageService = nil
+	}
+	for _, runtimeService := range []runtime.RuntimeService{s.privilegedRuntimeService, s.unikernelRuntimeService} {
+		if runtimeService != nil {
 			runtimeName := runtimeService.ServiceName()
 			sandboxes, err := runtimeService.ListPodSandbox(nil)
 			if err != nil {
@@ -122,9 +134,26 @@ func (s *FraktiManager) getRuntimeService(id string) (runtime.RuntimeService, ru
 	switch runtimeName {
 	case alternativeruntime.PrivilegedRuntimeName:
 		return s.privilegedRuntimeService, s.privilegedImageService
+	case alternativeruntime.UnikernelRuntimeName:
+		return s.unikernelRuntimeService, s.unikernelImageService
 	default:
 		return s.hyperRuntimeService, s.hyperImageService
 	}
+}
+
+// getEnabledRuntimeService get all enabled runtime services in FraktiManager
+func (s *FraktiManager) getEnabledRuntimeService() []runtime.RuntimeService {
+	runtimeServices := []runtime.RuntimeService{}
+	if s.hyperRuntimeService != nil {
+		runtimeServices = append(runtimeServices, s.hyperRuntimeService)
+	}
+	if s.privilegedRuntimeService != nil {
+		runtimeServices = append(runtimeServices, s.privilegedRuntimeService)
+	}
+	if s.unikernelRuntimeService != nil {
+		runtimeServices = append(runtimeServices, s.unikernelRuntimeService)
+	}
+	return runtimeServices
 }
 
 // Serve starts gRPC server at unix://addr
@@ -235,19 +264,14 @@ func (s *FraktiManager) PodSandboxStatus(ctx context.Context, req *kubeapi.PodSa
 func (s *FraktiManager) ListPodSandbox(ctx context.Context, req *kubeapi.ListPodSandboxRequest) (*kubeapi.ListPodSandboxResponse, error) {
 	glog.V(3).Infof("ListPodSandbox with request %s", req.String())
 
-	items, err := s.hyperRuntimeService.ListPodSandbox(req.GetFilter())
-	if err != nil {
-		glog.Errorf("ListPodSandbox from runtime service failed: %v", err)
-		return nil, err
-	}
-
-	if s.privilegedRuntimeService != nil {
-		podsInOsContainerRuntime, err := s.privilegedRuntimeService.ListPodSandbox(req.GetFilter())
+	var items []*kubeapi.PodSandbox
+	for _, runtimeService := range s.getEnabledRuntimeService() {
+		podsInRuntime, err := runtimeService.ListPodSandbox(req.GetFilter())
 		if err != nil {
-			glog.Errorf("ListPodSandbox from privileged runtime service failed: %v", err)
+			glog.Errorf("ListPodSandbox from  %s runtime service failed: %v", runtimeService.ServiceName(), err)
 			return nil, err
 		}
-		items = append(items, podsInOsContainerRuntime...)
+		items = append(items, podsInRuntime...)
 	}
 
 	return &kubeapi.ListPodSandboxResponse{Items: items}, nil
@@ -320,25 +344,15 @@ func (s *FraktiManager) RemoveContainer(ctx context.Context, req *kubeapi.Remove
 // ListContainers lists all containers by filters.
 func (s *FraktiManager) ListContainers(ctx context.Context, req *kubeapi.ListContainersRequest) (*kubeapi.ListContainersResponse, error) {
 	glog.V(3).Infof("ListContainers with request %s", req.String())
-	var (
-		containers []*kubeapi.Container
-		err        error
-	)
-	// kubelet always ant to list all containers, it use filter to get what it want
-	vmContainers, err := s.hyperRuntimeService.ListContainers(req.GetFilter())
-	if err != nil {
-		glog.Errorf("ListContainers from hyper runtime service failed: %v", err)
-		return nil, err
-	}
-	containers = append(containers, vmContainers...)
 
-	if s.privilegedRuntimeService != nil {
-		osContainers, err := s.privilegedRuntimeService.ListContainers(req.GetFilter())
+	var containers []*kubeapi.Container
+	for _, runtimeService := range s.getEnabledRuntimeService() {
+		runtimeContainers, err := runtimeService.ListContainers(req.GetFilter())
 		if err != nil {
-			glog.Errorf("ListContainers from privileged runtime service failed: %v", err)
+			glog.Errorf("ListContainers from %s runtime service failed: %v", runtimeService.ServiceName(), err)
 			return nil, err
 		}
-		containers = append(containers, osContainers...)
+		containers = append(containers, runtimeContainers...)
 	}
 
 	return &kubeapi.ListContainersResponse{
@@ -599,6 +613,9 @@ func (s *FraktiManager) getRuntimeServiceBySandboxConfig(podConfig *kubeapi.PodS
 	if isOSContainerRuntimeRequired(podConfig) {
 		return s.privilegedRuntimeService
 	}
+	if s.unikernelRuntimeService != nil && isUnikernelRuntimeRequiredBySandbox(podConfig) {
+		return s.unikernelRuntimeService
+	}
 	return s.hyperRuntimeService
 }
 
@@ -625,6 +642,17 @@ func isOSContainerRuntimeRequired(podConfig *kubeapi.PodSandboxConfig) bool {
 		}
 	}
 
+	return false
+}
+
+// isUnikernelRuntimeRequiredBySandbox check if this pod config requires to run with unikernel runtime.
+func isUnikernelRuntimeRequiredBySandbox(podConfig *kubeapi.PodSandboxConfig) bool {
+	// user required it
+	if annotations := podConfig.GetAnnotations(); annotations != nil {
+		if useUnikernel := annotations[UnikernelAnnotationKey]; useUnikernel == UnikernelAnnotationTrue {
+			return true
+		}
+	}
 	return false
 }
 
