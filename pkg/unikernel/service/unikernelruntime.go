@@ -17,6 +17,8 @@ limitations under the License.
 package service
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/golang/glog"
@@ -92,6 +94,12 @@ func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defa
 		defaultMem:         defaultMem,
 		vmTool:             libvirt.NewVMTool(conn),
 	}
+
+	// Init root dir and image dir
+	if err = os.MkdirAll(filepath.Join(runtime.rootDir), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create root dir: %v", err)
+	}
+
 	return runtime, nil
 }
 
