@@ -21,7 +21,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
+
 	"k8s.io/frakti/pkg/unikernel/metadata"
+	"k8s.io/frakti/pkg/unikernel/metadata/store"
 	"k8s.io/frakti/pkg/util/uuid"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
@@ -32,7 +35,7 @@ func (u *UnikernelRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (stri
 	var err error
 	// Genrate sandbox ID and name
 	podID := uuid.NewUUID()
-	podName := makeSandboxName(config.GetMetadata())
+	podName := makeSandboxName(podID, config.GetMetadata())
 	// Reserve sandbox name
 	if err = u.sandboxNameIndex.Reserve(podName, podID); err != nil {
 		return "", fmt.Errorf("failed to reserve sandbox name %q: %v", podName, err)
@@ -53,18 +56,24 @@ func (u *UnikernelRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (stri
 	}()
 
 	// TODO(Crazykev): Get cpu/mem from cgroup
+	vmMeta := &metadata.VMMetadata{
+		CPUNum: u.defaultCPU,
+		Memory: u.defaultMem,
+	}
 
 	// Create sandbox metadata.
 	meta := metadata.SandboxMetadata{
-		ID:     podID,
-		Name:   podName,
-		Config: config,
+		ID:       podID,
+		Name:     podName,
+		Config:   config,
+		VMConfig: vmMeta,
 	}
 
 	// TODO(Crazykev): Create ns and cni config
 
 	// Add sandbox into sandbox metadata store.
 	meta.CreatedAt = time.Now().UnixNano()
+	meta.State = kubeapi.PodSandboxState_SANDBOX_READY
 	if err = u.sandboxStore.Create(meta); err != nil {
 		return "", fmt.Errorf("failed to add sandbox metadata %+v into store: %v", meta, err)
 	}
@@ -75,30 +84,141 @@ func (u *UnikernelRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (stri
 // StopPodSandbox stops the sandbox. If there are any running containers in the
 // sandbox, they should be force terminated.
 func (u *UnikernelRuntime) StopPodSandbox(podSandboxID string) error {
-	return fmt.Errorf("not implemented")
+	sandbox, err := u.sandboxStore.Get(podSandboxID)
+	if err != nil {
+		return fmt.Errorf("failed to find sandbox(%q): %v", podSandboxID, err)
+	}
+	// Stop relate VM
+	if err = u.vmTool.StopVM(sandbox.ID, 0); err != nil {
+		return fmt.Errorf("failed to stop sandbox(%q): %v", sandbox.ID, err)
+	}
+	// Update sandbox metadata
+	err = u.sandboxStore.Update(sandbox.ID, func(meta metadata.SandboxMetadata) (metadata.SandboxMetadata, error) {
+		meta.State = kubeapi.PodSandboxState_SANDBOX_NOTREADY
+		return meta, nil
+	})
+
+	return nil
 }
 
 // RemovePodSandbox deletes the sandbox. If there are any running containers in the
 // sandbox, they should be force deleted.
 func (u *UnikernelRuntime) RemovePodSandbox(podSandboxID string) error {
-	return fmt.Errorf("not implemented")
+	// Get sandbox and all containers in sandbox
+	sandbox, err := u.sandboxStore.Get(podSandboxID)
+	if err != nil {
+		if err == store.ErrNotExist {
+			return nil
+		}
+		return fmt.Errorf("failed to find sandbox(%q): %v", podSandboxID, err)
+	}
+	ctrs, err := u.getAllContainersInPod(sandbox.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get all containers for sandbox(%q): %v", podSandboxID, err)
+	}
+
+	// Remove related VM
+	if err = u.vmTool.RemoveVM(sandbox.ID); err != nil {
+		return fmt.Errorf("failed to remove sandbox(%q) vm: %v", sandbox.ID, err)
+	}
+	// Remove sandbox and containers metadata
+	for _, ctr := range ctrs {
+		if err = u.containerStore.Delete(ctr.ID); err != nil {
+			return fmt.Errorf("failed to delete container(%q) metadata: %v", ctr.ID, err)
+		}
+	}
+	if err = u.sandboxStore.Delete(sandbox.ID); err != nil {
+		return fmt.Errorf("failed to delete sandbox(%q) metadata: %v", sandbox.ID, err)
+	}
+
+	return nil
 }
 
 // PodSandboxStatus returns the Status of the PodSandbox.
 func (u *UnikernelRuntime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStatus, error) {
-	return nil, fmt.Errorf("not implemented")
+	sandbox, err := u.sandboxStore.Get(podSandboxID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find sandbox(%q): %v", podSandboxID, err)
+	}
+
+	// TODO(Crazykev): Fill in network status
+
+	return toCRISandboxStatus(sandbox), nil
 }
 
 // ListPodSandbox returns a list of Sandbox.
 func (u *UnikernelRuntime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.PodSandbox, error) {
-	return nil, fmt.Errorf("not implemented")
+	glog.V(5).Infof("Unikernel: ListPodSandbox with filter %+v", filter)
+	allSandboxes, err := u.sandboxStore.List()
+	if err != nil {
+		return nil, fmt.Errorf("list sandbox failed: %v", err)
+	}
+	var sandboxes []*kubeapi.PodSandbox
+	for _, sbInStore := range allSandboxes {
+		sandboxes = append(sandboxes, toCRISandbox(sbInStore))
+	}
+	sandboxes = u.filterCRISandboxes(sandboxes, filter)
+	return sandboxes, nil
 }
 
-func makeSandboxName(meta *kubeapi.PodSandboxMetadata) string {
+func makeSandboxName(podID string, meta *kubeapi.PodSandboxMetadata) string {
 	return strings.Join([]string{
+		podID[:11],
 		meta.Name,
 		meta.Namespace,
 		meta.Uid,
 		fmt.Sprintf("%d", meta.Attempt),
 	}, "_")
+}
+
+func toCRISandbox(meta *metadata.SandboxMetadata) *kubeapi.PodSandbox {
+	return &kubeapi.PodSandbox{
+		Id:          meta.ID,
+		Metadata:    meta.Config.GetMetadata(),
+		State:       meta.State,
+		CreatedAt:   meta.CreatedAt,
+		Labels:      meta.Config.GetLabels(),
+		Annotations: meta.Config.GetAnnotations(),
+	}
+}
+
+func toCRISandboxStatus(meta *metadata.SandboxMetadata) *kubeapi.PodSandboxStatus {
+	return &kubeapi.PodSandboxStatus{
+		Id:          meta.ID,
+		Metadata:    meta.Config.GetMetadata(),
+		State:       meta.State,
+		CreatedAt:   meta.CreatedAt,
+		Labels:      meta.Config.GetLabels(),
+		Annotations: meta.Config.GetAnnotations(),
+	}
+}
+
+func (u *UnikernelRuntime) filterCRISandboxes(sandboxes []*kubeapi.PodSandbox, filter *kubeapi.PodSandboxFilter) []*kubeapi.PodSandbox {
+	if filter == nil {
+		return sandboxes
+	}
+	filtered := []*kubeapi.PodSandbox{}
+	for _, s := range sandboxes {
+		if filter.GetId() != "" && filter.GetId() != s.Id {
+			continue
+		}
+		if filter.GetState() != nil && filter.GetState().GetState() != s.State {
+			continue
+		}
+		if filter.GetLabelSelector() != nil {
+			match := true
+			for k, v := range filter.GetLabelSelector() {
+				value, exist := s.Labels[k]
+				if !exist || value != v {
+					match = false
+					break
+				}
+			}
+			if !match {
+				continue
+			}
+		}
+		filtered = append(filtered, s)
+	}
+	return filtered
 }
