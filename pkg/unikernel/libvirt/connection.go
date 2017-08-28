@@ -17,10 +17,15 @@ limitations under the License.
 package libvirt
 
 import (
+	"errors"
 	"github.com/golang/glog"
 	libvirtgo "github.com/libvirt/libvirt-go"
 	libvirtxml "github.com/libvirt/libvirt-go-xml"
 )
+
+// ErrDomainNotFound err means can't find specificed domain
+// returned by domain loop up methods
+var ErrDomainNotFound = errors.New("domain not found")
 
 type LibvirtConnect struct {
 	conn *libvirtgo.Connect
@@ -58,6 +63,10 @@ func (lc *LibvirtConnect) ListDomains() ([]libvirtgo.Domain, error) {
 func (lc *LibvirtConnect) LookupDomainByName(name string) (*libvirtgo.Domain, error) {
 	domain, err := lc.conn.LookupDomainByName(name)
 	if err != nil {
+		libvirtErr, ok := err.(libvirtgo.Error)
+		if ok && libvirtErr.Code == libvirtgo.ERR_NO_DOMAIN {
+			return nil, ErrDomainNotFound
+		}
 		return nil, err
 	}
 	return domain, nil
@@ -66,6 +75,10 @@ func (lc *LibvirtConnect) LookupDomainByName(name string) (*libvirtgo.Domain, er
 func (lc *LibvirtConnect) LookupDomainByUUIDString(uuid string) (*libvirtgo.Domain, error) {
 	domain, err := lc.conn.LookupDomainByUUIDString(uuid)
 	if err != nil {
+		libvirtErr, ok := err.(libvirtgo.Error)
+		if ok && libvirtErr.Code == libvirtgo.ERR_NO_DOMAIN {
+			return nil, ErrDomainNotFound
+		}
 		return nil, err
 	}
 	return domain, nil
