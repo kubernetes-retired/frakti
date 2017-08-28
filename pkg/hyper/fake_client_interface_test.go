@@ -18,6 +18,7 @@ package hyper
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,9 @@ type fakeClientInterface struct {
 	err              error
 	containerInfoMap map[string]*types.ContainerInfo
 	podInfoMap       map[string]*types.PodInfo
+	imageInfoList    []*types.ImageInfo
+	version          string
+	apiVersion       string
 }
 
 func newFakeClientInterface(c clock.Clock) *fakeClientInterface {
@@ -65,6 +69,13 @@ func (f *fakeClientInterface) SetFakePod(pods []*FakePod) {
 
 		f.podInfoMap[p.PodID] = &podInfo
 	}
+}
+
+func (f *fakeClientInterface) SetVersion(version string, apiVersion string) {
+	f.Lock()
+	defer f.Unlock()
+	f.version = version
+	f.apiVersion = apiVersion
 }
 
 func (f *fakeClientInterface) CleanCalls() {
@@ -153,7 +164,12 @@ func (f *fakeClientInterface) ContainerInfo(ctx context.Context, in *types.Conta
 }
 
 func (f *fakeClientInterface) ImageList(ctx context.Context, in *types.ImageListRequest, opts ...grpc.CallOption) (*types.ImageListResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ImageList")
+	return &types.ImageListResponse{
+		ImageList: f.imageInfoList,
+	}, f.err
 }
 
 func (f *fakeClientInterface) VMList(ctx context.Context, in *types.VMListRequest, opts ...grpc.CallOption) (*types.VMListResponse, error) {
@@ -305,8 +321,37 @@ func (f *fakeClientInterface) ServiceUpdate(ctx context.Context, in *types.Servi
 	return nil, fmt.Errorf("Not implemented")
 }
 
+type fakeAPIImagePullClient struct {
+	grpc.ClientStream
+}
+
+func (x *fakeAPIImagePullClient) Recv() (*types.ImagePullResponse, error) {
+	m := &types.ImagePullResponse{}
+	//Return "the image data has been read"
+	return m, io.EOF
+}
+
 func (f *fakeClientInterface) ImagePull(ctx context.Context, in *types.ImagePullRequest, opts ...grpc.CallOption) (types.PublicAPI_ImagePullClient, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ImagePull")
+	repoSep := ":"
+	id := in.Tag
+	if strings.Index(in.Tag, ":") > 0 {
+		repoSep = "@"
+		str := strings.Split(in.Tag, ":")
+		id = str[1]
+	}
+	repoTags := []string{
+		fmt.Sprintf("%s%s%s", in.Image, repoSep, in.Tag),
+	}
+	imageInfo := &types.ImageInfo{
+		Id:          id,
+		RepoTags:    repoTags,
+		VirtualSize: 0,
+	}
+	f.imageInfoList = append(f.imageInfoList, imageInfo)
+	return &fakeAPIImagePullClient{}, f.err
 }
 
 func (f *fakeClientInterface) ImagePush(ctx context.Context, in *types.ImagePushRequest, opts ...grpc.CallOption) (types.PublicAPI_ImagePushClient, error) {
@@ -314,7 +359,27 @@ func (f *fakeClientInterface) ImagePush(ctx context.Context, in *types.ImagePush
 }
 
 func (f *fakeClientInterface) ImageRemove(ctx context.Context, in *types.ImageRemoveRequest, opts ...grpc.CallOption) (*types.ImageRemoveResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ImageRemove")
+	tag := ""
+	for i, image := range f.imageInfoList {
+		for _, im := range image.RepoTags {
+			if im == in.Image {
+				tag = f.imageInfoList[i].Id
+				//In this test,one imageId has only one tag,while deleting the tag,we also delete the image
+				f.imageInfoList = append(f.imageInfoList[:i], f.imageInfoList[i+1:]...)
+			}
+		}
+	}
+	imageDelete := &types.ImageDelete{
+		Untaged: in.Image,
+		Deleted: tag,
+	}
+	images := []*types.ImageDelete{
+		imageDelete,
+	}
+	return &types.ImageRemoveResponse{Images: images}, f.err
 }
 
 func (f *fakeClientInterface) Ping(ctx context.Context, in *types.PingRequest, opts ...grpc.CallOption) (*types.PingResponse, error) {
@@ -326,7 +391,13 @@ func (f *fakeClientInterface) Info(ctx context.Context, in *types.InfoRequest, o
 }
 
 func (f *fakeClientInterface) Version(ctx context.Context, in *types.VersionRequest, opts ...grpc.CallOption) (*types.VersionResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "Version")
+	return &types.VersionResponse{
+		Version:    f.version,
+		ApiVersion: f.apiVersion,
+	}, f.err
 }
 
 // dockerTimestampToString converts the timestamp to string
