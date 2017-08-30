@@ -37,6 +37,8 @@ type SandboxMetadata struct {
 	NetConfig []byte
 	// VMConfig is the vm config.
 	VMConfig *VMMetadata
+	// State is CRI state of sandbox
+	State kubeapi.PodSandboxState
 }
 
 // VMMetadata is the vm metadata.

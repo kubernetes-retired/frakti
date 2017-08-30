@@ -16,12 +16,13 @@
 export GO15VENDOREXPERIMENT=1
 
 BUILD_DIR ?= ./out
+BUILD_TAGS := $(shell hack/libvirt_tag.sh)
 LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/frakti/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
 .PHONY: frakti
 frakti: $(shell $(LOCALKUBEFILES))
-	go build -a -o ${BUILD_DIR}/frakti ./cmd/frakti
-	go build -a -o ${BUILD_DIR}/flexvolume_driver ./cmd/flexvolume_driver
+	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/frakti ./cmd/frakti
+	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/flexvolume_driver ./cmd/flexvolume_driver
 
 .PHONY: docker
 docker:
