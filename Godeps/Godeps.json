@@ -224,7 +224,8 @@
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
-			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+			"Comment": "v1.1.0",
+			"Rev": "346938d642f2ec3594ed81d874461961cd0faa76"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
@@ -283,6 +284,11 @@
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/term/windows",
+			"Comment": "v1.11.2",
+			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/truncindex",
 			"Comment": "v1.11.2",
 			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
 		},
@@ -800,6 +806,15 @@
 			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
 		},
 		{
+			"ImportPath": "github.com/libvirt/libvirt-go",
+			"Comment": "v3.5.0-2-g2289a29",
+			"Rev": "2289a2978f30e8dda7cf54fe6129f87bdc4cd091"
+		},
+		{
+			"ImportPath": "github.com/libvirt/libvirt-go-xml",
+			"Rev": "83a754119fc7239caffd1f50e08cb13b1b3825ef"
+		},
+		{
 			"ImportPath": "github.com/mailru/easyjson/buffer",
 			"Rev": "d5b7844b561a7bc640052f1b935f7b800330d7e0"
 		},
@@ -1098,6 +1113,11 @@
 			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
 		},
 		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Comment": "v1.0.0",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
+		},
+		{
 			"ImportPath": "github.com/prometheus/client_golang/prometheus",
 			"Comment": "v0.8.0-83-ge7e9030",
 			"Rev": "e7e903064f5e9eb5da98208bae10b475d4db0f8c"
@@ -1218,12 +1238,17 @@
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.0",
-			"Rev": "232e8563676cd15c3a36ba5e675ad4312ac4cb11"
+			"Comment": "v1.1.4-6-g18a02ba",
+			"Rev": "18a02ba4a312f95da08ff4cfc0055750ce50ae9e"
 		},
 		{
 			"ImportPath": "github.com/syndtr/gocapability/capability",
 			"Rev": "e7cb7fa329f456b3855136a2642b197bad7366ba"
+		},
+		{
+			"ImportPath": "github.com/tchap/go-patricia/patricia",
+			"Comment": "v2.2.6",
+			"Rev": "666120de432aea38ab06bd5c818f04f4129882c9"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",

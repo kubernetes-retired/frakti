@@ -27,7 +27,7 @@ import (
 	"k8s.io/frakti/pkg/docker"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
-	"k8s.io/frakti/pkg/unikernel"
+	unikernel "k8s.io/frakti/pkg/unikernel/service"
 	"k8s.io/frakti/pkg/util/flags"
 	"k8s.io/frakti/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
@@ -104,7 +104,7 @@ func main() {
 	// 3. Initialize unikernel runtime if enabled
 	var unikernelRuntime *unikernel.UnikernelRuntime
 	if *enableUnikernelRuntime {
-		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir)
+		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB)
 		if err != nil {
 			glog.Errorf("Initialize unikernel runtime failed: %v", err)
 			os.Exit(1)
