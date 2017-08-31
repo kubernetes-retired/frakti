@@ -40,6 +40,7 @@ type fakeClientInterface struct {
 	imageInfoList    []*types.ImageInfo
 	version          string
 	apiVersion       string
+	execCmd          map[string]*[]string
 }
 
 func newFakeClientInterface(c clock.Clock) *fakeClientInterface {
@@ -47,11 +48,13 @@ func newFakeClientInterface(c clock.Clock) *fakeClientInterface {
 		Clock:            c,
 		containerInfoMap: make(map[string]*types.ContainerInfo),
 		podInfoMap:       make(map[string]*types.PodInfo),
+		execCmd:          make(map[string]*[]string),
 	}
 }
 
 type FakePod struct {
 	PodID     string
+	Status    string
 	PodVolume []*types.PodVolume
 }
 
@@ -63,8 +66,12 @@ func (f *fakeClientInterface) SetFakePod(pods []*FakePod) {
 		podSpec := types.PodSpec{
 			Volumes: p.PodVolume,
 		}
+		podStatus := types.PodStatus{
+			Phase: p.Status,
+		}
 		podInfo := types.PodInfo{
-			Spec: &podSpec,
+			Spec:   &podSpec,
+			Status: &podStatus,
 		}
 
 		f.podInfoMap[p.PodID] = &podInfo
@@ -76,6 +83,36 @@ func (f *fakeClientInterface) SetVersion(version string, apiVersion string) {
 	defer f.Unlock()
 	f.version = version
 	f.apiVersion = apiVersion
+}
+
+type FakeContainer struct {
+	ID     string
+	Name   string
+	Status string
+	PodID  string
+}
+
+func (f *fakeClientInterface) SetFakeContainers(containers []*FakeContainer) {
+	f.Lock()
+	defer f.Unlock()
+	for i := range containers {
+		c := containers[i]
+		container := types.Container{
+			Name:        c.Name,
+			ContainerID: c.ID,
+		}
+		containerStatus := types.ContainerStatus{
+			ContainerID: c.ID,
+			Phase:       c.Status,
+		}
+		containerInfo := types.ContainerInfo{
+			Container: &container,
+			Status:    &containerStatus,
+			PodID:     c.PodID,
+		}
+		f.containerInfoMap[c.ID] = &containerInfo
+	}
+
 }
 
 func (f *fakeClientInterface) CleanCalls() {
@@ -128,8 +165,28 @@ func (f *fakeClientInterface) PodUnpause(ctx context.Context, in *types.PodUnpau
 	return nil, fmt.Errorf("Not implemented")
 }
 
+type fakePublicAPI_ExecVMClient struct {
+	grpc.ClientStream
+}
+
+func (x *fakePublicAPI_ExecVMClient) Send(m *types.ExecVMRequest) error {
+	return nil
+}
+
+func (x *fakePublicAPI_ExecVMClient) Recv() (*types.ExecVMResponse, error) {
+	m := &types.ExecVMResponse{}
+	return m, io.EOF
+}
+
+func (x *fakePublicAPI_ExecVMClient) CloseSend() error {
+	return nil
+}
+
 func (f *fakeClientInterface) ExecVM(ctx context.Context, opts ...grpc.CallOption) (types.PublicAPI_ExecVMClient, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ExecVM")
+	return &fakePublicAPI_ExecVMClient{}, f.err
 }
 
 func (f *fakeClientInterface) ContainerList(ctx context.Context, in *types.ContainerListRequest, opts ...grpc.CallOption) (*types.ContainerListResponse, error) {
@@ -282,27 +339,83 @@ func (f *fakeClientInterface) ContainerRemove(ctx context.Context, in *types.Con
 }
 
 func (f *fakeClientInterface) ExecCreate(ctx context.Context, in *types.ExecCreateRequest, opts ...grpc.CallOption) (*types.ExecCreateResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ExecCreate")
+	containerId := in.ContainerID
+	f.execCmd[containerId] = &in.Command
+	//The container's name is "sidecar" + i,we use i as the execID
+	ids := strings.Split(containerId, "*")
+	execID := ids[1]
+	return &types.ExecCreateResponse{
+		ExecID: execID,
+	}, f.err
+}
+
+type fakePublicAPI_ExecStartClient struct {
+	grpc.ClientStream
+}
+
+func (x *fakePublicAPI_ExecStartClient) Send(m *types.ExecStartRequest) error {
+	return nil
+}
+
+func (x *fakePublicAPI_ExecStartClient) Recv() (*types.ExecStartResponse, error) {
+	m := &types.ExecStartResponse{}
+	return m, io.EOF
+}
+
+func (x *fakePublicAPI_ExecStartClient) CloseSend() error {
+	return nil
 }
 
 func (f *fakeClientInterface) ExecStart(ctx context.Context, opts ...grpc.CallOption) (types.PublicAPI_ExecStartClient, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "ExecStart")
+	return &fakePublicAPI_ExecStartClient{}, f.err
 }
 
 func (f *fakeClientInterface) ExecSignal(ctx context.Context, in *types.ExecSignalRequest, opts ...grpc.CallOption) (*types.ExecSignalResponse, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
+type fakePublicAPI_AttachClient struct {
+	grpc.ClientStream
+}
+
+func (x *fakePublicAPI_AttachClient) Send(m *types.AttachMessage) error {
+	return nil
+}
+
+func (x *fakePublicAPI_AttachClient) Recv() (*types.AttachMessage, error) {
+	m := &types.AttachMessage{}
+	return m, io.EOF
+}
+
+func (x *fakePublicAPI_AttachClient) CloseSend() error {
+	return nil
+}
+
 func (f *fakeClientInterface) Attach(ctx context.Context, opts ...grpc.CallOption) (types.PublicAPI_AttachClient, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "Attach")
+	return &fakePublicAPI_AttachClient{}, f.err
 }
 
 func (f *fakeClientInterface) Wait(ctx context.Context, in *types.WaitRequest, opts ...grpc.CallOption) (*types.WaitResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "Wait")
+	return &types.WaitResponse{}, f.err
 }
 
 func (f *fakeClientInterface) TTYResize(ctx context.Context, in *types.TTYResizeRequest, opts ...grpc.CallOption) (*types.TTYResizeResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "TTYResize")
+	return &types.TTYResizeResponse{}, nil
 }
 
 func (f *fakeClientInterface) ServiceList(ctx context.Context, in *types.ServiceListRequest, opts ...grpc.CallOption) (*types.ServiceListResponse, error) {
