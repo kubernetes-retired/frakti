@@ -26,6 +26,7 @@ import (
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 
 	"github.com/docker/docker/pkg/truncindex"
+	"k8s.io/frakti/pkg/unikernel/image"
 	"k8s.io/frakti/pkg/unikernel/libvirt"
 	"k8s.io/frakti/pkg/unikernel/metadata"
 	"k8s.io/frakti/pkg/unikernel/metadata/store"
@@ -60,6 +61,8 @@ type UnikernelRuntime struct {
 	defaultMem int32
 	// vmTool is the tools set to manipulate VM related operation.
 	vmTool *libvirt.VMTool
+	// imageManager manage all images in unikernel runtime.
+	imageManager *image.ImageManager
 	// enableLog determines whether vm's output print to file or console
 	enableLog bool
 }
@@ -97,6 +100,13 @@ func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defa
 		vmTool:             libvirt.NewVMTool(conn, enableLog),
 		enableLog:          enableLog,
 	}
+
+	// Init image manager
+	imageManager, err := image.NewImageManager("http", runtime.rootDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create image manager: %v", err)
+	}
+	runtime.imageManager = imageManager
 
 	// Init root dir and image dir
 	if err = os.MkdirAll(filepath.Join(runtime.rootDir), 0755); err != nil {

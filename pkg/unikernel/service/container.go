@@ -18,8 +18,6 @@ package service
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,6 +25,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/frakti/pkg/unikernel/libvirt"
 	"k8s.io/frakti/pkg/unikernel/metadata"
+	metaimage "k8s.io/frakti/pkg/unikernel/metadata/image"
 	"k8s.io/frakti/pkg/unikernel/metadata/store"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
@@ -73,13 +72,34 @@ func (u *UnikernelRuntime) CreateContainer(podSandboxID string, config *kubeapi.
 		LogPath:   config.LogPath,
 	}
 
-	// TODO(Crazykev): Prepare container image
-	// use a temp image for test
-	imageRef, err := u.prepareTestImage()
+	// Prepare container image
+	imageRef := config.GetImage().GetImage()
+	if _, err = u.imageManager.GetImageInfo(imageRef); err != nil {
+		if metadata.IsNotExistError(err) {
+			return "", fmt.Errorf("image %q not found", imageRef)
+		}
+		return "", fmt.Errorf("failed to get image %q: %v", imageRef, err)
+	}
+	storage, err := u.imageManager.PrepareImage(imageRef, podSandboxID)
 	if err != nil {
+		glog.Errorf("Failed to prepare image %q for sandbox %q: %v", imageRef, podSandboxID, err)
 		return "", fmt.Errorf("prepare image failed: %v", err)
 	}
-	meta.ImageRef = imageRef
+	defer func() {
+		if err != nil {
+			err1 := u.imageManager.CleanupImageCopy(imageRef, podSandboxID)
+			if err1 != nil {
+				glog.Errorf("Failed to cleanup image copy when create container failed: %v", err1)
+			}
+		}
+	}()
+
+	// TODO(Crazykev): Support it!
+	if storage.Format != metaimage.QCOW2 {
+		err = fmt.Errorf("only support qcow2 image format for now")
+		return "", err
+	}
+	meta.ImageRef = storage.ImageFile
 
 	// Create container in VM, for now we actually create VM
 	err = u.vmTool.CreateContainer(&meta, sandbox)
@@ -164,10 +184,18 @@ func (u *UnikernelRuntime) RemoveContainer(rawContainerID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to remove container related vm(%q): %v", container.SandboxID, err)
 	}
+	// Cleanup image copy
+	if err = u.imageManager.CleanupImageCopy(container.Config.GetImage().GetImage(), container.SandboxID); err != nil {
+		glog.Errorf("Failed to cleanup image copy after remove container: %v", err)
+		return err
+	}
+	// Release name and id
+	u.containerNameIndex.ReleaseByName(container.Name)
 	// Remove container metadata
 	if err = u.containerStore.Delete(container.ID); err != nil {
 		return fmt.Errorf("failed to delete conatiner(%q) metadata: %v", container.ID, err)
 	}
+
 	return nil
 }
 
@@ -184,6 +212,7 @@ func (u *UnikernelRuntime) ListContainers(filter *kubeapi.ContainerFilter) ([]*k
 	if err != nil {
 		return nil, err
 	}
+	glog.V(5).Infof("List all VMs in libvirt: %+v", vmMap)
 	// Update container state from libvirt
 	var containers []*kubeapi.Container
 	for _, container := range ctrInStore {
@@ -355,13 +384,4 @@ func makeContainerName(c *kubeapi.ContainerMetadata, s *kubeapi.PodSandboxMetada
 		s.Uid,
 		fmt.Sprintf("%d", c.Attempt),
 	}, "_")
-}
-
-// TODO(Crazykev): Remove this when we have image management
-func (u *UnikernelRuntime) prepareTestImage() (string, error) {
-	imagePath := filepath.Join(u.rootDir, "image", "test-image.qcow2")
-	if _, err := os.Stat(imagePath); err != nil {
-		return "", err
-	}
-	return imagePath, nil
 }

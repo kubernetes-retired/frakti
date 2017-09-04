@@ -19,30 +19,68 @@ package service
 import (
 	"fmt"
 
+	"k8s.io/frakti/pkg/unikernel/metadata"
+	metaimage "k8s.io/frakti/pkg/unikernel/metadata/image"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
 // ListImages lists existing images.
 func (u *UnikernelRuntime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, error) {
-	return nil, fmt.Errorf("not implemented")
+	// Deal with filter
+	if filter != nil && filter.GetImage().GetImage() != "" {
+		meta, err := u.imageManager.GetImageInfo(filter.GetImage().GetImage())
+		if err != nil {
+			if metadata.IsNotExistError(err) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return []*kubeapi.Image{metaImageToCRI(meta)}, nil
+	}
+	// List all images in store
+	imageMetaList := u.imageManager.ListImages()
+	imageList := make([]*kubeapi.Image, len(imageMetaList))
+	for n, meta := range imageMetaList {
+		imageList[n] = metaImageToCRI(&meta)
+	}
+
+	return imageList, nil
 }
 
 // PullImage pulls the image with authentication config.
 func (u *UnikernelRuntime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthConfig) (string, error) {
-	return "", fmt.Errorf("not implemented")
+	// TODO(Crazykev): Deal with auth config
+	return u.imageManager.PullImage(image.GetImage())
 }
 
 // RemoveImage removes the image.
 func (u *UnikernelRuntime) RemoveImage(image *kubeapi.ImageSpec) error {
-	return fmt.Errorf("not implemented")
+	return u.imageManager.RemoveImage(image.GetImage())
 }
 
 // ImageStatus returns the status of the image.
 func (u *UnikernelRuntime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) {
-	return nil, fmt.Errorf("not implemented")
+	meta, err := u.imageManager.GetImageInfo(image.GetImage())
+	if err != nil {
+		// return empty without error when image not found.
+		if metadata.IsNotExistError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return metaImageToCRI(meta), nil
 }
 
 // ImageFsInfo returns information of the filesystem that is used to store images.
 func (u *UnikernelRuntime) ImageFsInfo(req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+// metaImageToCRI returns CRI image based on image metadata
+func metaImageToCRI(meta *metaimage.Image) *kubeapi.Image {
+	return &kubeapi.Image{
+		Id:       meta.ID,
+		RepoTags: meta.RepoTags,
+		Size_:    uint64(meta.Size),
+	}
 }
