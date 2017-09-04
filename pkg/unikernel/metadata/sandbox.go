@@ -39,6 +39,8 @@ type SandboxMetadata struct {
 	VMConfig *VMMetadata
 	// State is CRI state of sandbox
 	State kubeapi.PodSandboxState
+	// LogDir is where sandbox's log stores.
+	LogDir string
 }
 
 // VMMetadata is the vm metadata.

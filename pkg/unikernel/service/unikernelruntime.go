@@ -60,13 +60,15 @@ type UnikernelRuntime struct {
 	defaultMem int32
 	// vmTool is the tools set to manipulate VM related operation.
 	vmTool *libvirt.VMTool
+	// enableLog determines whether vm's output print to file or console
+	enableLog bool
 }
 
 func (u *UnikernelRuntime) ServiceName() string {
 	return alternativeruntime.UnikernelRuntimeName
 }
 
-func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defaultCPU, defaultMem int32) (*UnikernelRuntime, error) {
+func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defaultCPU, defaultMem int32, enableLog bool) (*UnikernelRuntime, error) {
 	glog.Infof("Initialize unikernel runtime\n")
 
 	// Init VMTools
@@ -92,7 +94,8 @@ func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defa
 		containerIDIndex:   truncindex.NewTruncIndex(nil),
 		defaultCPU:         defaultCPU,
 		defaultMem:         defaultMem,
-		vmTool:             libvirt.NewVMTool(conn),
+		vmTool:             libvirt.NewVMTool(conn, enableLog),
+		enableLog:          enableLog,
 	}
 
 	// Init root dir and image dir

@@ -67,6 +67,7 @@ func (u *UnikernelRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (stri
 		Name:     podName,
 		Config:   config,
 		VMConfig: vmMeta,
+		LogDir:   config.LogDirectory,
 	}
 
 	// TODO(Crazykev): Create ns and cni config

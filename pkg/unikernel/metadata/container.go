@@ -48,6 +48,8 @@ type ContainerMetadata struct {
 	// Human-readable message indicating details about why container is in its
 	// current state.
 	Message string
+	// LogPath is path relative to sandbox's log directory for container to store logs.
+	LogPath string
 }
 
 // State returns current state of the container based on the metadata.

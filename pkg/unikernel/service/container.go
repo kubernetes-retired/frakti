@@ -70,6 +70,7 @@ func (u *UnikernelRuntime) CreateContainer(podSandboxID string, config *kubeapi.
 		Name:      cName,
 		SandboxID: podSandboxID,
 		Config:    config,
+		LogPath:   config.LogPath,
 	}
 
 	// TODO(Crazykev): Prepare container image
