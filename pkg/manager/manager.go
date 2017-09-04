@@ -19,8 +19,10 @@ package manager
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/frakti/pkg/runtime"
+	unikernelimage "k8s.io/frakti/pkg/unikernel/image"
 	"k8s.io/frakti/pkg/util/alternativeruntime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
@@ -484,7 +487,13 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 	errs := []error{}
 
 	imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
-	imageMapList := make([]map[string]*kubeapi.Image, 2)
+	workerNum := 2
+	// NOTE: make unikernel image service the last one
+	if s.unikernelImageService != nil {
+		imageServiceList = append(imageServiceList, s.unikernelImageService)
+		workerNum++
+	}
+	imageMapList := make([]map[string]*kubeapi.Image, workerNum)
 
 	listImageFunc := func(i int) {
 		images, err := imageServiceList[i].ListImages(req.GetFilter())
@@ -498,7 +507,7 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 		}
 	}
 
-	workqueue.Parallelize(2, 2, listImageFunc)
+	workqueue.Parallelize(workerNum, workerNum, listImageFunc)
 
 	if len(errs) > 0 {
 		glog.Error(errs[0])
@@ -511,7 +520,15 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 	// if there is different in two sides, print the different if log lever is high enough
 	if glog.V(5) && len(imageMapList[0]) != len(intersectList) {
 		glog.Infof("Image black hole in %s:\n%v", imageServiceList[0].ServiceName(), getImageListDifference(imageMapList[0], imageMapList[1]))
-		glog.Infof("Image black hole in %s:\n%v", imageServiceList[0].ServiceName(), getImageListDifference(imageMapList[1], imageMapList[0]))
+		glog.Infof("Image black hole in %s:\n%v", imageServiceList[1].ServiceName(), getImageListDifference(imageMapList[1], imageMapList[0]))
+	}
+
+	// Append unikernl image list at last
+	// NOTE: Here we assume all unikernel image is different from hyper/docker runtimes
+	if s.unikernelImageService != nil {
+		for _, v := range imageMapList[2] {
+			intersectList = append(intersectList, v)
+		}
 	}
 
 	return &kubeapi.ListImagesResponse{
@@ -523,11 +540,22 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 func (s *FraktiManager) ImageStatus(ctx context.Context, req *kubeapi.ImageStatusRequest) (*kubeapi.ImageStatusResponse, error) {
 	glog.V(3).Infof("ImageStatus with request %s", req.String())
 
-	// NOTE: we only show image status of hyper runtime and assume privileged runtime image are the same
-	status, err := s.hyperImageService.ImageStatus(req.Image)
-	if err != nil {
-		glog.Errorf("ImageStatus from hyper image service failed: %v", err)
-		return nil, err
+	var (
+		status *kubeapi.Image
+		err    error
+	)
+	if s.unikernelImageService != nil && isUnikernelRuntimeImage(req.GetImage().GetImage()) {
+		status, err = s.unikernelImageService.ImageStatus(req.GetImage())
+		if err != nil {
+			return nil, fmt.Errorf("ImageStatus from unikernel image service failed: %v", err)
+		}
+	} else {
+		// NOTE: we only show image status of hyper runtime and assume privileged runtime image are the same
+		status, err = s.hyperImageService.ImageStatus(req.Image)
+		if err != nil {
+			glog.Errorf("ImageStatus from hyper image service failed: %v", err)
+			return nil, err
+		}
 	}
 	return &kubeapi.ImageStatusResponse{Image: status}, nil
 }
@@ -536,32 +564,45 @@ func (s *FraktiManager) ImageStatus(ctx context.Context, req *kubeapi.ImageStatu
 func (s *FraktiManager) PullImage(ctx context.Context, req *kubeapi.PullImageRequest) (*kubeapi.PullImageResponse, error) {
 	glog.V(3).Infof("PullImage with request %s", req.String())
 
-	images := []string{}
-	errs := []error{}
-	pullImageFunc := func(i int) {
-		if i == 0 {
-			imageRef, err := s.hyperImageService.PullImage(req.Image, req.Auth)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("PullImage from hyper image service failed: %v", err))
-			}
-			images = append(images, imageRef)
-		} else {
-			imageRef, err := s.privilegedImageService.PullImage(req.Image, req.Auth)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("PullImage from privileged image service failed: %v", err))
-			}
-			images = append(images, imageRef)
+	var (
+		imageRef string
+		err      error
+	)
+	if s.unikernelImageService != nil && isUnikernelRuntimeImage(req.GetImage().GetImage()) {
+		imageRef, err = s.unikernelImageService.PullImage(req.Image, req.Auth)
+		if err != nil {
+			return nil, fmt.Errorf("PullImage from unikernel image service failed: %v", err)
 		}
+	} else {
+		images := []string{}
+		errs := []error{}
+		pullImageFunc := func(i int) {
+			if i == 0 {
+				imageRef, err = s.hyperImageService.PullImage(req.Image, req.Auth)
+				if err != nil {
+					errs = append(errs, fmt.Errorf("PullImage from hyper image service failed: %v", err))
+				}
+				images = append(images, imageRef)
+			} else {
+				imageRef, err = s.privilegedImageService.PullImage(req.Image, req.Auth)
+				if err != nil {
+					errs = append(errs, fmt.Errorf("PullImage from privileged image service failed: %v", err))
+				}
+				images = append(images, imageRef)
+			}
+		}
+
+		workqueue.Parallelize(2, 2, pullImageFunc)
+
+		if len(errs) > 0 || len(images) == 0 {
+			glog.Error(errs[0])
+			return nil, errs[0]
+		}
+		imageRef = images[0]
 	}
 
-	workqueue.Parallelize(2, 2, pullImageFunc)
-
-	if len(errs) > 0 || len(images) == 0 {
-		glog.Error(errs[0])
-		return nil, errs[0]
-	}
 	return &kubeapi.PullImageResponse{
-		ImageRef: images[0],
+		ImageRef: imageRef,
 	}, nil
 }
 
@@ -569,22 +610,29 @@ func (s *FraktiManager) PullImage(ctx context.Context, req *kubeapi.PullImageReq
 func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImageRequest) (*kubeapi.RemoveImageResponse, error) {
 	glog.V(3).Infof("RemoveImage with request %s", req.String())
 
-	errs := []error{}
-
-	imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
-
-	removeImageFunc := func(i int) {
-		err := imageServiceList[i].RemoveImage(req.Image)
+	if s.unikernelImageService != nil && isUnikernelRuntimeImage(req.GetImage().GetImage()) {
+		err := s.unikernelImageService.RemoveImage(req.GetImage())
 		if err != nil {
-			errs = append(errs, fmt.Errorf("RemoveImage from %s failed: %v", imageServiceList[i].ServiceName(), err))
+			return nil, fmt.Errorf("RemoveImage from unikernel image service failed: %v", err)
 		}
-	}
+	} else {
+		errs := []error{}
 
-	workqueue.Parallelize(2, 2, removeImageFunc)
+		imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
 
-	if len(errs) > 0 {
-		glog.Error(errs[0])
-		return nil, errs[0]
+		removeImageFunc := func(i int) {
+			err := imageServiceList[i].RemoveImage(req.Image)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("RemoveImage from %s failed: %v", imageServiceList[i].ServiceName(), err))
+			}
+		}
+
+		workqueue.Parallelize(2, 2, removeImageFunc)
+
+		if len(errs) > 0 {
+			glog.Error(errs[0])
+			return nil, errs[0]
+		}
 	}
 
 	return &kubeapi.RemoveImageResponse{}, nil
@@ -682,4 +730,22 @@ func getImageListDifference(mapA, mapB map[string]*kubeapi.Image) []*kubeapi.Ima
 		diffList = append(diffList, mapA[i])
 	}
 	return diffList
+}
+
+// isUnikernelRuntimeImage check image reference and return whether this image is unikernel image
+// TODO(Crazykev): Even after this, we may also wrongly consider a docker image as unikernel image. ie. 'unikernel/busybox.com:latest'
+func isUnikernelRuntimeImage(imageRef string) bool {
+	if strings.HasPrefix(imageRef, unikernelimage.UnikernelImagePrefix) {
+		imageRef = imageRef[len(unikernelimage.UnikernelImagePrefix) : len(imageRef)-1]
+		// Remove :latest if exist
+		defaultImageSuffix := ":latest"
+		if strings.HasSuffix(imageRef, defaultImageSuffix) {
+			imageRef = imageRef[0 : len(imageRef)-len(defaultImageSuffix)]
+		}
+		// Try to parse it as url, it's ok there is no scheme here.
+		if _, err := url.Parse(imageRef); err == nil {
+			return true
+		}
+	}
+	return false
 }
