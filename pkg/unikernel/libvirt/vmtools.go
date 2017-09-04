@@ -361,6 +361,9 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 				{Name: "rtc", Track: "guest", Tickpolicy: "catchup"},
 			},
 		},
+		Features: &libvirtxml.DomainFeatureList{
+			ACPI: &libvirtxml.DomainFeature{},
+		},
 		Devices: &libvirtxml.DomainDeviceList{
 			Emulator: emulator,
 			Inputs: []libvirtxml.DomainInput{
@@ -383,6 +386,15 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 					Address: &libvirtxml.DomainAddress{Type: "pci", Domain: &imageDiskDomainIndex,
 						Bus: &imageDiskBusIndex, Slot: &imageDiskSlotIndex},
 				},
+			},
+			// configure for default nat network
+			/*
+				Interfaces: []libvirtxml.DomainInterface{
+					{Type: "network", Source: &libvirtxml.DomainInterfaceSource{Network: "default"}},
+				},
+			*/
+			Interfaces: []libvirtxml.DomainInterface{
+				{Type: "bridge", Source: &libvirtxml.DomainInterfaceSource{Bridge: "virbr0"}, Model: &libvirtxml.DomainInterfaceModel{Type: "virtio"}},
 			},
 		},
 		OnPoweroff: "destroy",
