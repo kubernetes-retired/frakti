@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package json
+package metadata
 
 import (
 	"encoding/json"
@@ -82,4 +82,12 @@ func ReadJsonOptsFile(targetDir string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func CleanUpMetadataFile(targetDir string) error {
+	metadataFile := filepath.Join(targetDir, knownflags.FlexvolumeDataFile)
+	if err := os.Remove(metadataFile); err != nil {
+		return fmt.Errorf("removing metadata file: %v failed: %v", metadataFile, err)
+	}
+	return nil
 }

@@ -26,8 +26,8 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/frakti/pkg/hyper/types"
-	utiljson "k8s.io/frakti/pkg/util/json"
 	"k8s.io/frakti/pkg/util/knownflags"
+	utilmetadata "k8s.io/frakti/pkg/util/metadata"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
@@ -142,7 +142,7 @@ func makeContainerVolumes(config *kubeapi.ContainerConfig) ([]*types.UserVolumeR
 		if isCinderFlexvolume {
 			// this is a cinder-flexvolume
 			optsData := VolumeOptsData{}
-			if err := utiljson.ReadJson(volumeOptsFile, &optsData); err != nil {
+			if err := utilmetadata.ReadJson(volumeOptsFile, &optsData); err != nil {
 				return nil, fmt.Errorf(
 					"buildUserContainer() failed: can't read flexvolume data file in %q: %v",
 					hostPath, err,
