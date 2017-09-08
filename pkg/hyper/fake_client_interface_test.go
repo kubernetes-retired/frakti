@@ -54,6 +54,7 @@ func newFakeClientInterface(c clock.Clock) *fakeClientInterface {
 
 type FakePod struct {
 	PodID     string
+	PodName   string
 	Status    string
 	PodVolume []*types.PodVolume
 }
@@ -70,8 +71,9 @@ func (f *fakeClientInterface) SetFakePod(pods []*FakePod) {
 			Phase: p.Status,
 		}
 		podInfo := types.PodInfo{
-			Spec:   &podSpec,
-			Status: &podStatus,
+			Spec:    &podSpec,
+			Status:  &podStatus,
+			PodName: p.PodName,
 		}
 
 		f.podInfoMap[p.PodID] = &podInfo
@@ -122,7 +124,19 @@ func (f *fakeClientInterface) CleanCalls() {
 }
 
 func (f *fakeClientInterface) PodList(ctx context.Context, in *types.PodListRequest, opts ...grpc.CallOption) (*types.PodListResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "PodList")
+	podList := []*types.PodListResult{}
+	for _, value := range f.podInfoMap {
+		pod := types.PodListResult{
+			PodID:   value.PodID,
+			PodName: value.PodName,
+			Status:  value.Status.Phase,
+		}
+		podList = append(podList, &pod)
+	}
+	return &types.PodListResponse{PodList: podList}, f.err
 }
 
 func (f *fakeClientInterface) PodCreate(ctx context.Context, in *types.PodCreateRequest, opts ...grpc.CallOption) (*types.PodCreateResponse, error) {
@@ -142,7 +156,11 @@ func (f *fakeClientInterface) PodInfo(ctx context.Context, in *types.PodInfoRequ
 }
 
 func (f *fakeClientInterface) PodRemove(ctx context.Context, in *types.PodRemoveRequest, opts ...grpc.CallOption) (*types.PodRemoveResponse, error) {
-	return nil, fmt.Errorf("Not implemented")
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "PodRemove")
+	delete(f.podInfoMap, in.PodID)
+	return &types.PodRemoveResponse{}, f.err
 }
 
 func (f *fakeClientInterface) PodStart(ctx context.Context, in *types.PodStartRequest, opts ...grpc.CallOption) (*types.PodStartResponse, error) {
