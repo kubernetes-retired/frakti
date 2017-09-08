@@ -15,6 +15,7 @@
 # Use the native vendor/ dependency system
 export GO15VENDOREXPERIMENT=1
 
+FRAKIT_VERSION := 1.0
 BUILD_DIR ?= ./out
 BUILD_TAGS := $(shell hack/libvirt_tag.sh)
 LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/frakti/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
@@ -27,7 +28,7 @@ frakti: $(shell $(LOCALKUBEFILES))
 .PHONY: docker
 docker:
 	cp ${BUILD_DIR}/flexvolume_driver deployment/flexvolume/
-	sudo docker build -t stackube/flex-volume:v0.1 deployment/flexvolume/
+	sudo docker build -t stackube/flex-volume:v${or ${IMAGE_VERSION},${FRAKIT_VERSION}} deployment/flexvolume/
 
 .PHONY: install
 install:
