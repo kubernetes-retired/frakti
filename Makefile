@@ -27,7 +27,8 @@ frakti: $(shell $(LOCALKUBEFILES))
 .PHONY: docker
 docker:
 	cp ${BUILD_DIR}/flexvolume_driver deployment/flexvolume/
-	sudo docker build -t stackube/flex-volume:v0.1 deployment/flexvolume/
+	@if test -z "${IMAGE_VERSION}"; then echo "IMAGE_VERSION is not set"; exit 1; fi
+	sudo docker build -t stackube/flex-volume:v${IMAGE_VERSION} deployment/flexvolume/
 
 .PHONY: install
 install:
