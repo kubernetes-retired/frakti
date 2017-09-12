@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -37,12 +38,14 @@ const (
 )
 
 type VMTool struct {
-	conn *LibvirtConnect
+	conn      *LibvirtConnect
+	enableLog bool
 }
 
-func NewVMTool(conn *LibvirtConnect) *VMTool {
+func NewVMTool(conn *LibvirtConnect, enableLog bool) *VMTool {
 	return &VMTool{
-		conn: conn,
+		conn:      conn,
+		enableLog: enableLog,
 	}
 }
 
@@ -58,6 +61,7 @@ type VMSetting struct {
 	vcpuNum    int
 	memory     int
 	image      string
+	logPath    string
 }
 
 // NOTE(Crazykev): This method may be changed when support multiple container per Pod.
@@ -70,11 +74,22 @@ func (vt *VMTool) CreateContainer(ctrMeta *metadata.ContainerMetadata, sbMeta *m
 		memory:     int(sbMeta.VMConfig.Memory),
 		image:      ctrMeta.ImageRef,
 		enableKVM:  enableKVM(),
+		logPath:    filepath.Join(sbMeta.LogDir, ctrMeta.LogPath),
 	}
+
+	// Make sure log directory exist
+	// FIXME(Crazykev): Is kubelet's responsiblity to clean up the log directory?
+	if err := os.MkdirAll(filepath.Dir(settings.logPath), 0644); err != nil {
+		return fmt.Errorf("failed create log directory %q", settings.logPath)
+	}
+
 	domainxml, err := vt.createDomain(&settings)
 	if err != nil {
 		return fmt.Errorf("failed to create domain with config(%v): %v", settings, err)
 	}
+
+	// Append serial devices to domain
+	vt.appendSerialDevices(domainxml, &settings)
 
 	if _, err = vt.conn.DefineDomain(domainxml); err != nil {
 		return err
@@ -346,6 +361,9 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 				{Name: "rtc", Track: "guest", Tickpolicy: "catchup"},
 			},
 		},
+		Features: &libvirtxml.DomainFeatureList{
+			ACPI: &libvirtxml.DomainFeature{},
+		},
 		Devices: &libvirtxml.DomainDeviceList{
 			Emulator: emulator,
 			Inputs: []libvirtxml.DomainInput{
@@ -369,6 +387,15 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 						Bus: &imageDiskBusIndex, Slot: &imageDiskSlotIndex},
 				},
 			},
+			// configure for default nat network
+			/*
+				Interfaces: []libvirtxml.DomainInterface{
+					{Type: "network", Source: &libvirtxml.DomainInterfaceSource{Network: "default"}},
+				},
+			*/
+			Interfaces: []libvirtxml.DomainInterface{
+				{Type: "bridge", Source: &libvirtxml.DomainInterfaceSource{Bridge: "virbr0"}, Model: &libvirtxml.DomainInterfaceModel{Type: "virtio"}},
+			},
 		},
 		OnPoweroff: "destroy",
 		OnReboot:   "destroy",
@@ -385,4 +412,29 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 		}
 	}
 	return domain, nil
+}
+
+func (vt *VMTool) appendSerialDevices(domain *libvirtxml.Domain, settings *VMSetting) {
+	serialPort := uint(0)
+	if vt.enableLog {
+		domain.Devices.Serials = []libvirtxml.DomainSerial{
+			{
+				Type: "file", Target: &libvirtxml.DomainSerialTarget{Port: &serialPort},
+				Source: &libvirtxml.DomainChardevSource{Path: settings.logPath},
+			},
+		}
+		domain.Devices.Consoles = []libvirtxml.DomainConsole{
+			{
+				Type: "file", Target: &libvirtxml.DomainConsoleTarget{Type: "serial", Port: &serialPort},
+				Source: &libvirtxml.DomainChardevSource{Path: settings.logPath},
+			},
+		}
+	} else {
+		domain.Devices.Serials = []libvirtxml.DomainSerial{
+			{Type: "pty", Target: &libvirtxml.DomainSerialTarget{Port: &serialPort}},
+		}
+		domain.Devices.Consoles = []libvirtxml.DomainConsole{
+			{Type: "pty", Target: &libvirtxml.DomainConsoleTarget{Type: "serial", Port: &serialPort}},
+		}
+	}
 }

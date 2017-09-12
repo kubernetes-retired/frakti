@@ -58,6 +58,7 @@ var (
 		"The endpoint of privileged runtime to communicate with")
 	enablePrivilegedRuntime = pflag.Bool("enable-privileged-runtime", true, "Enable privileged runtime to handle OS containers, default is true")
 	enableUnikernelRuntime  = pflag.Bool("enable-unikernel-runtime", false, "Enable unikernel runtime to run containers using unikernel image, default is false. Still under development.")
+	enableUnikernelLog      = pflag.Bool("enable-unikernel-log", true, "Enable unikernel runtime's log allow print VM's log to kubelet specified file, while disable some ability when `virsh console` to VM.")
 	cgroupDriver            = pflag.String("cgroup-driver", "cgroupfs", "Driver that the frakti uses to manipulate cgroups on the host. *SHOULD BE SAME AS* kubelet cgroup driver configuration.  Possible values: 'cgroupfs', 'systemd'")
 	rootDir                 = pflag.String("root-directory", "/var/lib/frakti", "Path to the frakti root directory")
 	defaultCPUNum           = pflag.Int32("cpu", 1, "Default CPU in number for HyperVM when cpu limit is not specified for the pod")
@@ -104,7 +105,7 @@ func main() {
 	// 3. Initialize unikernel runtime if enabled
 	var unikernelRuntime *unikernel.UnikernelRuntime
 	if *enableUnikernelRuntime {
-		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB)
+		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB, *enableUnikernelLog)
 		if err != nil {
 			glog.Errorf("Initialize unikernel runtime failed: %v", err)
 			os.Exit(1)

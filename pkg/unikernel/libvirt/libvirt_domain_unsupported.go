@@ -38,7 +38,7 @@ func (lc *LibvirtConnect) DefineDomain(dxml *libvirtxml.Domain) (*LibvirtDomain,
 }
 
 // ListDomains get all domains managed by libvirt, including those not managed by unikernel runtime.
-func (lc *LibvirtConnect) ListDomains() ([]LibvirtDomain, error) {
+func (lc *LibvirtConnect) ListDomains() ([]*LibvirtDomain, error) {
 	return nil, fmt.Errorf("not supported")
 }
 

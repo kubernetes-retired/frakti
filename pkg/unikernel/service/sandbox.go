@@ -67,6 +67,7 @@ func (u *UnikernelRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (stri
 		Name:     podName,
 		Config:   config,
 		VMConfig: vmMeta,
+		LogDir:   config.LogDirectory,
 	}
 
 	// TODO(Crazykev): Create ns and cni config
@@ -117,14 +118,13 @@ func (u *UnikernelRuntime) RemovePodSandbox(podSandboxID string) error {
 		return fmt.Errorf("failed to get all containers for sandbox(%q): %v", podSandboxID, err)
 	}
 
-	// Remove related VM
-	if err = u.vmTool.RemoveVM(sandbox.ID); err != nil {
-		return fmt.Errorf("failed to remove sandbox(%q) vm: %v", sandbox.ID, err)
+	if len(ctrs) > 1 {
+		glog.Warningf("Get more than one(%d) containers in sandbox %q, remove them all", len(ctrs), sandbox.ID)
 	}
-	// Remove sandbox and containers metadata
+	// Remove all containers found in sandbox, althrough we expected only one exist.
 	for _, ctr := range ctrs {
-		if err = u.containerStore.Delete(ctr.ID); err != nil {
-			return fmt.Errorf("failed to delete container(%q) metadata: %v", ctr.ID, err)
+		if err = u.RemoveContainer(ctr.ID); err != nil {
+			return err
 		}
 	}
 	if err = u.sandboxStore.Delete(sandbox.ID); err != nil {
@@ -163,7 +163,6 @@ func (u *UnikernelRuntime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*
 
 func makeSandboxName(podID string, meta *kubeapi.PodSandboxMetadata) string {
 	return strings.Join([]string{
-		podID[:11],
 		meta.Name,
 		meta.Namespace,
 		meta.Uid,
