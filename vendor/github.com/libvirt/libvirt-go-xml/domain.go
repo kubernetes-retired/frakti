@@ -531,41 +531,12 @@ type DomainCPU struct {
 	Vendor   string             `xml:"vendor,omitempty"`
 	Topology *DomainCPUTopology `xml:"topology"`
 	Features []DomainCPUFeature `xml:"feature"`
-	Numa     *DomainNuma        `xml:"numa,omitempty"`
-}
-
-type DomainNuma struct {
-	Cell []DomainCell `xml:"cell"`
-}
-
-type DomainCell struct {
-	ID     string `xml:"id,attr"`
-	CPUs   string `xml:"cpus,attr"`
-	Memory string `xml:"memory,attr"`
-	Unit   string `xml:"unit,attr"`
 }
 
 type DomainClock struct {
-	Offset     string        `xml:"offset,attr,omitempty"`
-	Basis      string        `xml:"basis,attr,omitempty"`
-	Adjustment int           `xml:"adjustment,attr,omitempty"`
-	Timer      []DomainTimer `xml:"timer,omitempty"`
-}
-
-type DomainTimer struct {
-	Name       string        `xml:"name,attr"`
-	Track      string        `xml:"track,attr,omitempty"`
-	Tickpolicy string        `xml:"tickpolicy,attr,omitempty"`
-	CatchUp    DomainCatchUp `xml:"catchup,omitempty"`
-	Frequency  uint32        `xml:"frequency,attr,omitempty"`
-	Mode       string        `xml:"mode,attr,omitempty"`
-	Present    string        `xml:"present,attr,omitempty"`
-}
-
-type DomainCatchUp struct {
-	Threshold uint `xml:"threshold,attr,omitempty"`
-	Slew      uint `xml:"slew,attr,omitempty"`
-	Limit     uint `xml:"limit,attr,omitempty"`
+	Offset     string `xml:"offset,attr,omitempty"`
+	Basis      string `xml:"basis,attr,omitempty"`
+	Adjustment int    `xml:"adjustment,attr,omitempty"`
 }
 
 type DomainFeature struct {
