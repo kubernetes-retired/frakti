@@ -24,7 +24,7 @@ GODEP="${GODEP:-godep}"
 PRE_RESTORE_FLAG="--pre-restore"
 
 # Some special pkg dependencies we may need restore them
-# before godep-save when try to update
+# before save them to vendor when try to update
 PRE_RESTORE_PKG=(
   "k8s.io/client-go"
 )
@@ -43,15 +43,9 @@ if [ $# -gt 0 ]; then
   fi
 fi
 
-# Some things we want in godeps aren't code dependencies, so ./...
-# won't pick them up.
-REQUIRED_BINS=(
-  "github.com/onsi/ginkgo/ginkgo"
-  "./..."
-)
-
 cd ${FRAKTI_ROOT}
 
+# Add existing GOPATH files to vendor
 pushd "${FRAKTI_ROOT}" > /dev/null
-  GO15VENDOREXPERIMENT=1 ${GODEP} save "${REQUIRED_BINS[@]}"
+  GO15VENDOREXPERIMENT=1 govendor add +external
 popd > /dev/null
