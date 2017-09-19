@@ -821,4 +821,3 @@ func (d *DomainRNG) Marshal() (string, error) {
 	}
 	return string(doc), nil
 }
-

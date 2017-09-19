@@ -16,4 +16,4 @@ limitations under the License.
 
 // +k8s:deepcopy-gen=package,register
 // +groupName=rbac.authorization.k8s.io
-package rbac // import "k8s.io/kubernetes/pkg/apis/rbac"
+package rbac

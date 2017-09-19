@@ -21,4 +21,4 @@ limitations under the License.
 // InitializerConfiguration and ExternalAdmissionHookConfiguration is for the
 // new dynamic admission controller configuration.
 // +groupName=admissionregistration.k8s.io
-package admissionregistration // import "k8s.io/kubernetes/pkg/apis/admissionregistration"
+package admissionregistration
