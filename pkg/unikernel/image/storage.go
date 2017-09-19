@@ -50,7 +50,7 @@ func (im *ImageManager) prepareStorageForImage(imagePath string, digest godigest
 		}
 	}()
 	// storage
-	err = archive.UntarPath(imagePath, desDir)
+	err = archive.NewDefaultArchiver().UntarPath(imagePath, desDir)
 	if err != nil {
 		return nil, nil, fmt.Errorf("untar image tar file(%q) failed: %v", imagePath, err)
 	}

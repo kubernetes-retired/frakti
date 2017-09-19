@@ -388,3 +388,23 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 
 	return kubeStatus, nil
 }
+
+//  UpdateContainerResources updates the resource constraints for the container.
+func (h *Runtime) UpdateContainerResources(
+	rawContainerID string,
+	config *kubeapi.LinuxContainerResources,
+) error {
+	return fmt.Errorf("UpdateContainerResources is not implemented yet.")
+}
+
+// ContainerStats returns stats of the container. If the container does not
+// exist, the call returns an error.
+func (h *Runtime) ContainerStats(containerID string) (*kubeapi.ContainerStats, error) {
+	return nil, fmt.Errorf("ContainerStats is not implemented yet.")
+}
+
+// ListContainerStats returns stats of all running containers.
+func (h *Runtime) ListContainerStats(filter *kubeapi.ContainerStatsFilter) (
+	[]*kubeapi.ContainerStats, error) {
+	return nil, fmt.Errorf("ContainerStats is not implemented yet.")
+}

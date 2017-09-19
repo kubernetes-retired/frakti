@@ -311,9 +311,9 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 	if err != nil {
 		return nil, fmt.Errorf("find qemu-system-x86_64 binary failed: %v", err)
 	}
-	imageDiskDomainIndex := uint(0)
-	imageDiskBusIndex := uint(1)
-	imageDiskSlotIndex := uint(1)
+	imageDiskDomainIndex := libvirtxml.HexUint(0)
+	imageDiskBusIndex := libvirtxml.HexUint(1)
+	imageDiskSlotIndex := libvirtxml.HexUint(1)
 	domain := &libvirtxml.Domain{
 		Type: "kvm",
 		Name: setting.domainName,
@@ -358,7 +358,7 @@ func (vt *VMTool) createDomain(setting *VMSetting) (*libvirtxml.Domain, error) {
 		Clock: &libvirtxml.DomainClock{
 			Offset: "utc",
 			Timer: []libvirtxml.DomainTimer{
-				{Name: "rtc", Track: "guest", Tickpolicy: "catchup"},
+				{Name: "rtc", Track: "guest", TickPolicy: "catchup"},
 			},
 		},
 		Features: &libvirtxml.DomainFeatureList{
