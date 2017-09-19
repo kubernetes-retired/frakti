@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	utilexec "k8s.io/kubernetes/pkg/util/exec"
+	utilexec "k8s.io/utils/exec"
 )
 
 const (

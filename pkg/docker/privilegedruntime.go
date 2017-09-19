@@ -25,14 +25,12 @@ import (
 
 	"k8s.io/frakti/pkg/util/alternativeruntime"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/apis/componentconfig"
-	componentconfigv1alpha1 "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet"
+	"k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
+	kubeletconfiginternal "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
+	kubeletscheme "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/scheme"
+	kubeletconfigv1alpha1 "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/v1alpha1"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim"
-
 	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
@@ -54,13 +52,19 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	// For now we use docker as the only supported privileged runtime
 	glog.Infof("Initialize privileged runtime: docker runtime\n")
 
-	extKubeCfg := &componentconfigv1alpha1.KubeletConfiguration{}
-	crOption := options.NewContainerRuntimeOptions()
-	componentconfigv1alpha1.SetDefaults_KubeletConfiguration(extKubeCfg)
-	kubeCfg := &componentconfig.KubeletConfiguration{}
-	if err := api.Scheme.Convert(extKubeCfg, kubeCfg, nil); err != nil {
+	kubeletScheme, _, err := kubeletscheme.NewSchemeAndCodecs()
+	if err != nil {
 		return nil, err
 	}
+
+	external := &kubeletconfigv1alpha1.KubeletConfiguration{}
+	kubeletScheme.Default(external)
+	kubeCfg := &kubeletconfig.KubeletConfiguration{}
+	if err := kubeletScheme.Convert(external, kubeCfg, nil); err != nil {
+		return nil, err
+	}
+
+	crOption := options.NewContainerRuntimeOptions()
 	dockerClient := libdocker.ConnectToDockerOrDie(
 		// privilegedRuntimeEndpoint defaults to kubeCfg.DockerEndpoint
 		privilegedRuntimeEndpoint,
@@ -69,14 +73,14 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	)
 	// TODO(resouer) is it fine to reuse the CNI plug-in?
 	pluginSettings := dockershim.NetworkPluginSettings{
-		HairpinMode:       componentconfig.HairpinMode(kubeCfg.HairpinMode),
+		HairpinMode:       kubeletconfiginternal.HairpinMode(kubeCfg.HairpinMode),
 		NonMasqueradeCIDR: kubeCfg.NonMasqueradeCIDR,
 		PluginName:        networkPluginName,
 		PluginConfDir:     cniNetDir,
 		PluginBinDir:      cniPluginDir,
 		MTU:               networkPluginMTU,
 	}
-	var nl *noOpLegacyHost
+	var nl *kubelet.NoOpLegacyHost
 	pluginSettings.LegacyRuntimeHost = nl
 	// set cgroup driver to dockershim
 	dockerInfo, err := dockerClient.Info()
@@ -90,7 +94,6 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	}
 	ds, err := dockershim.NewDockerService(
 		dockerClient,
-		kubeCfg.SeccompProfileRoot,
 		crOption.PodSandboxImage,
 		streamingConfig,
 		&pluginSettings,
@@ -121,25 +124,4 @@ func startPrivilegedStreamingServer(streamingConfig *streaming.Config, ds docker
 			os.Exit(1)
 		}
 	}()
-}
-
-// noOpLegacyHost implements the network.LegacyHost interface for the remote
-// runtime shim by just returning empties. It doesn't support legacy features
-// like host port and bandwidth shaping.
-type noOpLegacyHost struct{}
-
-func (n *noOpLegacyHost) GetPodByName(namespace, name string) (*v1.Pod, bool) {
-	return nil, true
-}
-
-func (n *noOpLegacyHost) GetKubeClient() clientset.Interface {
-	return nil
-}
-
-func (n *noOpLegacyHost) GetRuntime() kubecontainer.Runtime {
-	return nil
-}
-
-func (nh *noOpLegacyHost) SupportsLegacyFeatures() bool {
-	return false
 }

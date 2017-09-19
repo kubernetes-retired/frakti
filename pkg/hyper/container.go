@@ -388,3 +388,28 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 
 	return kubeStatus, nil
 }
+
+//  UpdateContainerResources updates the resource constraints for the container.
+func (h *Runtime) UpdateContainerResources(
+	rawContainerID string,
+	config *kubeapi.LinuxContainerResources,
+) error {
+	// TODO(harry): I would suggest to run container with cpuset in docker, but we can not decide which Pod
+	// has cpuset configured. It's tricky.
+	// Also, we can not throw error here since kubelet will always execute cm.updateContainerCPUSet() by internal
+	// container life cycle hook.
+	// Will talk with @connor to see if this can be fixed.
+	return nil
+}
+
+// ContainerStats returns stats of the container. If the container does not
+// exist, the call returns an error.
+func (h *Runtime) ContainerStats(containerID string) (*kubeapi.ContainerStats, error) {
+	return nil, fmt.Errorf("ContainerStats is not implemented for hyper runtime yet.")
+}
+
+// ListContainerStats returns stats of all running containers.
+func (h *Runtime) ListContainerStats(filter *kubeapi.ContainerStatsFilter) (
+	[]*kubeapi.ContainerStats, error) {
+	return nil, fmt.Errorf("ContainerStats is not implemented for hyper runtime yet.")
+}

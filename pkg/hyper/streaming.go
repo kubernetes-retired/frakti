@@ -27,7 +27,7 @@ import (
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
-	utilexec "k8s.io/kubernetes/pkg/util/exec"
+	utilexec "k8s.io/utils/exec"
 )
 
 type streamingRuntime struct {
