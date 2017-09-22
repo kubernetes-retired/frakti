@@ -27,6 +27,7 @@ package libvirtxml
 
 import (
 	"encoding/xml"
+	"strconv"
 )
 
 type DomainController struct {
@@ -281,15 +282,15 @@ type DomainAlias struct {
 }
 
 type DomainAddress struct {
-	Type       string `xml:"type,attr"`
-	Controller *uint  `xml:"controller,attr"`
-	Domain     *uint  `xml:"domain,attr"`
-	Bus        *uint  `xml:"bus,attr"`
-	Port       *uint  `xml:"port,attr"`
-	Slot       *uint  `xml:"slot,attr"`
-	Function   *uint  `xml:"function,attr"`
-	Target     *uint  `xml:"target,attr"`
-	Unit       *uint  `xml:"unit,attr"`
+	Type       string   `xml:"type,attr"`
+	Controller *uint    `xml:"controller,attr"`
+	Domain     *HexUint `xml:"domain,attr"`
+	Bus        *HexUint `xml:"bus,attr"`
+	Port       *uint    `xml:"port,attr"`
+	Slot       *HexUint `xml:"slot,attr"`
+	Function   *HexUint `xml:"function,attr"`
+	Target     *uint    `xml:"target,attr"`
+	Unit       *uint    `xml:"unit,attr"`
 }
 
 type DomainConsole struct {
@@ -406,6 +407,29 @@ type DomainRNG struct {
 	Backend *DomainRNGBackend `xml:"backend"`
 }
 
+type DomainHostdevAdapter struct {
+	Name string `xml:"name,attr,omitempty"`
+}
+
+type DomainHostdevSource struct {
+	Protocol string                `xml:"protocol,attr,omitempty"`
+	Name     string                `xml:"name,attr,omitempty"`
+	WWPN     string                `xml:"wwpn,attr,omitempty"`
+	Adapter  *DomainHostdevAdapter `xml:"adapter"`
+	Address  *DomainAddress        `xml:"address"`
+}
+
+type DomainHostdev struct {
+	XMLName xml.Name             `xml:"hostdev"`
+	Mode    string               `xml:"mode,attr"`
+	Type    string               `xml:"type,attr"`
+	SGIO    string               `xml:"sgio,attr,omitempty"`
+	RawIO   string               `xml:"rawio,attr,omitempty"`
+	Managed string               `xml:"managed,attr,omitempty"`
+	Source  *DomainHostdevSource `xml:"source"`
+	Address *DomainAddress       `xml:"address"`
+}
+
 type DomainDeviceList struct {
 	Emulator    string             `xml:"emulator,omitempty"`
 	Controllers []DomainController `xml:"controller"`
@@ -421,6 +445,7 @@ type DomainDeviceList struct {
 	MemBalloon  *DomainMemBalloon  `xml:"memballoon"`
 	Sounds      []DomainSound      `xml:"sound"`
 	RNGs        []DomainRNG        `xml:"rng"`
+	Hostdevs    []DomainHostdev    `xml:"hostdev"`
 }
 
 type DomainMemory struct {
@@ -553,16 +578,16 @@ type DomainClock struct {
 }
 
 type DomainTimer struct {
-	Name       string        `xml:"name,attr"`
-	Track      string        `xml:"track,attr,omitempty"`
-	Tickpolicy string        `xml:"tickpolicy,attr,omitempty"`
-	CatchUp    DomainCatchUp `xml:"catchup,omitempty"`
-	Frequency  uint32        `xml:"frequency,attr,omitempty"`
-	Mode       string        `xml:"mode,attr,omitempty"`
-	Present    string        `xml:"present,attr,omitempty"`
+	Name       string              `xml:"name,attr"`
+	Track      string              `xml:"track,attr,omitempty"`
+	TickPolicy string              `xml:"tickpolicy,attr,omitempty"`
+	CatchUp    *DomainTimerCatchUp `xml:"catchup,omitempty"`
+	Frequency  uint32              `xml:"frequency,attr,omitempty"`
+	Mode       string              `xml:"mode,attr,omitempty"`
+	Present    string              `xml:"present,attr,omitempty"`
 }
 
-type DomainCatchUp struct {
+type DomainTimerCatchUp struct {
 	Threshold uint `xml:"threshold,attr,omitempty"`
 	Slew      uint `xml:"slew,attr,omitempty"`
 	Limit     uint `xml:"limit,attr,omitempty"`
@@ -822,3 +847,22 @@ func (d *DomainRNG) Marshal() (string, error) {
 	return string(doc), nil
 }
 
+func (d *DomainHostdev) Unmarshal(doc string) error {
+	return xml.Unmarshal([]byte(doc), d)
+}
+
+func (d *DomainHostdev) Marshal() (string, error) {
+	doc, err := xml.MarshalIndent(d, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(doc), nil
+}
+
+type HexUint uint
+
+func (h *HexUint) UnmarshalXMLAttr(attr xml.Attr) error {
+	val, err := strconv.ParseUint(attr.Value, 0, 32)
+	*h = HexUint(val)
+	return err
+}
