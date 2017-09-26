@@ -123,7 +123,7 @@ Further information could be found at:
 
 - [Deploying](docs/deploy.md)
 - [End-to-end testing](docs/e2e-tests.md)
-- [Kubelet container runtime API](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/runtime-client-server.md)
+- [Kubelet container runtime API](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node/runtime-client-server.md)
 - [HyperContainer](http://hypercontainer.io/)
 - [The blog on k8s.io about Hypernetes](http://blog.kubernetes.io/2016/05/hypernetes-security-and-multi-tenancy-in-kubernetes.html)
 
