@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/containernetworking/cni/pkg/ns"
@@ -387,6 +388,12 @@ func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 		return "", err
 	}
 
+	// bypass netfilter for the bridge.
+	// This is because bridge-nf-call-iptables=1 is required for kubernetes.
+	if err := disableBridgeTracking(brName, true); err != nil {
+		return "", fmt.Errorf("disableBridgeTracking failed: %v", err)
+	}
+
 	return brName, nil
 }
 
@@ -408,6 +415,10 @@ func teardownRelayBridgeInHost(bridgeName string) error {
 		return err
 	}
 
+	if err := disableBridgeTracking(bridgeName, false); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -419,4 +430,23 @@ func buildNetworkInfo(bridgeName string, interfaces []*containerInterface) *Netw
 		Ip:         interfaces[0].Addr.String(),
 		Gateway:    interfaces[0].Gateway,
 	}
+}
+
+func disableBridgeTracking(brName string, disable bool) error {
+	iptablesPath, err := exec.LookPath("iptables")
+	if err != nil {
+		return err
+	}
+
+	if disable {
+		_, err = exec.Command(iptablesPath, "-t", "raw", "-I", "PREROUTING", "-i", brName, "-j", "NOTRACK").CombinedOutput()
+	} else {
+		_, err = exec.Command(iptablesPath, "-t", "raw", "-D", "PREROUTING", "-i", brName, "-j", "NOTRACK").CombinedOutput()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
