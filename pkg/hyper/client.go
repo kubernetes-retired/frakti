@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/frakti/pkg/hyper/types"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	utilexec "k8s.io/kubernetes/pkg/util/exec"
+	utilexec "k8s.io/utils/exec"
 )
 
 const (
@@ -43,6 +43,9 @@ const (
 	// errorCodePodNotFound is the response code of PodRemove,
 	// when the pod can not be found.
 	errorCodePodNotFound = -2
+
+	defaultDomain    = "docker.io"
+	officialRepoName = "library"
 )
 
 // Client is the gRPC client for hyperd
@@ -278,6 +281,14 @@ func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// change `docker.io/library/imageName` to `imageName`
+	if split := strings.Split(image, "/"); len(split) == 3 &&
+		split[0] == defaultDomain &&
+		split[1] == officialRepoName {
+		image = split[2]
+	}
+
 	fullImageName := fmt.Sprintf("%s%s%s", image, repoSep, tag)
 	for _, image := range imageList.ImageList {
 		for _, i := range image.RepoDigests {

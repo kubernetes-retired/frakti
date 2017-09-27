@@ -29,6 +29,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/frakti/pkg/runtime"
@@ -36,7 +37,7 @@ import (
 	"k8s.io/frakti/pkg/util/alternativeruntime"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
-	utilexec "k8s.io/kubernetes/pkg/util/exec"
+	utilexec "k8s.io/utils/exec"
 )
 
 const (
@@ -62,13 +63,13 @@ type FraktiManager struct {
 	streamingServer streaming.Server
 
 	hyperRuntimeService runtime.RuntimeService
-	hyperImageService   runtime.ImageService
+	hyperImageService   runtime.ImageManagerService
 
 	privilegedRuntimeService runtime.RuntimeService
-	privilegedImageService   runtime.ImageService
+	privilegedImageService   runtime.ImageManagerService
 
 	unikernelRuntimeService runtime.RuntimeService
-	unikernelImageService   runtime.ImageService
+	unikernelImageService   runtime.ImageManagerService
 
 	// The pod sets need to be processed by privileged runtime
 	cachedAlternativeRuntimeItems *alternativeruntime.AlternativeRuntimeSets
@@ -77,12 +78,12 @@ type FraktiManager struct {
 // NewFraktiManager creates a new FraktiManager
 func NewFraktiManager(
 	hyperRuntimeService runtime.RuntimeService,
-	hyperImageService runtime.ImageService,
+	hyperImageService runtime.ImageManagerService,
 	streamingServer streaming.Server,
 	privilegedRuntimeService runtime.RuntimeService,
-	privilegedImageService runtime.ImageService,
+	privilegedImageService runtime.ImageManagerService,
 	unikernelRuntimeService runtime.RuntimeService,
-	unikernelImageService runtime.ImageService,
+	unikernelImageService runtime.ImageManagerService,
 ) (*FraktiManager, error) {
 	s := &FraktiManager{
 		server:                        grpc.NewServer(),
@@ -132,7 +133,7 @@ func NewFraktiManager(
 }
 
 // getRuntimeService returns corresponding runtime service based on given sandbox or container ID
-func (s *FraktiManager) getRuntimeService(id string) (runtime.RuntimeService, runtime.ImageService) {
+func (s *FraktiManager) getRuntimeService(id string) (runtime.RuntimeService, runtime.ImageManagerService) {
 	runtimeName := s.cachedAlternativeRuntimeItems.GetRuntime(id)
 	switch runtimeName {
 	case alternativeruntime.PrivilegedRuntimeName:
@@ -379,6 +380,23 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 	}, nil
 }
 
+func (s *FraktiManager) UpdateContainerResources(
+	ctx context.Context,
+	req *kubeapi.UpdateContainerResourcesRequest,
+) (*kubeapi.UpdateContainerResourcesResponse, error) {
+	glog.V(3).Infof("UpdateContainerResources with request %s", req.String())
+
+	runtimeService, _ := s.getRuntimeService(req.ContainerId)
+	if err := runtimeService.UpdateContainerResources(
+		req.GetContainerId(),
+		req.GetLinux(),
+	); err != nil {
+		return nil, err
+	}
+
+	return &kubeapi.UpdateContainerResourcesResponse{}, nil
+}
+
 // ExecSync runs a command in a container synchronously.
 func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncRequest) (*kubeapi.ExecSyncResponse, error) {
 	glog.V(3).Infof("ExecSync with request %s", req.String())
@@ -487,7 +505,7 @@ func (s *FraktiManager) ListImages(ctx context.Context, req *kubeapi.ListImagesR
 	errs := []error{}
 
 	// NOTE: The following steps assume 'imageServiceList' and 'imageMapList' have corresponding order
-	imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
+	imageServiceList := []runtime.ImageManagerService{s.hyperImageService, s.privilegedImageService}
 	workerNum := 2
 	if s.unikernelImageService != nil {
 		imageServiceList = append(imageServiceList, s.unikernelImageService)
@@ -619,7 +637,7 @@ func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImag
 	} else {
 		errs := []error{}
 
-		imageServiceList := []runtime.ImageService{s.hyperImageService, s.privilegedImageService}
+		imageServiceList := []runtime.ImageManagerService{s.hyperImageService, s.privilegedImageService}
 
 		removeImageFunc := func(i int) {
 			err := imageServiceList[i].RemoveImage(req.Image)
@@ -642,19 +660,37 @@ func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImag
 // ImageFSInfo returns information of the filesystem that is used to store images.
 func (s *FraktiManager) ImageFsInfo(ctx context.Context, req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error) {
 	glog.V(3).Infof("ImageFsInfo with request %s", req.String())
-
 	return nil, fmt.Errorf("not implemented")
 }
 
 // ContainerStats returns information of the container filesystem.
 func (s *FraktiManager) ContainerStats(ctx context.Context, req *kubeapi.ContainerStatsRequest) (*kubeapi.ContainerStatsResponse, error) {
 	glog.V(3).Infof("ContainerStats with request %s", req.String())
-	return nil, fmt.Errorf("not implemented")
+	runtimeService, _ := s.getRuntimeService(req.GetContainerId())
+
+	stats, err := runtimeService.ContainerStats(req.GetContainerId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &kubeapi.ContainerStatsResponse{
+		Stats: stats,
+	}, nil
 }
 
 func (s *FraktiManager) ListContainerStats(ctx context.Context, req *kubeapi.ListContainerStatsRequest) (*kubeapi.ListContainerStatsResponse, error) {
 	glog.V(3).Infof("ListContainerStats with request %s", req.String())
-	return nil, fmt.Errorf("not implemented")
+
+	runtimeService, _ := s.getRuntimeService(req.GetFilter().GetPodSandboxId())
+
+	statsList, err := runtimeService.ListContainerStats(req.GetFilter())
+	if err != nil {
+		return nil, err
+	}
+
+	return &kubeapi.ListContainerStatsResponse{
+		Stats: statsList,
+	}, nil
 }
 
 // getRuntimeServiceBySandboxConfig returns corresponding runtime service by sandbox config

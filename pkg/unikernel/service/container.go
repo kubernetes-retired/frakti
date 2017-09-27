@@ -385,3 +385,23 @@ func makeContainerName(c *kubeapi.ContainerMetadata, s *kubeapi.PodSandboxMetada
 		fmt.Sprintf("%d", c.Attempt),
 	}, "_")
 }
+
+//  UpdateContainerResources updates the resource constraints for the container.
+func (h *UnikernelRuntime) UpdateContainerResources(
+	rawContainerID string,
+	config *kubeapi.LinuxContainerResources,
+) error {
+	return fmt.Errorf("UpdateContainerResources is not implemented yet.")
+}
+
+// ContainerStats returns stats of the container. If the container does not
+// exist, the call returns an error.
+func (h *UnikernelRuntime) ContainerStats(containerID string) (*kubeapi.ContainerStats, error) {
+	return nil, fmt.Errorf("ContainerStats is not implemented yet.")
+}
+
+// ListContainerStats returns stats of all running containers.
+func (h *UnikernelRuntime) ListContainerStats(filter *kubeapi.ContainerStatsFilter) (
+	[]*kubeapi.ContainerStats, error) {
+	return nil, fmt.Errorf("ContainerStats is not implemented yet.")
+}
