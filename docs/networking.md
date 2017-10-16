@@ -19,7 +19,7 @@ $ ./build.sh
 $ sudo cp bin/* /opt/cni/bin/
 ```
 
-Then config CNI to use bridge and portmap plugin:
+Then configure CNI to use bridge and portmap plugin:
 
 ```sh
 $ sudo sh -c 'cat >/etc/cni/net.d/10-mynet.conflist <<-EOF
@@ -58,13 +58,13 @@ EOF'
 
 ## [Flannel](https://github.com/coreos/flannel)
 
-Remove other cni network configure if they are already configured:
+Remove other cni network configuration if exists:
 
 ```sh
 rm -f /etc/cni/net.d/*
 ```
 
-Then setup flannel plugin by running:
+Then set up flannel plugin by running:
 
 ```sh
 kubectl create -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel-rbac.yml
@@ -73,13 +73,13 @@ kubectl create -f https://github.com/coreos/flannel/raw/master/Documentation/kub
 
 ## [Calico](https://www.projectcalico.org)
 
-Remove other cni network configure if they are already configured:
+Remove other cni network configuration if exists:
 
 ```sh
 rm -f /etc/cni/net.d/*
 ```
 
-Then setup calico plugin by running:
+Then set up calico plugin by running:
 
 ```sh
 kubectl apply -f https://docs.projectcalico.org/v2.4/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
@@ -87,13 +87,13 @@ kubectl apply -f https://docs.projectcalico.org/v2.4/getting-started/kubernetes/
 
 ## [Weave](https://www.weave.works/)
 
-Remove other cni network configure if they are already configured:
+Remove other cni network configuration if exists:
 
 ```sh
 rm -f /etc/cni/net.d/*
 ```
 
-Then setup weave plugin by running:
+Then set up weave plugin by running:
 
 ```sh
 kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
