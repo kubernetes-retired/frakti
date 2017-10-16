@@ -21,7 +21,7 @@ Updated: 5/3/2017
 
 This document shows how to easily install a kubernetes cluster with frakti runtime.
 
-Frakti is a hypervisor-based container runtime, it depends on a few packages besides kubernetes:
+Frakti is a hypervisor-based container runtime, which depends on a few packages besides kubernetes:
 
 - hyperd: the hyper container engine (main container runtime)
 - docker: the docker container engine (auxiliary container runtime)
@@ -29,7 +29,7 @@ Frakti is a hypervisor-based container runtime, it depends on a few packages bes
 
 ## All in one
 
-An all in one kubernetes cluster with frakti runtime could be deployed by running:
+An all-in-one kubernetes cluster with frakti runtime could be deployed by running:
 
 ```sh
 cluster/allinone.sh
@@ -153,23 +153,6 @@ EOF
 setenforce 0
 yum install -y kubernetes-cni
 ```
-(Optional:
-Sometimes https://packages.cloud.google.com can not be reached due to several reasons, in which case an alternative website with the same images available can be chosen.
-
-On CentOS 7:
-
-```sh
-cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
-enabled=1
-gpgcheck=0
-EOF
-setenforce 0
-yum install -y kubernetes-cni
-```
-)
 
 CNI networks should also be configured, note that
 
@@ -237,7 +220,7 @@ systemctl daemon-reload
 kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version stable
 ```
 
-The default memory limits of kube-dns pods are too small for running in virtual machine, so they should be increased, e.g.
+The default memory limits of kube-dns pods are too small for running on virtual machines, so they should be increased, e.g.
 
 ```sh
 kubectl -n kube-system patch deployment kube-dns -p '{"spec":{"template":{"spec":{"containers":[{"name":"kubedns","resources":{"limits":{"memory":"256Mi"}}},{"name":"dnsmasq","resources":{"limits":{"memory":"128Mi"}}},{"name":"sidecar","resources":{"limits":{"memory":"64Mi"}}}]}}}}'
@@ -270,7 +253,7 @@ kubeadm join --token $token ${master_ip:port}
 
 ### Setting CNI network routes
 
-Containers across multi-node could be connected via direct route. You should setup the routes for all nodes, e.g. suppose one master node and two worker nodes:
+Containers across multi-node could be connected via direct route. You should set up the routes for all nodes, e.g. suppose one master node and two worker nodes:
 
 ```
 NODE   IP_ADDRESS   CONTAINER_CIDR
@@ -300,4 +283,4 @@ In a production environment, we recommend user to have their own CNI plugin (Fla
 
 On the other hand, https://github.com/openstack/stackube is a production ready upstream Kubernetes cluster with `frakti` as container runtime, standalone Neutron, Cinder and Keystone to provide multi-tenancy, networking and storage. Please feel free to explore.
 
-And, if you would like to try `frakti` with more integrations in your own environment, contribution will always be appreciated!
+And, if you would like to try `frakti` with more integrations in your own environment, contributions will always be appreciated!
