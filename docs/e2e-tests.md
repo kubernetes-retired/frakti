@@ -17,7 +17,7 @@ End-to-end (e2e) tests for frakti provide a mechanism to test end-to-end behavio
 ## Running the Tests
 
 Frakti acts as a manager of hyper container runtime, before we could run e2e tests
-in frakti, `hyperd` should be guaranteed running on localhost. In default way, `hyperd` should start with gRPC endpoint `127.0.0.1:22318`. If you are not sure hyperd is configured properly, here is the steps:
+in frakti, `hyperd` should be guaranteed running on localhost. In default way, `hyperd` should start with gRPC endpoint `127.0.0.1:22318`. If you are not sure hyperd is configured properly, here are the steps:
 
 ```sh
 cat >/etc/hyper/config <<EOF
