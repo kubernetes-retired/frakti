@@ -130,12 +130,16 @@ func makeContainerVolumes(config *kubeapi.ContainerConfig) ([]*types.UserVolumeR
 		// In frakti, we can both use normal container volumes (-v host:path), and also cinder-flexvolume
 		isCinderFlexvolume := false
 		volumeOptsFile := filepath.Join(hostPath, knownflags.FlexvolumeDataFile)
-		// 1. host path is a directory (filter out bind mounted files like /etc/hosts)
-		if hostPathInfo, _ := os.Stat(hostPath); hostPathInfo.IsDir() {
-			// 2. tag file exists in host path
-			if _, err := os.Stat(volumeOptsFile); !os.IsNotExist(err) {
-				// 3. then this is a cinder-flexvolume
-				isCinderFlexvolume = true
+
+		// no-exist hostPath is allowed, and that case should never be cinder flexvolume
+		if hostPathInfo, err := os.Stat(hostPath); !os.IsNotExist(err) {
+			// 1. host path is a directory (filter out bind mounted files like /etc/hosts)
+			if hostPathInfo.IsDir() {
+				// 2. tag file exists in host path
+				if _, err := os.Stat(volumeOptsFile); !os.IsNotExist(err) {
+					// 3. then this is a cinder-flexvolume
+					isCinderFlexvolume = true
+				}
 			}
 		}
 
