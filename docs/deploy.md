@@ -220,10 +220,11 @@ systemctl daemon-reload
 kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version stable
 ```
 
-The default memory limits of kube-dns pods are too small for running on virtual machines, so they should be increased, e.g.
+We prefer to use Linux container runtime to handle kube-dns since the default resource limit of hypervisor runtime is not enough.
+So let's annotate the Pod and let Kubernetes do the rolling update for you.
 
 ```sh
-kubectl -n kube-system patch deployment kube-dns -p '{"spec":{"template":{"spec":{"containers":[{"name":"kubedns","resources":{"limits":{"memory":"256Mi"}}},{"name":"dnsmasq","resources":{"limits":{"memory":"128Mi"}}},{"name":"sidecar","resources":{"limits":{"memory":"64Mi"}}}]}}}}'
+kubectl -n kube-system patch deployment kube-dns -p '{"spec":{"template":{"metadata":{"annotations":{"runtime.frakti.alpha.kubernetes.io/OSContainer": "true"}}}}}'
 ```
 
 Optional: enable schedule pods on the master
