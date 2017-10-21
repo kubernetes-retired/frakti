@@ -19,23 +19,22 @@ HYPERD_TEMP=${HYPERD_TEMP:-/tmp}
 GO_HYPERHQ_PATH=${GO_HYPERHQ_PATH:-${HYPERD_TEMP}/src/github.com/hyperhq}
 
 frakti::hyper::install_hypercontainer() {
-  # subshell so that we can export GOPATH without breaking other things
-  (
-    export GOPATH=${HYPERD_TEMP}
-    mkdir -p "${GO_HYPERHQ_PATH}"
+  _saved_gopath=$GOPATH
+  export GOPATH=${HYPERD_TEMP}
+  mkdir -p "${GO_HYPERHQ_PATH}"
 
-    frakti::log::status "install necessary tools"
-    frakti::hyper::preinstall
+  frakti::log::status "install necessary tools"
+  frakti::hyper::preinstall
 
-    frakti::log::status "build hyperd"
-    frakti::hyper::build_hyperd
+  frakti::log::status "build hyperd"
+  frakti::hyper::build_hyperd
 
-    frakti::log::status "build hyperstart"
-    frakti::hyper::build_hyperstart
-  )
+  frakti::log::status "build hyperstart"
+  frakti::hyper::build_hyperstart
 
   frakti::log::status "install hyperd and hyperstart"
   frakti::hyper::export_related_path
+  export GOPATH=${_saved_gopath}
 }
 
 frakti::hyper::build_hyperstart() {
@@ -70,7 +69,7 @@ frakti::hyper::build_hyperd() {
   ./configure
   make
 
-  HYPERD_BINARY_PATH="${hyperd_root}/hyperd"
+  HYPERD_BINARY_PATH="${hyperd_root}/cmd/hyperd/hyperd"
   if [ ! -f ${HYPERD_BINARY_PATH} ]; then
       return 1
   fi
@@ -83,7 +82,7 @@ frakti::hyper::preinstall() {
     return 0
   fi
   sudo apt-get update -qq
-  sudo apt-get install -y autoconf automake pkg-config libdevmapper-dev libsqlite3-dev libvirt-dev libvirt-bin -qq
+  sudo apt-get install -y wget autoconf automake pkg-config libdevmapper-dev libsqlite3-dev libvirt-dev libvirt-bin libaio1 libpixman-1-0 -qq
   wget https://s3-us-west-1.amazonaws.com/hypercontainer-download/qemu-hyper/qemu-hyper_2.4.1-1_amd64.deb && sudo dpkg -i --force-all qemu-hyper_2.4.1-1_amd64.deb
 }
 
@@ -93,7 +92,7 @@ frakti::hyper::export_related_path() {
   HYPER_INITRD_PATH="${GO_HYPERHQ_PATH}/hyperstart/build/hyper-initrd.img"
 
   # hyperd binary path
-  HYPERD_BINARY_PATH="${GO_HYPERHQ_PATH}/hyperd/hyperd"
+  HYPERD_BINARY_PATH="${GO_HYPERHQ_PATH}/hyperd/cmd/hyperd/hyperd"
 }
 
 frakti::hyper::cleanup() {
