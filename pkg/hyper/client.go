@@ -259,7 +259,10 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 	ctx, cancel := getContextWithTimeout(ctxTimeout)
 	defer cancel()
 
-	_, err = c.client.ContainerStop(ctx, &types.ContainerStopRequest{ContainerID: containerID, Timeout: timeout})
+	_, err = c.client.ContainerStop(ctx, &types.ContainerStopRequest{
+		ContainerID: containerID,
+		Timeout:     timeout,
+	})
 
 	return err
 }
@@ -282,23 +285,38 @@ func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 		return nil, err
 	}
 
-	// change `docker.io/library/imageName` to `imageName`
-	if split := strings.Split(image, "/"); len(split) == 3 &&
-		split[0] == defaultDomain &&
-		split[1] == officialRepoName {
-		image = split[2]
+	// kuberuntime relies on docker/distribution to parse image name to
+	// full image path and pass it to runtime.GetImageInfo():
+	// e.g.
+	// nginx -> docker.io/library/nginx
+	// alexellis/echo  -> docker.io/alexellis/echo
+	//
+	// But hyper only returns alexellis/echo in imageList, so we
+	// need to fix the inconsistency here before doing filter.
+	split := strings.Split(image, "/")
+	// 1. docker.io
+	if len(split) == 3 && split[0] == defaultDomain {
+		// 2. docker.io/library
+		if split[1] == officialRepoName {
+			image = split[2]
+		} else {
+			// 3. docker.io/xxx
+			image = split[1] + "/" + split[2]
+		}
+
 	}
 
+	// filter images
 	fullImageName := fmt.Sprintf("%s%s%s", image, repoSep, tag)
-	for _, image := range imageList.ImageList {
-		for _, i := range image.RepoDigests {
+	for _, hyperImage := range imageList.ImageList {
+		for _, i := range hyperImage.RepoDigests {
 			if i == fullImageName {
-				return image, nil
+				return hyperImage, nil
 			}
 		}
-		for _, i := range image.RepoTags {
+		for _, i := range hyperImage.RepoTags {
 			if i == fullImageName {
-				return image, nil
+				return hyperImage, nil
 			}
 		}
 	}
