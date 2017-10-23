@@ -347,7 +347,8 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 	state := toPodSandboxState(info.Status.Phase)
 	podIP := ""
 	if len(info.Status.PodIP) > 0 {
-		podIP = info.Status.PodIP[0]
+		// Need to do split here since newer hyperd (after 0.8.1) returns 10.244.1.195/24
+		podIP = strings.Split(info.Status.PodIP[0], "/")[0]
 	}
 
 	podName, podNamespace, podUID, attempt, err := parseSandboxName(info.PodName)
