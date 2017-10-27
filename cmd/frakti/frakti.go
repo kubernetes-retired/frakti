@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	fraktiVersion = "1.1"
+	fraktiVersion = "1.1.1"
 
 	// use port 22522 for dockershim streaming
 	privilegedStreamingServerPort = 22522
