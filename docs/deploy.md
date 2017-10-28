@@ -108,7 +108,6 @@ ExecStart=/usr/bin/frakti --v=3 \
           --logtostderr=false \
           --cgroup-driver=${cgroup_driver} \
           --listen=/var/run/frakti.sock \
-          --streaming-server-addr=%H \
           --hyper-endpoint=127.0.0.1:22318
 MountFlags=shared
 TasksMax=8192

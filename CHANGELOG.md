@@ -1,5 +1,10 @@
 <!-- TOC -->
-
+- [v1.1.1](#v111)
+    - [Features and updates](#features-and-updates)
+    - [External Dependency Version Information](#external-dependency-version-information)
+- [v1.1](#v11)
+    - [Features and updates](#features-and-updates)
+    - [External Dependency Version Information](#external-dependency-version-information)
 - [v1.0](#v10)
     - [Features and updates](#features-and-updates)
     - [External Dependency Version Information](#external-dependency-version-information)
@@ -21,28 +26,47 @@
 
 <!-- /TOC -->
 
-# v1.1
+# v1.1.1
 
 This release includes enhances and bug fixes. It has also passed all node e2e conformance tests.
 
 **Features and Updates**
 
-#192 Improves CNI plugin compatibility
-#196 #208 Adds general support for CNI plugins, e.g. flannel and calico plugin
-#219 #223 #226 Adds experimental support for unikernel
-#217 Fixes problem of weave plugin
-#199 #207 Adds cinder flexvolume plugin
-#188 Fixes CNI podName problem
-#189 Fixes CNI cleanup when sandbox runs failure
-#205 Increases memory limits for kube-dns
-#211 #212 #221 #224 #230 Adds unit tests for various packages
-
+- #256 Fix IP with mask in pod status by resouer
+- #255 Fix CI build failures caused by hyperd update by bergwolf
+- #254 Fix full docker image path inconsistency by resouer
+- #251 Annotate kube-dns to use Linux container to manage it by resouer
+- #246 Fix nil pointer when hostpath is invalid by resouer
 
 **External Dependency Version Information**
 
 Kubernetes v1.8
 Hyperd v1.0
 Docker v1.12-v17.03
+
+# v1.1
+
+This release includes enhances and bug fixes. It has also passed all node e2e conformance tests.
+
+**Features and Updates**
+
+- #192 Improves CNI plugin compatibility
+- #196 #208 Adds general support for CNI plugins, e.g. flannel and calico plugin
+- #219 #223 #226 Adds experimental support for unikernel
+- #217 Fixes problem of weave plugin
+- #199 #207 Adds cinder flexvolume plugin
+- #188 Fixes CNI podName problem
+- #189 Fixes CNI cleanup when sandbox runs failure
+- #205 Increases memory limits for kube-dns
+- #211 #212 #221 #224 #230 Adds unit tests for various packages
+- #237 Update frakti and its vendor to ensure compatibility with Kubernetes 1.8
+
+**External Dependency Version Information**
+
+Kubernetes v1.8
+Hyperd v1.0
+Docker v1.12-v17.03
+
 
 # v1.0
 
