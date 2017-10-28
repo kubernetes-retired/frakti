@@ -47,7 +47,7 @@ frakti::hyper::build_hyperstart() {
   ./configure
   make
 
-  HYPER_KERNEL_PATH="${hyperstart_root}/build/kernel"
+  HYPER_KERNEL_PATH="${hyperstart_root}/build/arch/x86_64/kernel"
   if [ ! -f ${HYPER_KERNEL_PATH} ]; then
       return 1
   fi
@@ -88,7 +88,7 @@ frakti::hyper::preinstall() {
 
 frakti::hyper::export_related_path() {
   # hyperstart kernel and image path
-  HYPER_KERNEL_PATH="${GO_HYPERHQ_PATH}/hyperstart/build/kernel"
+  HYPER_KERNEL_PATH="${GO_HYPERHQ_PATH}/hyperstart/build/arch/x86_64/kernel"
   HYPER_INITRD_PATH="${GO_HYPERHQ_PATH}/hyperstart/build/hyper-initrd.img"
 
   # hyperd binary path
