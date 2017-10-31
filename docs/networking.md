@@ -67,7 +67,6 @@ rm -f /etc/cni/net.d/*
 Then setup flannel plugin by running:
 
 ```sh
-kubectl create -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel-rbac.yml
 kubectl create -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml
 ```
 

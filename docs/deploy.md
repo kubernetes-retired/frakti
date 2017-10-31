@@ -153,10 +153,11 @@ setenforce 0
 yum install -y kubernetes-cni
 ```
 
-CNI networks should also be configured, note that
+CNI networks should also be configured:
 
-- frakti only supports **bridge** network plugin yet
-- **subnets should be different on different nodes**, .e.g. `10.244.1.0/24` for the master and `10.244.2.0/24` for the first node
+- Skip this section if you want to use existing CNI plugins like Fannel, Weave, Calico etc.
+- Otherwise, you can use **bridge** network plugin, it's the simplest way.
+    - Subnets should be different on different nodes. e.g. `10.244.1.0/24` for the master and `10.244.2.0/24` for the first node
 
 ```sh
 mkdir -p /etc/cni/net.d
@@ -218,6 +219,14 @@ systemctl daemon-reload
 ```sh
 kubeadm init --pod-network-cidr 10.244.0.0/16 --kubernetes-version stable
 ```
+
+Configure CNI network plugin (skip this step if you already configured simple bridge plugin)
+
+```sh
+kubectl create -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml
+```
+
+For other plugins, please check [networking doc](./networking.md).
 
 We prefer to use Linux container runtime to handle kube-dns since the default resource limit of hypervisor runtime is not enough.
 So let's annotate the Pod and let Kubernetes do the rolling update for you.
