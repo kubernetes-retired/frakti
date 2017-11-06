@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-FRAKTI_VERSION="v0.2"
+FRAKTI_VERSION="v1.1.1"
 CLUSTER_CIDR="10.244.0.0/16"
 MASTER_CIDR="10.244.1.0/24"
 
@@ -59,6 +59,9 @@ install-docker-centos() {
 }
 
 install-frakti() {
+    if [ -f "/usr/bin/frakti" ]; then
+      rm -f /usr/bin/frakti
+    fi
     curl -sSL https://github.com/kubernetes/frakti/releases/download/${FRAKTI_VERSION}/frakti -o /usr/bin/frakti
     chmod +x /usr/bin/frakti
     cgroup_driver=$(docker info | awk '/Cgroup Driver/{print $3}')
