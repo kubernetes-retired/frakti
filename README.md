@@ -4,13 +4,13 @@
 
 ## The hypervisor-based container runtime for Kubernetes
 
-Frakti lets Kubernetes run pods and containers directly inside hypervisors via [HyperContainer](http://hypercontainer.io/). It is light weighted and portable, but can provide much stronger isolation with independent kernel than linux-namespace-based container runtimes.
+Frakti lets Kubernetes run pods and containers directly inside hypervisors via [runV](https://github.com/hyperhq/runv). It is light weighted and portable, but can provide much stronger isolation with independent kernel than linux-namespace-based container runtimes.
 
 <p align="center">
-  <img src="docs/images/frakti.png" width="600">
+  <img src="docs/images/frakti.png" width="1000">
 </p>
 
-Frakti serves as a kubelet container runtime API server. Its endpoint should be configured while starting kubelet.
+Frakti serves as a CRI container runtime server. Its endpoint should be configured while starting kubelet. In the deployment, [hyperd](https://github.com/hyperhq/hyperd) is also required as the API wrapper of runV.
 
 ## QuickStart
 
@@ -124,7 +124,8 @@ Further information could be found at:
 - [Deploying](docs/deploy.md)
 - [End-to-end testing](docs/e2e-tests.md)
 - [Kubelet container runtime API](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node/runtime-client-server.md)
-- [HyperContainer](http://hypercontainer.io/)
+- [runV](https://github.com/hyperhq/runv)
+- [hyperd](https://github.com/hyperhq/hyperd)
 - [The blog on k8s.io about Hypernetes](http://blog.kubernetes.io/2016/05/hypernetes-security-and-multi-tenancy-in-kubernetes.html)
 
 ## The differences between `frakti` with other Linux container runtimes
@@ -137,7 +138,7 @@ Further information could be found at:
   - frakti is best to run Pod with `resources.limits` being set (i.e. all Guaranteed and most Burstable Pods), otherwise, frakti will set default resource limit for Pod.
   - This behavior is configurable by `--defaultCPUNum` and `--defaultMemoryMB`  of frakti
 - Mixed Runtimes Mode.
-  - frakti support mixed runtimes on the same Node (HyperContainer and Docker). We recommend user to run `BestEffort` Pods, daemon Pods in Docker runtime by adding `runtime.frakti.alpha.kubernetes.io/OSContainer` annotation to them.
+  - frakti support mixed runtimes on the same Node (runV and Docker). We recommend user to run `BestEffort` Pods, daemon Pods in Docker runtime by adding `runtime.frakti.alpha.kubernetes.io/OSContainer` annotation to them.
   - Additionally, special cases like privileged Pods, host network Pods etc will be automatically run in Docker runtime.
 - Persistent Volume
   - All k8s PVs are supported in frakti.
