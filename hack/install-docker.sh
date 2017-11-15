@@ -18,10 +18,26 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Install docker
-sudo sh -c 'echo "deb https://apt.dockerproject.org/repo ubuntu-$(lsb_release -cs) main" > /etc/apt/sources.list.d/docker.list'
-curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -
-sudo apt-key fingerprint 58118E89F3A912897C070ADBF76221572C52609D
+# Install docker 17.03.2
 sudo apt-get update
-sudo apt-get -y install "docker-engine=1.13.1-0~ubuntu-$(lsb_release -cs)"
+sudo apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
 
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo apt-key fingerprint 0EBFCD88
+sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+sudo apt-get update
+
+dockerVersion=$(apt-cache madison docker-ce | grep 17.03.2 | awk '{print $3}')
+sudo apt-get install -y docker-ce=${dockerVersion}
+
+sudo docker --version
+
+# Fix docker iptables bug in 17.03
+sudo iptables -P FORWARD ACCEPT
