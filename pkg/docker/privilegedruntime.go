@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -31,13 +30,15 @@ import (
 	kubeletscheme "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/scheme"
 	kubeletconfigv1alpha1 "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/v1alpha1"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim"
-	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
 const (
+	// NOTE(harry): all consts defined here mean user configure of kubelet like NonMasqueradeCIDR, will be ignored.
+	// This can be fixed when dockershim become independent, then we can delete all these default values.
 	networkPluginName = "cni"
 	networkPluginMTU  = 1460
+	nonMasqueradeCIDR = "10.0.0.0/8"
 )
 
 type PrivilegedRuntime struct {
@@ -65,16 +66,18 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	}
 
 	crOption := options.NewContainerRuntimeOptions()
-	dockerClient := libdocker.ConnectToDockerOrDie(
-		// privilegedRuntimeEndpoint defaults to kubeCfg.DockerEndpoint
-		privilegedRuntimeEndpoint,
-		kubeCfg.RuntimeRequestTimeout.Duration,
-		crOption.ImagePullProgressDeadline.Duration,
-	)
-	// TODO(resouer) is it fine to reuse the CNI plug-in?
+
+	dockerClientConfig := &dockershim.ClientConfig{
+		DockerEndpoint:            privilegedRuntimeEndpoint,
+		RuntimeRequestTimeout:     kubeCfg.RuntimeRequestTimeout.Duration,
+		ImagePullProgressDeadline: crOption.ImagePullProgressDeadline.Duration,
+	}
+
+	// NOTE(harry): pluginSettings should be arguments for dockershim, not part of kubelet.
+	// But standalone dockershim is not ready yet, so we use default values here.
 	pluginSettings := dockershim.NetworkPluginSettings{
 		HairpinMode:       kubeletconfiginternal.HairpinMode(kubeCfg.HairpinMode),
-		NonMasqueradeCIDR: kubeCfg.NonMasqueradeCIDR,
+		NonMasqueradeCIDR: nonMasqueradeCIDR,
 		PluginName:        networkPluginName,
 		PluginConfDir:     cniNetDir,
 		PluginBinDir:      cniPluginDir,
@@ -82,26 +85,18 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	}
 	var nl *kubelet.NoOpLegacyHost
 	pluginSettings.LegacyRuntimeHost = nl
-	// set cgroup driver to dockershim
-	dockerInfo, err := dockerClient.Info()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get info from docker: %v", err)
-	}
-	if len(dockerInfo.CgroupDriver) == 0 {
-		glog.Warningf("No cgroup driver is set in Docker, use frakti configuration: %q", cgroupDriver)
-	} else if dockerInfo.CgroupDriver != cgroupDriver {
-		return nil, fmt.Errorf("misconfiguration: frakti cgroup driver: %q is different from docker cgroup driver: %q", dockerInfo.CgroupDriver, cgroupDriver)
-	}
+
 	ds, err := dockershim.NewDockerService(
-		dockerClient,
+		dockerClientConfig,
 		crOption.PodSandboxImage,
 		streamingConfig,
 		&pluginSettings,
-		kubeCfg.RuntimeCgroups,
+		// RuntimeCgroups is optional, so we will not set it here.
+		"",
+		// If dockershim detected this cgroupDriver is different with dockerd, it will fail.
 		cgroupDriver,
-		crOption.DockerExecHandlerName,
 		privilegedRuntimeRootDir,
-		crOption.DockerDisableSharedPID,
+		true,
 	)
 	if err != nil {
 		return nil, err
