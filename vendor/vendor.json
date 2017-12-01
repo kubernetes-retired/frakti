@@ -1553,6 +1553,12 @@
 			"revisionTime": "2017-11-15T14:41:05Z"
 		},
 		{
+			"checksumSHA1": "gILp4IL+xwXLH6tJtRLrnZ56F24=",
+			"path": "github.com/mitchellh/mapstructure",
+			"revision": "06020f85339e21b2478f756a78e295255ffa4d6a",
+			"revisionTime": "2017-10-17T17:18:08Z"
+		},
+		{
 			"checksumSHA1": "leNRvaR91bI8aXqSMA6uZuKnfuI=",
 			"origin": "k8s.io/kubernetes/vendor/github.com/mrunalp/fileutils",
 			"path": "github.com/mrunalp/fileutils",
@@ -1973,11 +1979,103 @@
 			"revisionTime": "2017-11-15T14:41:05Z"
 		},
 		{
+			"checksumSHA1": "TgJKqqBm+zrGHbSJYLhQhvUhWWI=",
+			"path": "github.com/rackspace/gophercloud/openstack",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"path": "github.com/rackspace/gophercloud/openstack/blockstorage/v2/extensions/volumeaction",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "HP4BztwZMReAMrD18fGGSwielXU=",
+			"path": "github.com/rackspace/gophercloud/openstack/blockstorage/v2/extensions/volumeactions",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "YDsUjMTIX7JIquqMdB2rpNvOYEw=",
+			"path": "github.com/rackspace/gophercloud/openstack/blockstorage/v2/volumes",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "kBNUmTmGZgMc7RA8b/MfF8mNLrw=",
+			"path": "github.com/rackspace/gophercloud/openstack/identity/v2/tenants",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "QWhBGvvt47Wpw4qf3bt/rVgXdyw=",
+			"path": "github.com/rackspace/gophercloud/openstack/identity/v2/tokens",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "gDlQo40YDQFz3Cme/wNdsFAq568=",
+			"path": "github.com/rackspace/gophercloud/openstack/identity/v3/tokens",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "e4ussrqujJHizWbdBaLjIpWYmgY=",
+			"path": "github.com/rackspace/gophercloud/openstack/utils",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "YZ3h9gY2+9Cc11grugfLr9JASyU=",
+			"path": "github.com/rackspace/gophercloud/pagination",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "g+/FqpymOvSMVXRozZsiZixb070=",
+			"path": "github.com/rackspace/gophercloud/testhelper",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
+			"checksumSHA1": "fXtvTbQBML8QLu/qpD9sAt53J00=",
+			"path": "github.com/rackspace/gophercloud/testhelper/client",
+			"revision": "e00690e87603abe613e9f02c816c7c4bef82e063",
+			"revisionTime": "2016-10-13T23:24:34Z"
+		},
+		{
 			"checksumSHA1": "eKxih8cMxxVDidsMmAEEgIaMi0k=",
 			"origin": "k8s.io/kubernetes/vendor/github.com/renstrom/dedent",
 			"path": "github.com/renstrom/dedent",
 			"revision": "1ced91f2011b6d20a9572cf782762a1ca5da05c0",
 			"revisionTime": "2017-11-15T14:41:05Z"
+		},
+		{
+			"checksumSHA1": "TXpUFvKVEIHH5//3sbRVv6wgSUU=",
+			"path": "github.com/scalingdata/gcfg",
+			"revision": "37aabad69cfd3d20b8390d902a8b10e245c615ff",
+			"revisionTime": "2014-07-29T18:38:56Z"
+		},
+		{
+			"path": "github.com/scalingdata/gcfg/.../",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "LV3NB8wXu26KZwc6pAStcxE+ESQ=",
+			"path": "github.com/scalingdata/gcfg/scanner",
+			"revision": "37aabad69cfd3d20b8390d902a8b10e245c615ff",
+			"revisionTime": "2014-07-29T18:38:56Z"
+		},
+		{
+			"checksumSHA1": "ExoT8iEbM4K8c4b3mQglfuPkxzw=",
+			"path": "github.com/scalingdata/gcfg/token",
+			"revision": "37aabad69cfd3d20b8390d902a8b10e245c615ff",
+			"revisionTime": "2014-07-29T18:38:56Z"
+		},
+		{
+			"checksumSHA1": "hmKm+qy874Gta477MI+wlzxG2JM=",
+			"path": "github.com/scalingdata/gcfg/types",
+			"revision": "37aabad69cfd3d20b8390d902a8b10e245c615ff",
+			"revisionTime": "2014-07-29T18:38:56Z"
 		},
 		{
 			"checksumSHA1": "R0MDzC5btSSAFfUmtCgckOzIdSI=",
