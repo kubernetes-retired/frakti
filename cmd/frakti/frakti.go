@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	fraktiVersion = "1.1.1"
+	fraktiVersion = "1.9"
 
 	// use port 22522 for dockershim streaming
 	privilegedStreamingServerPort = 22522
@@ -48,8 +48,8 @@ var (
 		"The endpoint for connecting hyperd, e.g. 127.0.0.1:22318")
 	streamingServerPort = pflag.String("streaming-server-port", "22521",
 		"The port for the streaming server to serve on, e.g. 22521")
-	streamingServerAddress = pflag.String("streaming-server-addr", "0.0.0.0",
-		"The IP address for the streaming server to serve on, e.g. 0.0.0.0")
+	streamingServerAddress = pflag.String("streaming-server-addr", "",
+		"The IP address for the streaming server to serve on, should not be 0.0.0.0 or 127.0.0.1")
 	cniNetDir = pflag.String("cni-net-dir", "/etc/cni/net.d",
 		"The directory for putting cni configuration file")
 	cniPluginDir = pflag.String("cni-plugin-dir", "/opt/cni/bin",

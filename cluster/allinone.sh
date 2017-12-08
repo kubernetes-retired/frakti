@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-FRAKTI_VERSION="v1.1.1"
+FRAKTI_VERSION="v1.9"
 CLUSTER_CIDR="10.244.0.0/16"
 MASTER_CIDR="10.244.1.0/24"
 

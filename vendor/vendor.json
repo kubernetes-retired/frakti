@@ -1578,6 +1578,48 @@
 			"revisionTime": "2017-03-18T22:17:15Z"
 		},
 		{
+			"checksumSHA1": "W9PsSS4FR7HTw399KW1wXkYXHII=",
+			"path": "github.com/onsi/ginkgo/ginkgo",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
+			"checksumSHA1": "RX2QA4mqBzsogy4OWOCi9mUfAGU=",
+			"path": "github.com/onsi/ginkgo/ginkgo/convert",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
+			"checksumSHA1": "jvjomLV3JcWQ1qa1ZfmvB4/62YI=",
+			"path": "github.com/onsi/ginkgo/ginkgo/interrupthandler",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
+			"checksumSHA1": "brZ63GMMr79P/RwClxFRBKMtICg=",
+			"path": "github.com/onsi/ginkgo/ginkgo/nodot",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
+			"checksumSHA1": "qSXx1svgCAAqk+ICAWL1AXdSJmA=",
+			"path": "github.com/onsi/ginkgo/ginkgo/testrunner",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
+			"checksumSHA1": "x2Fa0rbgpXQaVc6f10KTRchiF7E=",
+			"path": "github.com/onsi/ginkgo/ginkgo/testsuite",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
+			"checksumSHA1": "yT4efdDV3bfosM49kBvQg3PjcMA=",
+			"path": "github.com/onsi/ginkgo/ginkgo/watch",
+			"revision": "cb73bd0f14eb8d91a9801647edbebe6ddb5b4cb4",
+			"revisionTime": "2017-12-07T17:25:02Z"
+		},
+		{
 			"checksumSHA1": "T1cZh3UWr4Hnx6fQYp+7KDNvxG4=",
 			"path": "github.com/onsi/ginkgo/internal/codelocation",
 			"revision": "67b9df7f55fe1165fd9ad49aca7754cce01a42b8",
