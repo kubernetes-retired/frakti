@@ -109,7 +109,6 @@ ExecStart=/usr/bin/frakti --v=3 \
           --cgroup-driver=${cgroup_driver} \
           --listen=/var/run/frakti.sock \
           --hyper-endpoint=127.0.0.1:22318
-          --streaming-server-addr=${hostname -i}
 MountFlags=shared
 TasksMax=8192
 LimitNOFILE=1048576
@@ -122,8 +121,6 @@ Restart=on-abnormal
 WantedBy=multi-user.target
 EOF
 ```
-
-Please note the `--streaming-server-addr` need to be set to the node address which  kube-apiserver is able to reach. e.g. the default IP addr of node machine. Do not use `0.0.0.0` or `127.0.0.1` which will confuse the apiserver.
 
 #### Install CNI
 
