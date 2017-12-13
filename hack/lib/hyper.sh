@@ -66,7 +66,7 @@ frakti::hyper::build_hyperd() {
   cd ${hyperd_root}
   frakti::log::info "build hyperd"
   ./autogen.sh
-  ./configure --without-xen
+  ./configure
   make
 
   HYPERD_BINARY_PATH="${hyperd_root}/cmd/hyperd/hyperd"
