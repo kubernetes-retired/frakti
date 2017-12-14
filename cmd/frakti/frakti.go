@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/golang/glog"
@@ -30,14 +29,15 @@ import (
 	unikernel "k8s.io/frakti/pkg/unikernel/service"
 	"k8s.io/frakti/pkg/util/flags"
 	"k8s.io/frakti/pkg/util/logs"
+	"k8s.io/frakti/pkg/util/network"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
 const (
-	fraktiVersion = "1.1.1"
+	fraktiVersion = "1.9"
 
 	// use port 22522 for dockershim streaming
-	privilegedStreamingServerPort = 22522
+	privilegedStreamingServerPort = "22522"
 )
 
 var (
@@ -48,8 +48,8 @@ var (
 		"The endpoint for connecting hyperd, e.g. 127.0.0.1:22318")
 	streamingServerPort = pflag.String("streaming-server-port", "22521",
 		"The port for the streaming server to serve on, e.g. 22521")
-	streamingServerAddress = pflag.String("streaming-server-addr", "0.0.0.0",
-		"The IP address for the streaming server to serve on, e.g. 0.0.0.0")
+	streamingServerAddress = pflag.String("streaming-server-addr", "",
+		"The IP address for the streaming server to serve on, should not be 0.0.0.0 or 127.0.0.1")
 	cniNetDir = pflag.String("cni-net-dir", "/etc/cni/net.d",
 		"The directory for putting cni configuration file")
 	cniPluginDir = pflag.String("cni-plugin-dir", "/opt/cni/bin",
@@ -71,35 +71,31 @@ func main() {
 	defer logs.FlushLogs()
 
 	if *version {
-		glog.Infof("frakti version: %s\n", fraktiVersion)
-		os.Exit(0)
+		glog.Fatalf("frakti version: %s\n", fraktiVersion)
 	}
 
 	if *cgroupDriver != "cgroupfs" && *cgroupDriver != "systemd" {
-		glog.Error("cgroup-driver flag should only be set as 'cgroupfs' or 'systemd'")
-		os.Exit(1)
+		glog.Fatalf("cgroup-driver flag should only be set as 'cgroupfs' or 'systemd'")
 	}
 
 	// 1. Initialize hyper runtime and streaming server
-	streamingConfig := getStreamingConfig()
+	streamingConfig := getStreamingConfig(*streamingServerPort)
 	hyperRuntime, streamingServer, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig, *cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB)
 	if err != nil {
-		glog.Errorf("Initialize hyper runtime failed: %v", err)
-		os.Exit(1)
+		glog.Fatalf("Initialize hyper runtime failed: %v", err)
 	}
 
 	// 2. Initialize privileged runtime and start its own streaming server
 	privilegedRuntime, err := docker.NewPrivilegedRuntimeService(
 		*privilegedRuntimeEndpoint,
-		getprivilegedStreamingConfig(),
+		getStreamingConfig(privilegedStreamingServerPort),
 		*cniNetDir,
 		*cniPluginDir,
 		*cgroupDriver,
 		filepath.Join(*rootDir, "privileged"),
 	)
 	if err != nil && *enablePrivilegedRuntime {
-		glog.Errorf("Initialize privileged runtime failed: %v", err)
-		os.Exit(1)
+		glog.Fatalf("Initialize privileged runtime failed: %v", err)
 	}
 
 	// 3. Initialize unikernel runtime if enabled
@@ -107,16 +103,14 @@ func main() {
 	if *enableUnikernelRuntime {
 		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB, *enableUnikernelLog)
 		if err != nil {
-			glog.Errorf("Initialize unikernel runtime failed: %v", err)
-			os.Exit(1)
+			glog.Fatalf("Initialize unikernel runtime failed: %v", err)
 		}
 	}
 
 	// 4. Initialize frakti manager with two runtimes above
 	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer, privilegedRuntime, privilegedRuntime, unikernelRuntime, unikernelRuntime)
 	if err != nil {
-		glog.Errorf("Initialize frakti server failed: %v", err)
-		os.Exit(1)
+		glog.Fatalf("Initialize frakti server failed: %v", err)
 	}
 
 	fmt.Println(server.Serve(*listen))
@@ -132,16 +126,21 @@ func generateStreamingConfigInternal() *streaming.Config {
 	}
 }
 
-// Gets the streaming server configuration to use with in-process CRI shims.
-func getStreamingConfig() *streaming.Config {
+// getStreamingConfig returns the streaming server configuration to use with in-process CRI shims.
+func getStreamingConfig(port string) *streaming.Config {
 	config := generateStreamingConfigInternal()
-	config.Addr = fmt.Sprintf("%s:%s", *streamingServerAddress, *streamingServerPort)
-	return config
-}
-
-// Gets the streaming server configuration to use with in-process privileged shims.
-func getprivilegedStreamingConfig() *streaming.Config {
-	config := generateStreamingConfigInternal()
-	config.Addr = fmt.Sprintf("%s:%d", *streamingServerAddress, privilegedStreamingServerPort)
+	var (
+		addr string
+		err  error
+	)
+	if len(*streamingServerAddress) == 0 {
+		addr, err = network.GetLocalIPAddress()
+		if err != nil {
+			glog.Fatalf("failed to get local IP address of host machine: %v", err)
+		}
+	} else {
+		addr = *streamingServerAddress
+	}
+	config.Addr = fmt.Sprintf("%s:%s", addr, port)
 	return config
 }

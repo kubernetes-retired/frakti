@@ -143,6 +143,7 @@ func TestRuntimeExec(t *testing.T) {
 	//Test Runtime Exec
 	rawContainerID := fmt.Sprintf("%s%s%d", containerId, "*", 0)
 	execRequest := &kubeapi.ExecRequest{
+		Stdout:      true,
 		ContainerId: rawContainerID,
 	}
 	execResponse, err := r.Exec(execRequest)
@@ -156,6 +157,7 @@ func TestRuntimeExec(t *testing.T) {
 	rawContainerID = fmt.Sprintf("%s%s%d", containerId, "*", 1)
 	attachRequest := &kubeapi.AttachRequest{
 		ContainerId: rawContainerID,
+		Stdout:      true,
 	}
 	attachResponse, err := r.Attach(attachRequest)
 	assert.NoError(t, err)

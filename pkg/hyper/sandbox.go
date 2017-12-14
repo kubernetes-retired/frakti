@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/containernetworking/cni/pkg/ns"
+	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/golang/glog"
 	"golang.org/x/sys/unix"
 

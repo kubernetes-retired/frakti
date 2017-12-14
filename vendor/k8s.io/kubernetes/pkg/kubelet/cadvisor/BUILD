@@ -24,8 +24,9 @@ go_library(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/kubelet/cadvisor",
     deps = [
-        "//pkg/api/v1/helper:go_default_library",
+        "//pkg/apis/core/v1/helper:go_default_library",
         "//pkg/features:go_default_library",
         "//vendor/github.com/google/cadvisor/events:go_default_library",
         "//vendor/github.com/google/cadvisor/info/v1:go_default_library",
@@ -46,6 +47,9 @@ go_library(
             "//vendor/github.com/google/cadvisor/utils/sysfs:go_default_library",
             "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
         ],
+        "@io_bazel_rules_go//go/platform:windows_amd64": [
+            "//pkg/kubelet/winstats:go_default_library",
+        ],
         "//conditions:default": [],
     }),
 )
@@ -58,6 +62,7 @@ go_test(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/kubelet/cadvisor",
     library = ":go_default_library",
     deps = select({
         "@io_bazel_rules_go//go/platform:linux_amd64": [

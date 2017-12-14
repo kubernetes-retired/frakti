@@ -10,9 +10,10 @@ go_library(
         "policy_none.go",
         "policy_static.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/kubelet/cm/cpumanager",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/api/v1/helper/qos:go_default_library",
+        "//pkg/apis/core/v1/helper/qos:go_default_library",
         "//pkg/kubelet/apis/cri/v1alpha1/runtime:go_default_library",
         "//pkg/kubelet/cm/cpumanager/state:go_default_library",
         "//pkg/kubelet/cm/cpumanager/topology:go_default_library",
@@ -35,6 +36,7 @@ go_test(
         "policy_static_test.go",
         "policy_test.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/kubelet/cm/cpumanager",
     library = ":go_default_library",
     deps = [
         "//pkg/kubelet/apis/cri/v1alpha1/runtime:go_default_library",

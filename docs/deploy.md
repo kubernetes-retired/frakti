@@ -93,7 +93,7 @@ systemctl start docker
 #### Install frakti
 
 ```sh
-curl -sSL https://github.com/kubernetes/frakti/releases/download/v1.1.1/frakti -o /usr/bin/frakti
+curl -sSL https://github.com/kubernetes/frakti/releases/download/v1.9/frakti -o /usr/bin/frakti
 chmod +x /usr/bin/frakti
 cgroup_driver=$(docker info | awk '/Cgroup Driver/{print $3}')
 cat <<EOF > /lib/systemd/system/frakti.service

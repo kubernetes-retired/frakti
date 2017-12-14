@@ -5,13 +5,17 @@ dist: xenial
 services:
   - docker
 
+env:  
+    global:
+        - DOCKER_VERSION=17.03.2~ce-0~ubuntu-xenial
+
 go:
   - 1.9.x
 
 go_import_path: k8s.io/frakti
 
-before_install:
-  - hack/install-docker.sh
+script:  
+    - docker version
 
 install:
   - docker run -v /usr/local/bin:/target jpetazzo/nsenter
