@@ -142,5 +142,7 @@ func getStreamingConfig(port string) *streaming.Config {
 		addr = *streamingServerAddress
 	}
 	config.Addr = fmt.Sprintf("%s:%s", addr, port)
+
+	glog.V(3).Infof("Streaming server is listening on: %v", config.Addr)
 	return config
 }
