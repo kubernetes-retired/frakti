@@ -23,7 +23,9 @@ LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/frakti/ | grep k8s.io 
 .PHONY: frakti
 frakti: $(shell $(LOCALKUBEFILES))
 	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/frakti ./cmd/frakti
-	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/flexvolume_driver ./cmd/flexvolume_driver
+	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/rbd ./cmd/flexvolume-cinder-rbd/cinder_rbd.go
+	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/pd ./cmd/flexvolume-gce-pd/gce_pd.go
+
 
 .PHONY: docker
 docker:

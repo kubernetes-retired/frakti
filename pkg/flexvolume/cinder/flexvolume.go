@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package flexvolume
+package cinder
 
 import (
 	"encoding/json"
@@ -29,6 +29,7 @@ import (
 
 type FlexVolumeDriver struct {
 	uuid string
+	name string
 
 	volId        string
 	fsType       string
@@ -41,9 +42,10 @@ type FlexVolumeDriver struct {
 }
 
 // NewFlexVolumeDriver returns a flex volume driver
-func NewFlexVolumeDriver(uuid string) *FlexVolumeDriver {
+func NewFlexVolumeDriver(uuid string, name string) *FlexVolumeDriver {
 	return &FlexVolumeDriver{
 		uuid: uuid,
+		name: name,
 	}
 }
 
