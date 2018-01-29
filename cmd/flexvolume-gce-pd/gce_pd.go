@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package main
 import (
 	"os"
 
-	"k8s.io/frakti/pkg/flexvolume"
+	"k8s.io/frakti/pkg/flexvolume/gcepd"
 	"k8s.io/frakti/pkg/util/uuid"
 )
 
 func main() {
-	driver := flexvolume.NewFlexVolumeDriver(uuid.NewUUID())
+	driver := gcepd.NewFlexVolumeDriver(uuid.NewUUID(), "gcepd")
 	os.Stdout.WriteString(driver.Run(os.Args[1:]))
 }
