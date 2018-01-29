@@ -14,24 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package knownflags
+package main
 
-const (
-	VolIdKey  = "volumeID"
-	FsTypeKey = "fsType"
+import (
+	"os"
 
-	HyperFlexvolumeDataFile = "hyper-flexvolume.json"
-
-	// Cinder flexvolume
-	CinderConfigKey  = "cinderConfig"
-	CinderConfigFile = "/etc/kubernetes/cinder.conf"
-
-	// GCE PD flexvolume
-	SizeKey      = "size"
-	ZoneKey      = "zone"
-	ProjectKey   = "project"
-	DivcePathKey = "devicePath"
-
-	// Build-in fsType key of flexvolume
-	SystemFsTypeKey = "kubernetes.io/fsType"
+	"k8s.io/frakti/pkg/flexvolume/cinder"
+	"k8s.io/frakti/pkg/util/uuid"
 )
+
+func main() {
+	driver := cinder.NewFlexVolumeDriver(uuid.NewUUID(), "cinder")
+	os.Stdout.WriteString(driver.Run(os.Args[1:]))
+}
