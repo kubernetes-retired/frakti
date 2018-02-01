@@ -278,8 +278,9 @@ func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 		repoSep = "@"
 	}
 
-	// TODO: use filter to get the image.
-	req := types.ImageListRequest{}
+	req := types.ImageListRequest{
+		Filter: strings.Join([]string{image, tag}, repoSep),
+	}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
 		return nil, err
