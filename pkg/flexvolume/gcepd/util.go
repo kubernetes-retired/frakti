@@ -18,7 +18,9 @@ package gcepd
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 
@@ -26,8 +28,14 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v0.beta"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	utilnode "k8s.io/frakti/pkg/util/node"
 	"k8s.io/utils/exec"
+)
+
+const (
+	diskPollInterval = 100 * time.Millisecond
+	diskCheckTimeout = 5 * time.Second
 )
 
 func attachDisk(project string, zone string, volId string) error {
@@ -57,6 +65,11 @@ func attachDisk(project string, zone string, volId string) error {
 		return err
 	}
 
+	// Check if device appears on host.
+	if err := waitForDiskAttach(volId); err != nil {
+		return fmt.Errorf("failed to wait for disk appear on host: %v", err)
+	}
+
 	// TODO(harry): Check status of resp?
 	glog.V(5).Infof("[Attach Device] GCE PD: %s is attached to node: %s", volId, nodeName)
 
@@ -83,9 +96,34 @@ func detachDisk(project string, zone string, volId string) error {
 		return err
 	}
 
+	// Check if device appears on host.
+	if err := waitForDiskDetach(volId); err != nil {
+		return fmt.Errorf("failed to wait for disk disappear on host: %v", err)
+	}
+
 	glog.V(5).Infof("[Detach Device] GCE PD device: %s is detached from node: %s", volId, nodeName)
 
 	return nil
+}
+
+func waitForDiskAttach(volId string) error {
+	devicePath := getDevPathByVolID(volId)
+	return wait.Poll(diskPollInterval, diskCheckTimeout, func() (bool, error) {
+		if _, err := os.Stat(devicePath); err == nil {
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
+func waitForDiskDetach(volId string) error {
+	devicePath := getDevPathByVolID(volId)
+	return wait.Poll(diskPollInterval, diskCheckTimeout, func() (bool, error) {
+		if _, err := os.Stat(devicePath); os.IsNotExist(err) {
+			return true, nil
+		}
+		return false, nil
+	})
 }
 
 // getDevPathByVolID returns devicePath on VM for given GCE PD volume ID.
@@ -93,8 +131,8 @@ func getDevPathByVolID(volId string) string {
 	return "/dev/disk/by-id/google-" + volId
 }
 
-// fomratDisk check the device status and format it if needed.
-func fomratDisk(volId, fstype string) error {
+// formatDisk check the device status and format it if needed.
+func formatDisk(volId, fstype string) error {
 	source := getDevPathByVolID(volId)
 
 	existingFormat, err := getDiskFormat(source)
@@ -138,7 +176,7 @@ func buildDiskURL(project, zone, volID string) string {
 	)
 }
 
-// GetDiskFormat uses 'lsblk' to see if the given disk is unformated
+// getDiskFormat uses 'lsblk' to return the format of given disk.
 func getDiskFormat(disk string) (string, error) {
 	args := []string{"-n", "-o", "FSTYPE", disk}
 	glog.V(4).Infof("Attempting to determine if disk %q is formatted using lsblk with args: (%v)", disk, args)

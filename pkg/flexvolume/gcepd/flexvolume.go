@@ -124,7 +124,7 @@ func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string
 	}
 
 	// Step 2: Format the device.
-	if err := fomratDisk(d.volId, d.fsType); err != nil {
+	if err := formatDisk(d.volId, d.fsType); err != nil {
 		detachDiskLogError(d)
 		return nil, err
 	}
