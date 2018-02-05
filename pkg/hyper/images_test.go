@@ -57,11 +57,11 @@ func TestListImage(t *testing.T) {
 		}
 		id, err := r.PullImage(imageSpec, nil)
 		assert.NoError(t, err)
-		repoTages := []string{}
-		repoTages = append(repoTages, imageFullName[i])
+		repoTags := []string{}
+		repoTags = append(repoTags, imageFullName[i])
 		image := kubeapi.Image{
 			Id:          id,
-			RepoTags:    repoTages,
+			RepoTags:    repoTags,
 			RepoDigests: nil,
 			Size_:       0,
 		}
@@ -103,11 +103,11 @@ func TestImageStatus(t *testing.T) {
 		//Get the image's status
 		image, err := r.ImageStatus(imageSpec)
 		assert.NoError(t, err)
-		repoTages := []string{}
-		repoTages = append(repoTages, imageFullName[i])
+		repoTags := []string{}
+		repoTags = append(repoTags, imageFullName[i])
 		expected := &kubeapi.Image{
 			Id:          id,
-			RepoTags:    repoTages,
+			RepoTags:    repoTags,
 			RepoDigests: nil,
 			Size_:       0,
 		}
