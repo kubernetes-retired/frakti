@@ -147,7 +147,7 @@ Further information could be found at:
   - frakti is fully based on CNI (bridge mode only for now), so there's no big difference here.
   - Network plug-ins like `Flannel` & `Calico` can work out-of-box with `frakti` based Kubernetes.
 
-Besides the lists above, all behaviors of frakti are 100% the same with other Liunx container runtimes like Docker, please enjoy it!
+Besides the lists above, all behaviors of frakti are 100% the same with other Linux container runtimes like Docker, please enjoy it!
 
 ## License
 
