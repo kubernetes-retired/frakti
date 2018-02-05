@@ -66,7 +66,7 @@ func generateMacAddress() (net.HardwareAddr, error) {
 	_, err := rand.Read(bytes)
 
 	if err != nil {
-		glog.Errorf("get random number faild")
+		glog.Errorf("get random number failed")
 		return nil, err
 	}
 
