@@ -64,7 +64,7 @@ type StdcopyExtractor struct {
 
 // NewExtractor instantiates a new StreamExtractor.
 // When tty is enabled, return a RawExtractor which only extract raw
-// data because tty is a singal stream. When tty is unabled, return a
+// data because tty is a signal stream. When tty is unabled, return a
 // StdcopyExtractor.
 func NewExtractor(tty bool) StreamExtractor {
 	if tty {

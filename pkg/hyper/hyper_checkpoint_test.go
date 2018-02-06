@@ -47,7 +47,7 @@ func TestCheckpoint(t *testing.T) {
 	}
 	assert.Len(t, checkpointsList, 3)
 	assert.Equal(t, expected, checkpointsList)
-	//Test Remove Checkpints
+	//Test Remove Checkpoints
 	podSandboxID := fmt.Sprintf("%s%d", podSandbox, 0)
 	err = persistentCheckpointHandler.RemoveCheckpoint(podSandboxID)
 	assert.NoError(t, err)

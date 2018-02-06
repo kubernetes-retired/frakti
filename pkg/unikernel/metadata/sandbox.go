@@ -83,7 +83,7 @@ type SandboxStore interface {
 	Delete(string) error
 }
 
-// sandboxStore is an implmentation of SandboxStore.
+// sandboxStore is an implementation of SandboxStore.
 type sandboxStore struct {
 	store store.MetadataStore
 }

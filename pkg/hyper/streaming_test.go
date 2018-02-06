@@ -44,7 +44,7 @@ func TestExec(t *testing.T) {
 	container := "sidecar"
 	containerId, PodId := "c", "p"
 	containers := []*FakeContainer{}
-	//Create runnning containers for test
+	//Create running containers for test
 	for i := 0; i < 2; i++ {
 		containerID := fmt.Sprintf("%s%s%d", containerId, "*", i)
 		podID := fmt.Sprintf("%s%s%d", PodId, "*", i)
@@ -58,7 +58,7 @@ func TestExec(t *testing.T) {
 		containers = append(containers, container)
 	}
 	fakeClient.SetFakeContainers(containers)
-	//Create a temporaty empty file
+	//Create a temporary empty file
 	file, err := ioutil.TempFile("", "tmp")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
@@ -92,7 +92,7 @@ func TestPortForward(t *testing.T) {
 
 	fakeClient.SetFakePod(pods)
 
-	//Create a temporaty empty file
+	//Create a temporary empty file
 	file, err := ioutil.TempFile("", "tmp")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
@@ -126,7 +126,7 @@ func TestRuntimeExec(t *testing.T) {
 	container := "sidecar"
 	containerId, PodId := "c", "p"
 	containers := []*FakeContainer{}
-	//Create runnning containers for test
+	//Create running containers for test
 	for i := 0; i < 2; i++ {
 		containerID := fmt.Sprintf("%s%s%d", containerId, "*", i)
 		podID := fmt.Sprintf("%s%s%d", PodId, "*", i)

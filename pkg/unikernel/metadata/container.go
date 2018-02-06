@@ -98,7 +98,7 @@ type ContainerStore interface {
 	Delete(string) error
 }
 
-// containerStore is an implmentation of ContainerStore.
+// containerStore is an implementation of ContainerStore.
 type containerStore struct {
 	store store.MetadataStore
 }
