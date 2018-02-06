@@ -66,7 +66,7 @@ func TestListPodSandbox(t *testing.T) {
 	containerName := "sidecar"
 	pods := []*FakePod{}
 	podIDs := []string{}
-	//Create runnning pods for test
+	//Create running pods for test
 	for i := 0; i < 3; i++ {
 		podID := fmt.Sprintf("%s%s%d", podId, "*", i)
 		container := fmt.Sprintf("%s%d", containerName, i)

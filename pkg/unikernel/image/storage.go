@@ -74,7 +74,7 @@ func (im *ImageManager) prepareStorageForImage(imagePath string, digest godigest
 }
 
 func (im *ImageManager) manifestToStorage(mani *ImageManifest, digestID string) *metaimage.Storage {
-	// NOTE: validation of image manifest should be gurranteed by `valideManifest`
+	// NOTE: validation of image manifest should be guaranteed by `valideManifest`
 	meta := &metaimage.Storage{UUID: digestID}
 	imageDir := filepath.Join(im.storageRoot, digestID)
 	switch mani.Format {
@@ -98,7 +98,7 @@ func (im *ImageManager) manifestToStorage(mani *ImageManifest, digestID string) 
 }
 
 // valideManifest check if all fields are validate
-// all images are gurranteed
+// all images are guaranteed
 // TODO(Crazykev): Implement this
 func valideManifest(mani *ImageManifest) error {
 	return nil
@@ -173,7 +173,7 @@ func copyFile(srcFile, destFile string) error {
 	return nil
 }
 
-// downloadImageFile download image file with image location, returns downloaded image path and caculated digest
+// downloadImageFile download image file with image location, returns downloaded image path and calculated digest
 func (im *ImageManager) downloadImageFile(imageName string) (string, godigest.Digest, error) {
 	readcloser, err := im.downloader.DownloadStream(imageName)
 	if err != nil {

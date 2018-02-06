@@ -121,7 +121,7 @@ func (u *UnikernelRuntime) RemovePodSandbox(podSandboxID string) error {
 	if len(ctrs) > 1 {
 		glog.Warningf("Get more than one(%d) containers in sandbox %q, remove them all", len(ctrs), sandbox.ID)
 	}
-	// Remove all containers found in sandbox, althrough we expected only one exist.
+	// Remove all containers found in sandbox, although we expected only one exist.
 	for _, ctr := range ctrs {
 		if err = u.RemoveContainer(ctr.ID); err != nil {
 			return err

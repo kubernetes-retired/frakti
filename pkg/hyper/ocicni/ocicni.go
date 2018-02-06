@@ -29,7 +29,7 @@ import (
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
-// TODO: upgrade CNI Plugin to its stable realease
+// TODO: upgrade CNI Plugin to its stable release
 // when v0.5.0 is released
 type cniNetworkPlugin struct {
 	sync.RWMutex

@@ -43,6 +43,6 @@ const (
 // DomainState represents a state of a libvirt domain
 type DomainState int
 
-// ErrDomainNotFound err means can't find specificed domain
+// ErrDomainNotFound err means can't find specified domain
 // returned by domain loop up methods
 var ErrDomainNotFound = errors.New("domain not found")

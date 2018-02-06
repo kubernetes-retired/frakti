@@ -78,7 +78,7 @@ func (vt *VMTool) CreateContainer(ctrMeta *metadata.ContainerMetadata, sbMeta *m
 	}
 
 	// Make sure log directory exist
-	// FIXME(Crazykev): Is kubelet's responsiblity to clean up the log directory?
+	// FIXME(Crazykev): Is kubelet's responsibility to clean up the log directory?
 	if err := os.MkdirAll(filepath.Dir(settings.logPath), 0644); err != nil {
 		return fmt.Errorf("failed create log directory %q", settings.logPath)
 	}
