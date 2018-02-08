@@ -37,24 +37,26 @@ const (
 
 // CinderVolumeOptsData is the struct of json file
 type CinderVolumeOptsData struct {
-	AccessMode   string   `json:"access_mode"`
-	AuthUserName string   `json:"auth_username"`
-	AuthEnabled  bool     `json:"auth_enabled"`
-	ClusterName  string   `json:"cluster_name"`
-	Encrypted    bool     `json:"encrypted"`
-	FsType       string   `json:"fsType"`
-	Hosts        []string `json:"hosts"`
-	Keyring      string   `json:"keyring"`
-	Name         string   `json:"name"`
-	Ports        []string `json:"ports"`
-	SecretUUID   string   `json:"secret_uuid"`
-	SecretType   string   `json:"secret_type"`
-	VolumeID     string   `json:"volumeID"`
-	VolumeType   string   `json:"volume_type"`
+	// Needed to reconstruct new cinder clients
+	ConfigKey string `json:"cinderConfig"`
+	VolumeID  string `json:"volumeID"`
+
+	// rbd volume details
+	VolumeType string   `json:"volume_type"`
+	Name       string   `json:"name"`
+	FsType     string   `json:"fsType"`
+	Hosts      []string `json:"hosts"`
+	Ports      []string `json:"ports"`
 }
 
 // GCEPDOptsData is the struct of json file
 type GCEPDOptsData struct {
+	// Needed for unmount
+	VolumeID string `json:"volumeID"`
+	Zone     string `json:"zone"`
+	Project  string `json:"project"`
+
+	// gce pd volume details
 	DevicePath   string `json:"devicePath"`
 	SystemFsType string `json:"kubernetes.io/fsType"`
 }
