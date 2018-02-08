@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"k8s.io/frakti/pkg/util/knownflags"
+	"k8s.io/frakti/pkg/flexvolume"
 	utilmetadata "k8s.io/frakti/pkg/util/metadata"
 )
 
@@ -64,19 +64,19 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 	var volOptions map[string]interface{}
 	json.Unmarshal([]byte(jsonOptions), &volOptions)
 
-	if len(volOptions[knownflags.VolIdKey].(string)) == 0 {
+	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 {
 		return fmt.Errorf("jsonOptions is not set by user properly: %#v", jsonOptions)
 	}
 
 	// cinder configure file is optional in jsonOptions
-	if userConfig, ok := volOptions[knownflags.CinderConfigKey]; ok {
+	if userConfig, ok := volOptions[flexvolume.CinderConfigKey]; ok {
 		d.cinderConfig = userConfig.(string)
 	} else {
 		// use default configure if not provided
-		d.cinderConfig = knownflags.CinderConfigFile
+		d.cinderConfig = flexvolume.CinderConfigFile
 	}
 
-	d.volId = volOptions[knownflags.VolIdKey].(string)
+	d.volId = volOptions[flexvolume.VolIdKey].(string)
 	// this is a system option
 	d.fsType = volOptions["kubernetes.io/fsType"].(string)
 
@@ -97,9 +97,9 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForUnMount(targetMountDir string)
 		return err
 	}
 
-	d.cinderConfig = optsData[knownflags.CinderConfigKey].(string)
+	d.cinderConfig = optsData[flexvolume.CinderConfigKey].(string)
 
-	d.volId = optsData[knownflags.VolIdKey].(string)
+	d.volId = optsData[flexvolume.VolIdKey].(string)
 
 	manager, err := NewFlexManager(d.cinderConfig)
 	if err != nil {
@@ -169,10 +169,10 @@ func (d *FlexVolumeDriver) generateOptionsData(metadata map[string]interface{}) 
 	}
 
 	// these are used for detach
-	optsData[knownflags.VolIdKey] = d.volId
-	optsData[knownflags.CinderConfigKey] = d.cinderConfig
+	optsData[flexvolume.VolIdKey] = d.volId
+	optsData[flexvolume.CinderConfigKey] = d.cinderConfig
 
-	optsData[knownflags.FsTypeKey] = d.fsType
+	optsData[flexvolume.FsTypeKey] = d.fsType
 
 	return optsData
 }

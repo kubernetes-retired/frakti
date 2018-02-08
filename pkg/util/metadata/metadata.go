@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/frakti/pkg/util/knownflags"
+	"k8s.io/frakti/pkg/flexvolume"
 )
 
 // MapToJson converts the specified map object to indented JSON.
@@ -72,12 +72,12 @@ func WriteJson(filename string, v interface{}, perm os.FileMode) error {
 }
 
 func WriteJsonOptsFile(targetDir string, opts map[string]interface{}) error {
-	return WriteJson(filepath.Join(targetDir, knownflags.HyperFlexvolumeDataFile), opts, 0700)
+	return WriteJson(filepath.Join(targetDir, flexvolume.HyperFlexvolumeDataFile), opts, 0700)
 }
 
 func ReadJsonOptsFile(targetDir string) (map[string]interface{}, error) {
 	var result map[string]interface{}
-	err := ReadJson(filepath.Join(targetDir, knownflags.HyperFlexvolumeDataFile), &result)
+	err := ReadJson(filepath.Join(targetDir, flexvolume.HyperFlexvolumeDataFile), &result)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func ReadJsonOptsFile(targetDir string) (map[string]interface{}, error) {
 }
 
 func CleanUpMetadataFile(targetDir string) error {
-	metadataFile := filepath.Join(targetDir, knownflags.HyperFlexvolumeDataFile)
+	metadataFile := filepath.Join(targetDir, flexvolume.HyperFlexvolumeDataFile)
 	if err := os.Remove(metadataFile); err != nil {
 		return fmt.Errorf("removing metadata file: %v failed: %v", metadataFile, err)
 	}

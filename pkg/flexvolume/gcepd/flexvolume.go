@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"k8s.io/frakti/pkg/util/knownflags"
+	"k8s.io/frakti/pkg/flexvolume"
 	utilmetadata "k8s.io/frakti/pkg/util/metadata"
 )
 
@@ -64,14 +64,14 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 	json.Unmarshal([]byte(jsonOptions), &volOptions)
 
 	// TODO(harry): check "volId zone project" are not nil to avoid panic, below check is useless.
-	if len(volOptions[knownflags.VolIdKey].(string)) == 0 {
+	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 {
 		return fmt.Errorf("jsonOptions is not set by user properly: %#v", jsonOptions)
 	}
 
-	d.volId = volOptions[knownflags.VolIdKey].(string)
-	d.fsType = volOptions[knownflags.SystemFsTypeKey].(string)
-	d.zone = volOptions[knownflags.ZoneKey].(string)
-	d.project = volOptions[knownflags.ProjectKey].(string)
+	d.volId = volOptions[flexvolume.VolIdKey].(string)
+	d.fsType = volOptions[flexvolume.SystemFsTypeKey].(string)
+	d.zone = volOptions[flexvolume.ZoneKey].(string)
+	d.project = volOptions[flexvolume.ProjectKey].(string)
 
 	return nil
 }
@@ -84,9 +84,9 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForUnMount(targetMountDir string)
 		return err
 	}
 
-	d.volId = optsData[knownflags.VolIdKey].(string)
-	d.zone = optsData[knownflags.ZoneKey].(string)
-	d.project = optsData[knownflags.ProjectKey].(string)
+	d.volId = optsData[flexvolume.VolIdKey].(string)
+	d.zone = optsData[flexvolume.ZoneKey].(string)
+	d.project = optsData[flexvolume.ProjectKey].(string)
 
 	return nil
 }
@@ -146,12 +146,12 @@ func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string
 func (d *FlexVolumeDriver) generateOptionsData() map[string]interface{} {
 	optsData := map[string]interface{}{}
 
-	optsData[knownflags.VolIdKey] = d.volId
-	optsData[knownflags.FsTypeKey] = d.fsType
-	optsData[knownflags.ZoneKey] = d.zone
-	optsData[knownflags.ProjectKey] = d.project
+	optsData[flexvolume.VolIdKey] = d.volId
+	optsData[flexvolume.FsTypeKey] = d.fsType
+	optsData[flexvolume.ZoneKey] = d.zone
+	optsData[flexvolume.ProjectKey] = d.project
 
-	optsData[knownflags.DivcePathKey] = getDevPathByVolID(d.volId)
+	optsData[flexvolume.DivcePathKey] = getDevPathByVolID(d.volId)
 
 	return optsData
 }

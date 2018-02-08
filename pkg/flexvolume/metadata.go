@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package knownflags
+package flexvolume
 
 const (
 	VolIdKey  = "volumeID"
@@ -34,3 +34,27 @@ const (
 	// Build-in fsType key of flexvolume
 	SystemFsTypeKey = "kubernetes.io/fsType"
 )
+
+// CinderVolumeOptsData is the struct of json file
+type CinderVolumeOptsData struct {
+	AccessMode   string   `json:"access_mode"`
+	AuthUserName string   `json:"auth_username"`
+	AuthEnabled  bool     `json:"auth_enabled"`
+	ClusterName  string   `json:"cluster_name"`
+	Encrypted    bool     `json:"encrypted"`
+	FsType       string   `json:"fsType"`
+	Hosts        []string `json:"hosts"`
+	Keyring      string   `json:"keyring"`
+	Name         string   `json:"name"`
+	Ports        []string `json:"ports"`
+	SecretUUID   string   `json:"secret_uuid"`
+	SecretType   string   `json:"secret_type"`
+	VolumeID     string   `json:"volumeID"`
+	VolumeType   string   `json:"volume_type"`
+}
+
+// GCEPDOptsData is the struct of json file
+type GCEPDOptsData struct {
+	DevicePath   string `json:"devicePath"`
+	SystemFsType string `json:"kubernetes.io/fsType"`
+}
