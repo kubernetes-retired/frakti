@@ -16,6 +16,14 @@ limitations under the License.
 
 package flexvolume
 
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	utilmetadata "k8s.io/frakti/pkg/util/metadata"
+)
+
 const (
 	VolIdKey  = "volumeID"
 	FsTypeKey = "fsType"
@@ -57,6 +65,27 @@ type GCEPDOptsData struct {
 	Project  string `json:"project"`
 
 	// gce pd volume details
-	DevicePath   string `json:"devicePath"`
-	SystemFsType string `json:"kubernetes.io/fsType"`
+	DevicePath string `json:"devicePath"`
+	FsType     string `json:"fsType"`
+}
+
+type FlexVolumeOptsData struct {
+	CinderData *CinderVolumeOptsData `json:"cinderVolumeOptsData,omitempty"`
+	GCEPDData  *GCEPDOptsData        `json:"gCEPDOptsData,omitempty"`
+}
+
+func WriteJsonOptsFile(targetDir string, opts interface{}) error {
+	return utilmetadata.WriteJson(filepath.Join(targetDir, HyperFlexvolumeDataFile), opts, 0700)
+}
+
+func ReadJsonOptsFile(targetDir string, opts interface{}) error {
+	return utilmetadata.ReadJson(filepath.Join(targetDir, HyperFlexvolumeDataFile), opts)
+}
+
+func CleanUpMetadataFile(targetDir string) error {
+	metadataFile := filepath.Join(targetDir, HyperFlexvolumeDataFile)
+	if err := os.Remove(metadataFile); err != nil {
+		return fmt.Errorf("removing metadata file: %v failed: %v", metadataFile, err)
+	}
+	return nil
 }

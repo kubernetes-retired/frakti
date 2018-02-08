@@ -22,10 +22,21 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
-
-	"k8s.io/frakti/pkg/flexvolume"
 )
+
+func ExtractStringSlice(s interface{}) ([]string, error) {
+	bs, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	err = json.Unmarshal(bs, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
 
 // MapToJson converts the specified map object to indented JSON.
 // It panics in case if the map connot be converted.
@@ -67,27 +78,6 @@ func WriteJson(filename string, v interface{}, perm os.FileMode) error {
 	}
 	if err := ioutil.WriteFile(filename, content, perm); err != nil {
 		return fmt.Errorf("error writing JSON data file %q: %v", filename, err)
-	}
-	return nil
-}
-
-func WriteJsonOptsFile(targetDir string, opts map[string]interface{}) error {
-	return WriteJson(filepath.Join(targetDir, flexvolume.HyperFlexvolumeDataFile), opts, 0700)
-}
-
-func ReadJsonOptsFile(targetDir string) (map[string]interface{}, error) {
-	var result map[string]interface{}
-	err := ReadJson(filepath.Join(targetDir, flexvolume.HyperFlexvolumeDataFile), &result)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func CleanUpMetadataFile(targetDir string) error {
-	metadataFile := filepath.Join(targetDir, flexvolume.HyperFlexvolumeDataFile)
-	if err := os.Remove(metadataFile); err != nil {
-		return fmt.Errorf("removing metadata file: %v failed: %v", metadataFile, err)
 	}
 	return nil
 }

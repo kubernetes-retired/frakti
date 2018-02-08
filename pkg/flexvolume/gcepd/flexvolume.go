@@ -24,7 +24,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/frakti/pkg/flexvolume"
-	utilmetadata "k8s.io/frakti/pkg/util/metadata"
 )
 
 type FlexVolumeDriver struct {
@@ -79,14 +78,15 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 // initFlexVolumeDriverForUnMount use targetMountDir to initialize FlexVolumeDriver from tag file.
 func (d *FlexVolumeDriver) initFlexVolumeDriverForUnMount(targetMountDir string) error {
 	// Use the tag file to store volId since flexvolume will execute fresh new binary every time.
-	optsData, err := utilmetadata.ReadJsonOptsFile(targetMountDir)
+	var optsData flexvolume.FlexVolumeOptsData
+	err := flexvolume.ReadJsonOptsFile(targetMountDir, &optsData)
 	if err != nil {
 		return err
 	}
 
-	d.volId = optsData[flexvolume.VolIdKey].(string)
-	d.zone = optsData[flexvolume.ZoneKey].(string)
-	d.project = optsData[flexvolume.ProjectKey].(string)
+	d.volId = optsData.GCEPDData.VolumeID
+	d.zone = optsData.GCEPDData.Zone
+	d.project = optsData.GCEPDData.Project
 
 	return nil
 }
@@ -130,8 +130,10 @@ func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string
 	}
 
 	// Step 3: Create a json file and write metadata into the it.
-	optsData := d.generateOptionsData()
-	if err := utilmetadata.WriteJsonOptsFile(targetMountDir, optsData); err != nil {
+	optsData := &flexvolume.FlexVolumeOptsData{
+		GCEPDData: d.generateOptionsData(),
+	}
+	if err := flexvolume.WriteJsonOptsFile(targetMountDir, optsData); err != nil {
 		os.Remove(targetMountDir)
 		detachDiskLogError(d)
 		return nil, err
@@ -143,17 +145,14 @@ func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string
 }
 
 // generateOptionsData generates metadata for given GCE PD volume.
-func (d *FlexVolumeDriver) generateOptionsData() map[string]interface{} {
-	optsData := map[string]interface{}{}
-
-	optsData[flexvolume.VolIdKey] = d.volId
-	optsData[flexvolume.FsTypeKey] = d.fsType
-	optsData[flexvolume.ZoneKey] = d.zone
-	optsData[flexvolume.ProjectKey] = d.project
-
-	optsData[flexvolume.DivcePathKey] = getDevPathByVolID(d.volId)
-
-	return optsData
+func (d *FlexVolumeDriver) generateOptionsData() *flexvolume.GCEPDOptsData {
+	return &flexvolume.GCEPDOptsData{
+		VolumeID:   d.volId,
+		Zone:       d.zone,
+		Project:    d.project,
+		DevicePath: getDevPathByVolID(d.volId),
+		FsType:     d.fsType,
+	}
 }
 
 // detachDiskLogError is a wrapper to detach first before log error
@@ -182,7 +181,7 @@ func (d *FlexVolumeDriver) unmount(targetMountDir string) (map[string]interface{
 
 	// NOTE: the targetDir will be cleaned by flexvolume,
 	// we just need to clean up the metadata file.
-	if err := utilmetadata.CleanUpMetadataFile(targetMountDir); err != nil {
+	if err := flexvolume.CleanUpMetadataFile(targetMountDir); err != nil {
 		return nil, err
 	}
 
