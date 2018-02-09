@@ -137,7 +137,8 @@ function test_cri() {
 
   pushd $(pwd)
     cd $GOPATH/src/github.com/kubernetes-incubator/cri-tools
-    git checkout ded07bb08aa23492fa0233bb3af8c4629875f286
+    # for Kubernetes 1.9
+    git checkout v1.0.0-alpha.0 
   popd
 
   # run critest
