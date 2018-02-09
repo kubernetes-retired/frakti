@@ -74,7 +74,7 @@ func (f *AlternativeRuntimeSets) Has(id string, runtimeType string) bool {
 func (f *AlternativeRuntimeSets) Remove(id string, runtimeType string) {
 	f.Lock()
 	defer f.Unlock()
-	// Do nothing is none is matched
+	// Do nothing if none is matched
 	switch runtimeType {
 	case PrivilegedRuntimeName:
 		f.privilegedStore.Delete(id)
