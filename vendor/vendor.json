@@ -1650,10 +1650,10 @@
 			"revisionTime": "2017-03-18T22:17:15Z"
 		},
 		{
-			"checksumSHA1": "Ai1IYFylkozCZbIUATIgkX12rss=",
+			"checksumSHA1": "gD1kOPw9EeDfTNvNqBvYu/qnP1k=",
 			"path": "github.com/onsi/ginkgo/internal/spec",
-			"revision": "67b9df7f55fe1165fd9ad49aca7754cce01a42b8",
-			"revisionTime": "2017-03-18T22:17:15Z"
+			"revision": "747514b53ddd06d5d37d096c1cb313cfe620d7d4",
+			"revisionTime": "2018-01-19T17:42:37Z"
 		},
 		{
 			"checksumSHA1": "O6nDPvRJsfBKA+PxCoph3a8QXLA=",
