@@ -535,3 +535,13 @@ func (f *fakeClientInterface) Version(ctx context.Context, in *types.VersionRequ
 func dockerTimestampToString(t time.Time) string {
 	return t.Format(time.RFC3339Nano)
 }
+
+func (f *fakeClientInterface) PortMappingList(ctx context.Context, in *types.PortMappingListRequest, opts ...grpc.CallOption) (*types.PortMappingListResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+func (f *fakeClientInterface) PortMappingAdd(ctx context.Context, in *types.PortMappingModifyRequest, opts ...grpc.CallOption) (*types.PortMappingModifyResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+func (f *fakeClientInterface) PortMappingDel(ctx context.Context, in *types.PortMappingModifyRequest, opts ...grpc.CallOption) (*types.PortMappingModifyResponse, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
