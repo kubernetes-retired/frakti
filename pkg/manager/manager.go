@@ -44,13 +44,14 @@ const (
 	runtimeAPIVersion = "0.1.0"
 
 	// TODO(resouer) move this to well-known labels on k8s upstream?
-	// The annotation key specifying this pod will run by OS container runtime.
+
+	// OSContainerAnnotationKey specifying this pod will run by OS container runtime.
 	OSContainerAnnotationKey = "runtime.frakti.alpha.kubernetes.io/OSContainer"
-	// The annotation value specifying this pod will run by OS container runtime.
+	// OSContainerAnnotationTrue specifying this pod will run by OS container runtime.
 	OSContainerAnnotationTrue = "true"
-	// The annotation key specifying this pod will run by unikernel runtime.
+	// UnikernelAnnotationKey specifying this pod will run by unikernel runtime.
 	UnikernelAnnotationKey = "runtime.frakti.alpha.kubernetes.io/Unikernel"
-	// The annotation value specifying this pod will run by unikernel runtime.
+	// UnikernelAnnotationTrue specifying this pod will run by unikernel runtime.
 	UnikernelAnnotationTrue = "true"
 )
 
@@ -380,6 +381,7 @@ func (s *FraktiManager) ContainerStatus(ctx context.Context, req *kubeapi.Contai
 	}, nil
 }
 
+// UpdateContainerResources updates ContainerConfig of the container
 func (s *FraktiManager) UpdateContainerResources(
 	ctx context.Context,
 	req *kubeapi.UpdateContainerResourcesRequest,
@@ -657,7 +659,7 @@ func (s *FraktiManager) RemoveImage(ctx context.Context, req *kubeapi.RemoveImag
 	return &kubeapi.RemoveImageResponse{}, nil
 }
 
-// ImageFSInfo returns information of the filesystem that is used to store images.
+// ImageFsInfo returns information of the filesystem that is used to store images.
 func (s *FraktiManager) ImageFsInfo(ctx context.Context, req *kubeapi.ImageFsInfoRequest) (*kubeapi.ImageFsInfoResponse, error) {
 	glog.V(3).Infof("ImageFsInfo with request %s", req.String())
 	return nil, fmt.Errorf("not implemented")
@@ -678,6 +680,7 @@ func (s *FraktiManager) ContainerStats(ctx context.Context, req *kubeapi.Contain
 	}, nil
 }
 
+// ListContainerStats returns stats of all running containers
 func (s *FraktiManager) ListContainerStats(ctx context.Context, req *kubeapi.ListContainerStatsRequest) (*kubeapi.ListContainerStatsResponse, error) {
 	glog.V(3).Infof("ListContainerStats with request %s", req.String())
 
@@ -715,15 +718,15 @@ func isOSContainerRuntimeRequired(podConfig *kubeapi.PodSandboxConfig) bool {
 
 	// privileged container required
 	if securityContext := podConfig.GetLinux().GetSecurityContext(); securityContext != nil {
-		if securityContext.Privileged {
-			return true
-		} else {
+		if !securityContext.Privileged {
 			// use host namespace
 			if nsOptions := securityContext.GetNamespaceOptions(); nsOptions != nil {
 				if nsOptions.HostIpc || nsOptions.HostNetwork || nsOptions.HostPid {
 					return true
 				}
 			}
+		} else {
+			return true
 		}
 	}
 
