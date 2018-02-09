@@ -135,6 +135,11 @@ function test_cri() {
   # install critest
   go get github.com/kubernetes-incubator/cri-tools/cmd/critest
 
+  pushd $(pwd)
+    cd $GOPATH/src/github.com/kubernetes-incubator/cri-tools
+    git checkout ded07bb08aa23492fa0233bb3af8c4629875f286
+  popd
+
   # run critest
   sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="Conformance" --skip="port mapping" validation
 }
