@@ -24,11 +24,11 @@ message VolumeMount {
 }
 
 message WaitingStatus {
-	string reason = 1;
+  string reason = 1;
 }
 
 message RunningStatus {
-	string startedAt = 1;
+  string startedAt = 1;
 }
 
 message TermStatus {
@@ -83,29 +83,29 @@ message RBDVolumeSource {
 }
 
 message PodVolume {
-	string name         = 1;
-	string source       = 2;
-	string driver       = 3;
-	RBDVolumeSource rbd = 4;
+  string name         = 1;
+  string source       = 2;
+  string driver       = 3;
+  RBDVolumeSource rbd = 4;
 }
 
 message PodSpec {
-	repeated PodVolume volumes    = 1;
-	repeated Container containers = 2;
-	map<string,string> labels     = 3;
-	int32 vcpu                    = 4;
-	int32 memory                  = 5;
+  repeated PodVolume volumes    = 1;
+  repeated Container containers = 2;
+  map<string,string> labels     = 3;
+  int32 vcpu                    = 4;
+  int32 memory                  = 5;
 }
 
 message PodStatus {
-	string phase                              = 1;
-	string message                            = 2;
-	string reason                             = 3;
-	string hostIP                             = 4;
-	repeated string podIP                     = 5;
-	string startTime                          = 6;
-	repeated ContainerStatus containerStatus  = 7;
-	string finishTime                         = 8;
+  string phase                              = 1;
+  string message                            = 2;
+  string reason                             = 3;
+  string hostIP                             = 4;
+  repeated string podIP                     = 5;
+  string startTime                          = 6;
+  repeated ContainerStatus containerStatus  = 7;
+  string finishTime                         = 8;
 }
 
 message PodInfo {
@@ -436,8 +436,8 @@ message UserInterface {
   string ip     = 2;
   string ifname = 3;
   string mac    = 4;
-  string gateway  = 5;
-  string tap    = 6;
+  uint64 mtu    = 5;
+  string gateway  = 6;
 }
 
 message UserServiceBackend {
@@ -490,8 +490,8 @@ message UserPod {
   repeated UserService services              = 14;
   PortmappingWhiteList portmappingWhiteLists = 15;
   repeated PortMapping portmappings          = 16;
-  repeated string dnsOptions		     = 17;
-  repeated string dnsSearch		     = 18;
+  repeated string dnsOptions         = 17;
+  repeated string dnsSearch        = 18;
 }
 
 message PodCreateRequest {
@@ -726,6 +726,21 @@ message ServiceUpdateRequest {
 
 message ServiceUpdateResponse {}
 
+message PortMappingListRequest {
+  string podID = 1;
+}
+
+message PortMappingListResponse {
+  repeated PortMapping portMappings = 1;
+}
+
+message PortMappingModifyRequest {
+  string podID = 1;
+  repeated PortMapping portMappings = 2;
+}
+
+message PortMappingModifyResponse {}
+
 message PodStopRequest {
   string podID = 1;
 }
@@ -870,6 +885,13 @@ service PublicAPI {
     rpc ServiceDelete(ServiceDelRequest) returns (ServiceDelResponse){}
     // ServiceUpdate updates an existing service of a pod
     rpc ServiceUpdate(ServiceUpdateRequest) returns (ServiceUpdateResponse){}
+
+    // PortMappingList get a list of PortMappings
+    rpc PortMappingList(PortMappingListRequest) returns (PortMappingListResponse) {}
+    // PortMappingAdd add a list of PortMapping rules to a Pod
+    rpc PortMappingAdd(PortMappingModifyRequest) returns (PortMappingModifyResponse) {}
+    // PortMappingDel remove a list of PortMapping rules from a Pod
+    rpc PortMappingDel(PortMappingModifyRequest) returns (PortMappingModifyResponse) {}
 
     // ImagePull pulls a image from registry
     rpc ImagePull(ImagePullRequest) returns (stream ImagePullResponse) {}
