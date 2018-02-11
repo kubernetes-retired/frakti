@@ -279,7 +279,7 @@ func (c *Client) GetImageInfo(image, tag string) (*types.ImageInfo, error) {
 	}
 
 	req := types.ImageListRequest{
-		Filter: strings.Join([]string{image, tag}, repoSep),
+		Filter: image,
 	}
 	imageList, err := c.client.ImageList(ctx, &req)
 	if err != nil {
