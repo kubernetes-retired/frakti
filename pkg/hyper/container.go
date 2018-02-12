@@ -25,9 +25,8 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/frakti/pkg/flexvolume"
 	"k8s.io/frakti/pkg/hyper/types"
-	"k8s.io/frakti/pkg/util/knownflags"
-	utilmetadata "k8s.io/frakti/pkg/util/metadata"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
@@ -50,30 +49,6 @@ func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.Container
 	}
 
 	return containerID, nil
-}
-
-// CinderVolumeOptsData is the struct of json file
-type CinderVolumeOptsData struct {
-	AccessMode   string   `json:"access_mode"`
-	AuthUserName string   `json:"auth_username"`
-	AuthEnabled  bool     `json:"auth_enabled"`
-	ClusterName  string   `json:"cluster_name"`
-	Encrypted    bool     `json:"encrypted"`
-	FsType       string   `json:"fsType"`
-	Hosts        []string `json:"hosts"`
-	Keyring      string   `json:"keyring"`
-	Name         string   `json:"name"`
-	Ports        []string `json:"ports"`
-	SecretUUID   string   `json:"secret_uuid"`
-	SecretType   string   `json:"secret_type"`
-	VolumeID     string   `json:"volumeID"`
-	VolumeType   string   `json:"volume_type"`
-}
-
-// GCEPDOptsData is the struct of json file
-type GCEPDOptsData struct {
-	DevicePath   string `json:"devicePath"`
-	SystemFsType string `json:"kubernetes.io/fsType"`
 }
 
 // buildUserContainer builds hyperd's UserContainer based kubelet ContainerConfig.
@@ -126,16 +101,8 @@ func buildUserContainer(config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.
 	return containerSpec, nil
 }
 
-func getVolumeForCinder(volumeOptsFile, volName string, m *kubeapi.Mount) (*types.UserVolumeReference, error) {
+func makeVolumeForCinder(optsData *flexvolume.CinderVolumeOptsData, volName string, m *kubeapi.Mount) (*types.UserVolumeReference, error) {
 	// this is a cinder-flexvolume
-	optsData := CinderVolumeOptsData{}
-	if err := utilmetadata.ReadJson(volumeOptsFile, &optsData); err != nil {
-		return nil, fmt.Errorf(
-			"buildUserContainer() failed: can't read Cinder flexvolume data file: %q: %v",
-			volumeOptsFile, err,
-		)
-	}
-
 	if optsData.VolumeType == "rbd" {
 		monitors := make([]string, 0, 1)
 		for _, host := range optsData.Hosts {
@@ -162,20 +129,13 @@ func getVolumeForCinder(volumeOptsFile, volName string, m *kubeapi.Mount) (*type
 	return nil, fmt.Errorf("got wrong volume type: %v, expected: rbd", optsData.VolumeType)
 }
 
-func getVolumeForGCEPD(volumeOptsFile, volName string, m *kubeapi.Mount) (*types.UserVolumeReference, error) {
+func makeVolumeForGCEPD(optsData *flexvolume.GCEPDOptsData, volName string, m *kubeapi.Mount) (*types.UserVolumeReference, error) {
 	// this is a gcepd-flexvolume
-	optsData := GCEPDOptsData{}
-	if err := utilmetadata.ReadJson(volumeOptsFile, &optsData); err != nil {
-		return nil, fmt.Errorf(
-			"buildUserContainer() failed: can't read GCE PD flexvolume data file: %q: %v",
-			volumeOptsFile, err,
-		)
-	}
 	volDetail := &types.UserVolume{
 		Name:   volName + fmt.Sprintf("_%08x", rand.Uint32()),
 		Source: optsData.DevicePath,
 		Format: "raw",
-		Fstype: optsData.SystemFsType,
+		Fstype: optsData.FsType,
 	}
 	return &types.UserVolumeReference{
 		// use the generated volume name above
@@ -187,12 +147,12 @@ func getVolumeForGCEPD(volumeOptsFile, volName string, m *kubeapi.Mount) (*types
 }
 
 func isHyperFlexVolume(hostPath, volumeOptsFile string) bool {
-	// no-exist hostPath is allowed, and that case should never be cinder flexvolume
+	// no-exist hostPath is allowed, and that case should never be hyper flexvolume
 	if hostPathInfo, err := os.Stat(hostPath); !os.IsNotExist(err) {
 		// 1. host path is a directory (filter out bind mounted files like /etc/hosts)
 		if hostPathInfo.IsDir() {
 			// 2. tag file exists in host path
-			if _, err := os.Stat(volumeOptsFile); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(hostPath, volumeOptsFile)); !os.IsNotExist(err) {
 				// 3. then this is a HyperFlexvolume
 				return true
 			}
@@ -210,20 +170,25 @@ func makeContainerVolumes(config *kubeapi.ContainerConfig) ([]*types.UserVolumeR
 		_, volName := filepath.Split(hostPath)
 
 		// In frakti, we can both use normal container volumes (-v host:path), and also hyper-flexvolume
-		volumeOptsFile := filepath.Join(hostPath, knownflags.HyperFlexvolumeDataFile)
+		if isHyperFlexVolume(hostPath, flexvolume.HyperFlexvolumeDataFile) {
+			var err error
 
-		if isHyperFlexVolume(hostPath, volumeOptsFile) {
-			var (
-				err error
-			)
+			optsData := flexvolume.FlexVolumeOptsData{}
+			if err := flexvolume.ReadJsonOptsFile(hostPath, &optsData); err != nil {
+				return nil, fmt.Errorf(
+					"buildUserContainer() failed: can't read Cinder flexvolume data file in %q: %v",
+					hostPath, err,
+				)
+			}
+
 			switch {
-			case strings.Contains(hostPath, "cinder~rbd"):
-				if volumes[i], err = getVolumeForCinder(volumeOptsFile, volName, m); err != nil {
+			case optsData.CinderData != nil:
+				if volumes[i], err = makeVolumeForCinder(optsData.CinderData, volName, m); err != nil {
 					return nil, err
 				}
 
-			case strings.Contains(hostPath, "gce~pd"):
-				if volumes[i], err = getVolumeForGCEPD(volumeOptsFile, volName, m); err != nil {
+			case optsData.GCEPDData != nil:
+				if volumes[i], err = makeVolumeForGCEPD(optsData.GCEPDData, volName, m); err != nil {
 					return nil, err
 				}
 			default:

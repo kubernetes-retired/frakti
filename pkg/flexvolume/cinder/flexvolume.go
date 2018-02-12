@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"k8s.io/frakti/pkg/util/knownflags"
+	"k8s.io/frakti/pkg/flexvolume"
 	utilmetadata "k8s.io/frakti/pkg/util/metadata"
 )
 
@@ -64,19 +64,19 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 	var volOptions map[string]interface{}
 	json.Unmarshal([]byte(jsonOptions), &volOptions)
 
-	if len(volOptions[knownflags.VolIdKey].(string)) == 0 {
+	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 {
 		return fmt.Errorf("jsonOptions is not set by user properly: %#v", jsonOptions)
 	}
 
 	// cinder configure file is optional in jsonOptions
-	if userConfig, ok := volOptions[knownflags.CinderConfigKey]; ok {
+	if userConfig, ok := volOptions[flexvolume.CinderConfigKey]; ok {
 		d.cinderConfig = userConfig.(string)
 	} else {
 		// use default configure if not provided
-		d.cinderConfig = knownflags.CinderConfigFile
+		d.cinderConfig = flexvolume.CinderConfigFile
 	}
 
-	d.volId = volOptions[knownflags.VolIdKey].(string)
+	d.volId = volOptions[flexvolume.VolIdKey].(string)
 	// this is a system option
 	d.fsType = volOptions["kubernetes.io/fsType"].(string)
 
@@ -92,14 +92,15 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 // initFlexVolumeDriverForUnMount use targetMountDir to initialize FlexVolumeDriver from magic file
 func (d *FlexVolumeDriver) initFlexVolumeDriverForUnMount(targetMountDir string) error {
 	// use the magic file to store volId since flexvolume will execute fresh new binary every time
-	optsData, err := utilmetadata.ReadJsonOptsFile(targetMountDir)
+	var optsData flexvolume.FlexVolumeOptsData
+	err := flexvolume.ReadJsonOptsFile(targetMountDir, &optsData)
 	if err != nil {
 		return err
 	}
 
-	d.cinderConfig = optsData[knownflags.CinderConfigKey].(string)
+	d.cinderConfig = optsData.CinderData.ConfigKey
 
-	d.volId = optsData[knownflags.VolIdKey].(string)
+	d.volId = optsData.CinderData.VolumeID
 
 	manager, err := NewFlexManager(d.cinderConfig)
 	if err != nil {
@@ -150,10 +151,11 @@ func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string
 	glog.V(3).Infof("Cinder volume %s attached", d.volId)
 
 	// append VolumeOptions with metadata
-	optsData := d.generateOptionsData(d.metadata)
-
+	optsData := &flexvolume.FlexVolumeOptsData{
+		CinderData: d.generateOptionsData(d.metadata),
+	}
 	// create a file and write metadata into the it
-	if err := utilmetadata.WriteJsonOptsFile(targetMountDir, optsData); err != nil {
+	if err := flexvolume.WriteJsonOptsFile(targetMountDir, optsData); err != nil {
 		os.Remove(targetMountDir)
 		detachDiskLogError(d)
 		return nil, err
@@ -162,19 +164,37 @@ func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string
 	return nil, nil
 }
 
-func (d *FlexVolumeDriver) generateOptionsData(metadata map[string]interface{}) map[string]interface{} {
-	optsData := map[string]interface{}{}
-	for k, v := range metadata {
-		optsData[k] = v
+func (d *FlexVolumeDriver) generateOptionsData(metadata map[string]interface{}) *flexvolume.CinderVolumeOptsData {
+	var result *flexvolume.CinderVolumeOptsData
+
+	result.ConfigKey = d.cinderConfig
+	result.VolumeID = d.volId
+	result.FsType = d.fsType
+
+	if data, ok := metadata["volume_type"]; ok {
+		result.VolumeType = data.(string)
+	}
+	if data, ok := metadata["name"]; ok {
+		result.Name = data.(string)
 	}
 
-	// these are used for detach
-	optsData[knownflags.VolIdKey] = d.volId
-	optsData[knownflags.CinderConfigKey] = d.cinderConfig
+	if data, ok := metadata["hosts"]; ok {
+		if hosts, err := utilmetadata.ExtractStringSlice(data); err != nil {
+			glog.V(4).Infof("cannot parse metadata hosts: %v", err)
+		} else {
+			result.Hosts = hosts
+		}
+	}
 
-	optsData[knownflags.FsTypeKey] = d.fsType
+	if data, ok := metadata["ports"]; ok {
+		if ports, err := utilmetadata.ExtractStringSlice(data); err != nil {
+			glog.V(4).Infof("cannot parse metadata ports: %v", err)
+		} else {
+			result.Ports = ports
+		}
+	}
 
-	return optsData
+	return result
 }
 
 // detachDiskLogError is a wrapper to detach first before log error
@@ -205,7 +225,7 @@ func (d *FlexVolumeDriver) unmount(targetMountDir string) (map[string]interface{
 
 	// NOTE: the targetDir will be cleaned by flexvolume,
 	// we just need to clean up the metadata file.
-	if err := utilmetadata.CleanUpMetadataFile(targetMountDir); err != nil {
+	if err := flexvolume.CleanUpMetadataFile(targetMountDir); err != nil {
 		return nil, err
 	}
 
