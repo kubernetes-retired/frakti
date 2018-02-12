@@ -187,9 +187,9 @@ func buildLabelsWithAnnotations(labels, annotations map[string]string) map[strin
 		return labels
 	}
 
-	newLables := labels
+	newLabels := labels
 	if labels == nil {
-		newLables = make(map[string]string)
+		newLabels = make(map[string]string)
 	}
 
 	rawAnnotations, err := json.Marshal(annotations)
@@ -197,8 +197,8 @@ func buildLabelsWithAnnotations(labels, annotations map[string]string) map[strin
 		glog.Warningf("Unable to marshal annotations %q: %v", annotations, err)
 	}
 
-	newLables[fraktiAnnotationLabel] = string(rawAnnotations)
-	return newLables
+	newLabels[fraktiAnnotationLabel] = string(rawAnnotations)
+	return newLabels
 }
 
 // getAnnotationsFromLabels gets annotations from labels.
