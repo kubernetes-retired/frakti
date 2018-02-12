@@ -200,7 +200,7 @@ func (h *Runtime) buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod
 		if err != nil {
 			return nil, err
 		}
-		memoryinMegabytes, err = h.getMemeoryLimitFromCgroup(cgroupParent)
+		memoryinMegabytes, err = h.getMemoryLimitFromCgroup(cgroupParent)
 		if err != nil {
 			return nil, err
 		}
