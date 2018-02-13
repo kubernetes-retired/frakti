@@ -66,9 +66,7 @@ func (im *ImageManager) PullImage(imageName string) (imageRef string, err error)
 	// to check image version before try to pull it
 
 	// Standard image reference
-	if strings.HasSuffix(imageName, DefaultImageSuffix) {
-		imageName = imageName[0 : len(imageName)-len(DefaultImageSuffix)]
-	}
+	imageName = getActualImageName(imageName)
 	location := imageName
 	if strings.HasPrefix(imageName, UnikernelImagePrefix) {
 		location = imageName[len(UnikernelImagePrefix):]
@@ -128,7 +126,7 @@ func (im *ImageManager) PullImage(imageName string) (imageRef string, err error)
 			return "", fmt.Errorf("update image metadata failed: %v", err)
 		}
 	} else {
-		// Add image matedata
+		// Add image metadata
 		newImage := metaimage.Image{
 			ID:        imageName,
 			RepoTags:  []string{imageName},
@@ -147,9 +145,7 @@ func (im *ImageManager) PullImage(imageName string) (imageRef string, err error)
 // PrepareImage prepares image for container or VM
 // and returns a location descriptor for image.
 func (im *ImageManager) PrepareImage(imageName, sandboxID string) (s *metaimage.Storage, err error) {
-	if strings.HasSuffix(imageName, DefaultImageSuffix) {
-		imageName = imageName[0 : len(imageName)-len(DefaultImageSuffix)]
-	}
+	imageName = getActualImageName(imageName)
 	image, err := im.metaStore.Get(imageName)
 	if err != nil {
 		return nil, err
@@ -164,9 +160,7 @@ func (im *ImageManager) PrepareImage(imageName, sandboxID string) (s *metaimage.
 // CleanupImageCopy cleanups image copy or other files
 // prepared for container when create container.
 func (im *ImageManager) CleanupImageCopy(imageName, sandboxID string) error {
-	if strings.HasSuffix(imageName, DefaultImageSuffix) {
-		imageName = imageName[0 : len(imageName)-len(DefaultImageSuffix)]
-	}
+	imageName = getActualImageName(imageName)
 	image, err := im.metaStore.Get(imageName)
 	if err != nil {
 		return err
@@ -191,9 +185,7 @@ func (im *ImageManager) CleanupImageCopy(imageName, sandboxID string) error {
 // RemoveImage removes image by imageName
 // If image is referenced by other containers, returns error
 func (im *ImageManager) RemoveImage(imageName string) error {
-	if strings.HasSuffix(imageName, DefaultImageSuffix) {
-		imageName = imageName[0 : len(imageName)-len(DefaultImageSuffix)]
-	}
+	imageName = getActualImageName(imageName)
 	image, err := im.metaStore.Get(imageName)
 	if err != nil {
 		if metadata.IsNotExistError(err) {
@@ -232,9 +224,7 @@ func (im *ImageManager) ListImages() []metaimage.Image {
 
 // GetImageInfo gets image metadata for image ID
 func (im *ImageManager) GetImageInfo(imageName string) (*metaimage.Image, error) {
-	if strings.HasSuffix(imageName, DefaultImageSuffix) {
-		imageName = imageName[0 : len(imageName)-len(DefaultImageSuffix)]
-	}
+	imageName = getActualImageName(imageName)
 	image, err := im.metaStore.Get(imageName)
 	if err != nil {
 		return nil, err
@@ -247,4 +237,12 @@ func (im *ImageManager) GetImageInfo(imageName string) (*metaimage.Image, error)
 // FIXME(Crazykev): Need to figure out is one image should only have one FilesystemUsage?
 func (im *ImageManager) GetFsUsage(imageID string) ([]*kubeapi.FilesystemUsage, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+// getActualImageName standardize the image name by remove the default image tag if presents
+func getActualImageName(imageName string) string {
+	if strings.HasSuffix(imageName, DefaultImageSuffix) {
+		return imageName[0 : len(imageName)-len(DefaultImageSuffix)]
+	}
+	return imageName
 }
