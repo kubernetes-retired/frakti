@@ -48,6 +48,7 @@ type NetworkInfo struct {
 	IfName     string
 	Mac        string
 	Ip         string
+	Mtu        int
 	Gateway    string
 	BridgeName string
 }
@@ -56,6 +57,7 @@ type containerInterface struct {
 	Name    string
 	Mac     net.HardwareAddr
 	Addr    *net.IPNet
+	Mtu     int
 	Gateway string
 	Link    *netlink.Link
 }
@@ -127,6 +129,7 @@ func scanContainerInterfaces(netns ns.NetNS) ([]*containerInterface, error) {
 				Name:    linkName,
 				Mac:     link.Attrs().HardwareAddr,
 				Addr:    ip,
+				Mtu:     link.Attrs().MTU,
 				Gateway: gateway,
 				Link:    &link,
 			})
@@ -428,6 +431,7 @@ func buildNetworkInfo(bridgeName string, interfaces []*containerInterface) *Netw
 		IfName:     strings.Replace(bridgeName, "br", "tap", 1),
 		Mac:        interfaces[0].Mac.String(),
 		Ip:         interfaces[0].Addr.String(),
+		Mtu:        interfaces[0].Mtu,
 		Gateway:    interfaces[0].Gateway,
 	}
 }
