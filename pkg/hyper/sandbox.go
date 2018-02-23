@@ -178,6 +178,7 @@ func addNetworkInterfaceForPod(userpod *types.UserPod, info *NetworkInfo) {
 		Bridge:  info.BridgeName,
 		Ip:      info.Ip,
 		Mac:     info.Mac,
+		Mtu:     uint64(info.Mtu),
 		Gateway: info.Gateway,
 	})
 	userpod.Interfaces = ifaces
