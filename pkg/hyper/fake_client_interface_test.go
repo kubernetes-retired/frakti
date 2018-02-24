@@ -271,11 +271,11 @@ func (f *fakeClientInterface) ContainerCreate(ctx context.Context, in *types.Con
 
 	volumeMounts := []*types.VolumeMount{}
 	for i := range in.ContainerSpec.Volumes {
-		valumeMount := types.VolumeMount{
+		volumeMount := types.VolumeMount{
 			Name:      in.ContainerSpec.Volumes[i].Volume,
 			MountPath: in.ContainerSpec.Volumes[i].Path,
 		}
-		volumeMounts = append(volumeMounts, &valumeMount)
+		volumeMounts = append(volumeMounts, &volumeMount)
 	}
 	containerNameSplit := strings.Split(in.ContainerSpec.Name, "_")
 	//Create containerID
