@@ -4030,34 +4030,34 @@
 			"revisionTime": "2017-11-15T14:41:05Z"
 		},
 		{
-			"checksumSHA1": "DPMriBhrNK0onGxgiqDFTlMG0n8=",
+			"checksumSHA1": "+Ro+EzhwFkSePw/mfk5bEv5vrEI=",
 			"path": "k8s.io/kubernetes/pkg/kubelet/dockershim",
-			"revision": "1ced91f2011b6d20a9572cf782762a1ca5da05c0",
-			"revisionTime": "2017-11-15T14:41:05Z"
+			"revision": "5fa2db2bd46ac79e5e00a4e6ed24191080aa463b",
+			"revisionTime": "2018-01-17T11:44:51Z"
 		},
 		{
 			"checksumSHA1": "oAd+2EDHVy/uczGXG2qMk9shxw8=",
 			"path": "k8s.io/kubernetes/pkg/kubelet/dockershim/cm",
-			"revision": "1ced91f2011b6d20a9572cf782762a1ca5da05c0",
-			"revisionTime": "2017-11-15T14:41:05Z"
+			"revision": "5fa2db2bd46ac79e5e00a4e6ed24191080aa463b",
+			"revisionTime": "2018-01-17T11:44:51Z"
 		},
 		{
-			"checksumSHA1": "mNcKzj7E7fxQf4PaLsqiICcL8VE=",
+			"checksumSHA1": "1AVPlCXu7VxaLsDY+2GbE1bdpvg=",
 			"path": "k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker",
-			"revision": "1ced91f2011b6d20a9572cf782762a1ca5da05c0",
-			"revisionTime": "2017-11-15T14:41:05Z"
+			"revision": "5fa2db2bd46ac79e5e00a4e6ed24191080aa463b",
+			"revisionTime": "2018-01-17T11:44:51Z"
 		},
 		{
 			"checksumSHA1": "/GQpvIUql5XSYXRWpowjUhWEHmY=",
 			"path": "k8s.io/kubernetes/pkg/kubelet/dockershim/metrics",
-			"revision": "1ced91f2011b6d20a9572cf782762a1ca5da05c0",
-			"revisionTime": "2017-11-15T14:41:05Z"
+			"revision": "5fa2db2bd46ac79e5e00a4e6ed24191080aa463b",
+			"revisionTime": "2018-01-17T11:44:51Z"
 		},
 		{
 			"checksumSHA1": "lnwoSE0Sht70ys4ylVQvz/l+fW0=",
 			"path": "k8s.io/kubernetes/pkg/kubelet/dockershim/remote",
-			"revision": "1ced91f2011b6d20a9572cf782762a1ca5da05c0",
-			"revisionTime": "2017-11-15T14:41:05Z"
+			"revision": "5fa2db2bd46ac79e5e00a4e6ed24191080aa463b",
+			"revisionTime": "2018-01-17T11:44:51Z"
 		},
 		{
 			"checksumSHA1": "NnvlMZE+sbgDHaBvtq2Pad9mCRc=",
@@ -4829,5 +4829,5 @@
 			"revisionTime": "2017-07-19T03:11:28Z"
 		}
 	],
-	"rootPath": "k8s.io/frakti"
+	"rootPath": "/k8s.io/frakti"
 }
