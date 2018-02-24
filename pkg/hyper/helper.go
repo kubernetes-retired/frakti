@@ -339,8 +339,8 @@ func readCgroupFileToInt64(cgroupPath, cgroupFile string) (int64, error) {
 	}
 }
 
-// getMemeoryLimitFromCgroup get the memory limit from given cgroupParent
-func (h *Runtime) getMemeoryLimitFromCgroup(cgroupParent string) (int32, error) {
+// getMemoryLimitFromCgroup get the memory limit from given cgroupParent
+func (h *Runtime) getMemoryLimitFromCgroup(cgroupParent string) (int32, error) {
 	mntPath, err := libcontainercgroups.FindCgroupMountpoint("memory")
 	if err != nil {
 		return -1, err
