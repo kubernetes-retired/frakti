@@ -325,9 +325,7 @@ func ValidateDeploymentStatus(status *extensions.DeploymentStatus, fldPath *fiel
 	if status.AvailableReplicas > status.Replicas {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("availableReplicas"), status.AvailableReplicas, msg))
 	}
-	// TODO: ReadyReplicas is introduced in 1.6 and this check breaks the Deployment controller when pre-1.6 clusters get upgraded.
-	// 		 Remove the comparison to zero once we stop supporting upgrades from 1.5.
-	if status.ReadyReplicas > 0 && status.AvailableReplicas > status.ReadyReplicas {
+	if status.AvailableReplicas > status.ReadyReplicas {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("availableReplicas"), status.AvailableReplicas, "cannot be greater than readyReplicas"))
 	}
 	return allErrs
@@ -657,6 +655,7 @@ func ValidatePodSecurityPolicySpec(spec *extensions.PodSecurityPolicySpec, fldPa
 	allErrs = append(allErrs, validatePSPCapsAgainstDrops(spec.RequiredDropCapabilities, spec.AllowedCapabilities, field.NewPath("allowedCapabilities"))...)
 	allErrs = append(allErrs, validatePSPDefaultAllowPrivilegeEscalation(fldPath.Child("defaultAllowPrivilegeEscalation"), spec.DefaultAllowPrivilegeEscalation, spec.AllowPrivilegeEscalation)...)
 	allErrs = append(allErrs, validatePSPAllowedHostPaths(fldPath.Child("allowedHostPaths"), spec.AllowedHostPaths)...)
+	allErrs = append(allErrs, validatePSPAllowedFlexVolumes(fldPath.Child("allowedFlexVolumes"), spec.AllowedFlexVolumes)...)
 
 	return allErrs
 }
@@ -720,6 +719,20 @@ func validatePSPAllowedHostPaths(fldPath *field.Path, allowedHostPaths []extensi
 		}
 	}
 
+	return allErrs
+}
+
+// validatePSPAllowedFlexVolumes
+func validatePSPAllowedFlexVolumes(fldPath *field.Path, flexVolumes []extensions.AllowedFlexVolume) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if len(flexVolumes) > 0 {
+		for idx, fv := range flexVolumes {
+			if len(fv.Driver) == 0 {
+				allErrs = append(allErrs, field.Required(fldPath.Child("allowedFlexVolumes").Index(idx).Child("driver"),
+					"must specify a driver"))
+			}
+		}
+	}
 	return allErrs
 }
 
@@ -804,7 +817,6 @@ func validatePodSecurityPolicyVolumes(fldPath *field.Path, volumes []extensions.
 			allErrs = append(allErrs, field.NotSupported(fldPath.Child("volumes"), v, allowed.List()))
 		}
 	}
-
 	return allErrs
 }
 

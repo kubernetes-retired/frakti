@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	goruntime "runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -32,8 +31,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-
-	clientgoclientset "k8s.io/client-go/kubernetes"
 
 	cadvisorapi "github.com/google/cadvisor/info/v1"
 	cadvisorapiv2 "github.com/google/cadvisor/info/v2"
@@ -79,6 +76,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/metrics"
 	"k8s.io/kubernetes/pkg/kubelet/network"
+	"k8s.io/kubernetes/pkg/kubelet/network/dns"
 	"k8s.io/kubernetes/pkg/kubelet/pleg"
 	kubepod "k8s.io/kubernetes/pkg/kubelet/pod"
 	"k8s.io/kubernetes/pkg/kubelet/preemption"
@@ -202,6 +200,8 @@ type Builder func(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	cloudProvider string,
 	certDirectory string,
 	rootDirectory string,
+	registerNode bool,
+	registerWithTaints []api.Taint,
 	allowedUnsafeSysctls []string,
 	containerized bool,
 	remoteRuntimeEndpoint string,
@@ -216,7 +216,10 @@ type Builder func(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	masterServiceNamespace string,
 	registerSchedulable bool,
 	nonMasqueradeCIDR string,
-	keepTerminatedPodVolumes bool) (Bootstrap, error)
+	keepTerminatedPodVolumes bool,
+	nodeLabels map[string]string,
+	seccompProfileRoot string,
+	bootstrapCheckpointPath string) (Bootstrap, error)
 
 // Dependencies is a bin for things we might consider "injected dependencies" -- objects constructed
 // at runtime that are necessary for running the Kubelet. This is a temporary solution for grouping
@@ -253,7 +256,7 @@ type Dependencies struct {
 	EventClient             v1core.EventsGetter
 	HeartbeatClient         v1core.CoreV1Interface
 	KubeClient              clientset.Interface
-	ExternalKubeClient      clientgoclientset.Interface
+	ExternalKubeClient      clientset.Interface
 	Mounter                 mount.Interface
 	NetworkPlugins          []network.NetworkPlugin
 	OOMAdjuster             *oom.OOMAdjuster
@@ -269,7 +272,7 @@ type Dependencies struct {
 
 // makePodSourceConfig creates a config.PodConfig from the given
 // KubeletConfiguration or returns an error.
-func makePodSourceConfig(kubeCfg *kubeletconfiginternal.KubeletConfiguration, kubeDeps *Dependencies, nodeName types.NodeName) (*config.PodConfig, error) {
+func makePodSourceConfig(kubeCfg *kubeletconfiginternal.KubeletConfiguration, kubeDeps *Dependencies, nodeName types.NodeName, bootstrapCheckpointPath string) (*config.PodConfig, error) {
 	manifestURLHeader := make(http.Header)
 	if len(kubeCfg.ManifestURLHeader) > 0 {
 		for k, v := range kubeCfg.ManifestURLHeader {
@@ -284,7 +287,7 @@ func makePodSourceConfig(kubeCfg *kubeletconfiginternal.KubeletConfiguration, ku
 
 	// define file config source
 	if kubeCfg.PodManifestPath != "" {
-		glog.Infof("Adding manifest file: %v", kubeCfg.PodManifestPath)
+		glog.Infof("Adding manifest path: %v", kubeCfg.PodManifestPath)
 		config.NewSourceFile(kubeCfg.PodManifestPath, nodeName, kubeCfg.FileCheckFrequency.Duration, cfg.Channel(kubetypes.FileSource))
 	}
 
@@ -293,9 +296,22 @@ func makePodSourceConfig(kubeCfg *kubeletconfiginternal.KubeletConfiguration, ku
 		glog.Infof("Adding manifest url %q with HTTP header %v", kubeCfg.ManifestURL, manifestURLHeader)
 		config.NewSourceURL(kubeCfg.ManifestURL, manifestURLHeader, nodeName, kubeCfg.HTTPCheckFrequency.Duration, cfg.Channel(kubetypes.HTTPSource))
 	}
+
+	// Restore from the checkpoint path
+	// NOTE: This MUST happen before creating the apiserver source
+	// below, or the checkpoint would override the source of truth.
+	updatechannel := cfg.Channel(kubetypes.ApiserverSource)
+	if bootstrapCheckpointPath != "" {
+		glog.Infof("Adding checkpoint path: %v", bootstrapCheckpointPath)
+		err := cfg.Restore(bootstrapCheckpointPath, updatechannel)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if kubeDeps.KubeClient != nil {
 		glog.Infof("Watching apiserver")
-		config.NewSourceApiserver(kubeDeps.KubeClient, nodeName, cfg.Channel(kubetypes.ApiserverSource))
+		config.NewSourceApiserver(kubeDeps.KubeClient, nodeName, updatechannel)
 	}
 	return cfg, nil
 }
@@ -325,6 +341,8 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	cloudProvider string,
 	certDirectory string,
 	rootDirectory string,
+	registerNode bool,
+	registerWithTaints []api.Taint,
 	allowedUnsafeSysctls []string,
 	containerized bool,
 	remoteRuntimeEndpoint string,
@@ -339,7 +357,10 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 	masterServiceNamespace string,
 	registerSchedulable bool,
 	nonMasqueradeCIDR string,
-	keepTerminatedPodVolumes bool) (*Kubelet, error) {
+	keepTerminatedPodVolumes bool,
+	nodeLabels map[string]string,
+	seccompProfileRoot string,
+	bootstrapCheckpointPath string) (*Kubelet, error) {
 	if rootDirectory == "" {
 		return nil, fmt.Errorf("invalid root directory %q", rootDirectory)
 	}
@@ -400,7 +421,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 
 	if kubeDeps.PodConfig == nil {
 		var err error
-		kubeDeps.PodConfig, err = makePodSourceConfig(kubeCfg, kubeDeps, nodeName)
+		kubeDeps.PodConfig, err = makePodSourceConfig(kubeCfg, kubeDeps, nodeName, bootstrapCheckpointPath)
 		if err != nil {
 			return nil, err
 		}
@@ -479,6 +500,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		}
 	}
 	httpClient := &http.Client{}
+	parsedNodeIP := net.ParseIP(nodeIP)
 
 	klet := &Kubelet{
 		hostname:                       hostname,
@@ -488,10 +510,10 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		rootDirectory:                  rootDirectory,
 		resyncInterval:                 kubeCfg.SyncFrequency.Duration,
 		sourcesReady:                   config.NewSourcesReady(kubeDeps.PodConfig.SeenAllSources),
-		registerNode:                   kubeCfg.RegisterNode,
+		registerNode:                   registerNode,
+		registerWithTaints:             registerWithTaints,
 		registerSchedulable:            registerSchedulable,
-		clusterDomain:                  kubeCfg.ClusterDomain,
-		clusterDNS:                     clusterDNS,
+		dnsConfigurer:                  dns.NewConfigurer(kubeDeps.Recorder, nodeRef, parsedNodeIP, clusterDNS, kubeCfg.ClusterDomain, kubeCfg.ResolverConfig),
 		serviceLister:                  serviceLister,
 		nodeInfo:                       nodeInfo,
 		masterServiceNamespace:         masterServiceNamespace,
@@ -503,7 +525,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		externalCloudProvider:     cloudprovider.IsExternal(cloudProvider),
 		providerID:                providerID,
 		nodeRef:                   nodeRef,
-		nodeLabels:                kubeCfg.NodeLabels,
+		nodeLabels:                nodeLabels,
 		nodeStatusUpdateFrequency: kubeCfg.NodeStatusUpdateFrequency.Duration,
 		os:                   kubeDeps.OSInterface,
 		oomWatcher:           oomWatcher,
@@ -514,11 +536,10 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		maxPods:              int(kubeCfg.MaxPods),
 		podsPerCore:          int(kubeCfg.PodsPerCore),
 		syncLoopMonitor:      atomic.Value{},
-		resolverConfig:       kubeCfg.ResolverConfig,
 		daemonEndpoints:      daemonEndpoints,
 		containerManager:     kubeDeps.ContainerManager,
 		containerRuntimeName: containerRuntime,
-		nodeIP:               net.ParseIP(nodeIP),
+		nodeIP:               parsedNodeIP,
 		clock:                clock.RealClock{},
 		enableControllerAttachDetach:            kubeCfg.EnableControllerAttachDetach,
 		iptClient:                               utilipt.New(utilexec.New(), utildbus.New(), utilipt.ProtocolIpv4),
@@ -653,7 +674,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		runtime, err := kuberuntime.NewKubeGenericRuntimeManager(
 			kubecontainer.FilterEventRecorder(kubeDeps.Recorder),
 			klet.livenessManager,
-			kubeCfg.SeccompProfileRoot,
+			seccompProfileRoot,
 			containerRefManager,
 			machineInfo,
 			klet,
@@ -676,14 +697,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		klet.containerRuntime = runtime
 		klet.runner = runtime
 
-		// CRI integrations should get container metrics via CRI. Docker
-		// uses the built-in cadvisor to gather such metrics on Linux for
-		// historical reasons.
-		// cri-o relies on cadvisor as a temporary workaround. The code should
-		// be removed. Related issue:
-		// https://github.com/kubernetes/kubernetes/issues/51798
-		if (containerRuntime == kubetypes.DockerContainerRuntime &&
-			goruntime.GOOS == "linux") || remoteRuntimeEndpoint == "/var/run/crio.sock" {
+		if cadvisor.UsingLegacyCadvisorStats(containerRuntime, remoteRuntimeEndpoint) {
 			klet.StatsProvider = stats.NewCadvisorStatsProvider(
 				klet.cadvisor,
 				klet.resourceAnalyzer,
@@ -808,7 +822,7 @@ func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,
 		experimentalCheckNodeCapabilitiesBeforeMount = false
 		// Replace the nameserver in containerized-mounter's rootfs/etc/resolve.conf with kubelet.ClusterDNS
 		// so that service name could be resolved
-		klet.setupDNSinContainerizedMounter(experimentalMounterPath)
+		klet.dnsConfigurer.SetupDNSinContainerizedMounter(experimentalMounterPath)
 	}
 
 	// setup volumeManager
@@ -945,16 +959,15 @@ type Kubelet struct {
 
 	// Set to true to have the node register itself with the apiserver.
 	registerNode bool
+	// List of taints to add to a node object when the kubelet registers itself.
+	registerWithTaints []api.Taint
 	// Set to true to have the node register itself as schedulable.
 	registerSchedulable bool
 	// for internal book keeping; access only from within registerWithApiserver
 	registrationCompleted bool
 
-	// If non-empty, use this for container DNS search.
-	clusterDomain string
-
-	// If non-nil, use this for container DNS server.
-	clusterDNS []net.IP
+	// dnsConfigurer is used for setting up DNS resolver configuration when launching pods.
+	dnsConfigurer *dns.Configurer
 
 	// masterServiceNamespace is the namespace that the master service is exposed in.
 	masterServiceNamespace string
@@ -1098,11 +1111,6 @@ type Kubelet struct {
 
 	// Channel for sending pods to kill.
 	podKillingCh chan *kubecontainer.PodPair
-
-	// The configuration file used as the base to generate the container's
-	// DNS resolver configuration file. This can be used in conjunction with
-	// clusterDomain and clusterDNS.
-	resolverConfig string
 
 	// Information about the ports which are opened by daemons on Node running this Kubelet server.
 	daemonEndpoints *v1.NodeDaemonEndpoints
@@ -1311,7 +1319,7 @@ func (kl *Kubelet) initializeModules() error {
 		return fmt.Errorf("Kubelet failed to get node info: %v", err)
 	}
 
-	if err := kl.containerManager.Start(node, kl.GetActivePods, kl.statusManager, kl.runtimeService); err != nil {
+	if err := kl.containerManager.Start(node, kl.GetActivePods, kl.sourcesReady, kl.statusManager, kl.runtimeService); err != nil {
 		return fmt.Errorf("Failed to start ContainerManager %v", err)
 	}
 
@@ -1377,8 +1385,8 @@ func (kl *Kubelet) Run(updates <-chan kubetypes.PodUpdate) {
 	go wait.Until(kl.podKiller, 1*time.Second, wait.NeverStop)
 
 	// Start gorouting responsible for checking limits in resolv.conf
-	if kl.resolverConfig != "" {
-		go wait.Until(func() { kl.checkLimitsForResolvConf() }, 30*time.Second, wait.NeverStop)
+	if kl.dnsConfigurer.ResolverConfig != "" {
+		go wait.Until(func() { kl.dnsConfigurer.CheckLimitsForResolvConf() }, 30*time.Second, wait.NeverStop)
 	}
 
 	// Start component sync loops.
@@ -1844,17 +1852,28 @@ func (kl *Kubelet) syncLoopIteration(configCh <-chan kubetypes.PodUpdate, handle
 			glog.V(2).Infof("SyncLoop (DELETE, %q): %q", u.Source, format.Pods(u.Pods))
 			// DELETE is treated as a UPDATE because of graceful deletion.
 			handler.HandlePodUpdates(u.Pods)
+		case kubetypes.RESTORE:
+			glog.V(2).Infof("SyncLoop (RESTORE, %q): %q", u.Source, format.Pods(u.Pods))
+			// These are pods restored from the checkpoint. Treat them as new
+			// pods.
+			handler.HandlePodAdditions(u.Pods)
 		case kubetypes.SET:
 			// TODO: Do we want to support this?
 			glog.Errorf("Kubelet does not support snapshot update")
 		}
 
-		// Mark the source ready after receiving at least one update from the
-		// source. Once all the sources are marked ready, various cleanup
-		// routines will start reclaiming resources. It is important that this
-		// takes place only after kubelet calls the update handler to process
-		// the update to ensure the internal pod cache is up-to-date.
-		kl.sourcesReady.AddSource(u.Source)
+		if u.Op != kubetypes.RESTORE {
+			// If the update type is RESTORE, it means that the update is from
+			// the pod checkpoints and may be incomplete. Do not mark the
+			// source as ready.
+
+			// Mark the source ready after receiving at least one update from the
+			// source. Once all the sources are marked ready, various cleanup
+			// routines will start reclaiming resources. It is important that this
+			// takes place only after kubelet calls the update handler to process
+			// the update to ensure the internal pod cache is up-to-date.
+			kl.sourcesReady.AddSource(u.Source)
+		}
 	case e := <-plegCh:
 		if isSyncPodWorthy(e) {
 			// PLEG event for a pod; sync it.
