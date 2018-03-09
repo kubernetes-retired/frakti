@@ -48,7 +48,13 @@ func NewFlexVolumeDriver(uuid string, name string) *FlexVolumeDriver {
 
 // Invocation: <driver executable> init
 func (d *FlexVolumeDriver) init() (map[string]interface{}, error) {
-	// TODO(harry): check if GOOGLE_APPLICATION_CREDENTIALS is set.
+	cred := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if len(cred) == 0 {
+		return nil, fmt.Errorf("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set")
+	}
+	if _, err := os.Stat(cred); err != nil {
+		return nil, fmt.Errorf("cannot stat %s: %s", cred, err)
+	}
 	// "{\"status\": \"Success\", \"capabilities\": {\"attach\": false}}"
 	return map[string]interface{}{
 		"capabilities": map[string]bool{
