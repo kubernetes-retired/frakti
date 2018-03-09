@@ -68,8 +68,7 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 	var volOptions map[string]interface{}
 	json.Unmarshal([]byte(jsonOptions), &volOptions)
 
-	// TODO(harry): check "volId zone project" are not nil to avoid panic, below check is useless.
-	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 {
+	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 || len(volOptions[flexvolume.SystemFsTypeKey].(string)) == 0 || len(volOptions[flexvolume.ZoneKey].(string)) == 0 || len(volOptions[flexvolume.ProjectKey].(string)) == 0 {
 		return fmt.Errorf("jsonOptions is not set by user properly: %#v", jsonOptions)
 	}
 
