@@ -19,6 +19,7 @@ package kubelet
 import (
 	"fmt"
 	"net"
+	"runtime"
 
 	"github.com/golang/glog"
 
@@ -86,8 +87,20 @@ type kubeletVolumeHost struct {
 	mountPodManager  mountpod.Manager
 }
 
+func (kvh *kubeletVolumeHost) GetVolumeDevicePluginDir(pluginName string) string {
+	return kvh.kubelet.getVolumeDevicePluginDir(pluginName)
+}
+
 func (kvh *kubeletVolumeHost) GetPodVolumeDir(podUID types.UID, pluginName string, volumeName string) string {
-	return kvh.kubelet.getPodVolumeDir(podUID, pluginName, volumeName)
+	dir := kvh.kubelet.getPodVolumeDir(podUID, pluginName, volumeName)
+	if runtime.GOOS == "windows" {
+		dir = volume.GetWindowsPath(dir)
+	}
+	return dir
+}
+
+func (kvh *kubeletVolumeHost) GetPodVolumeDeviceDir(podUID types.UID, pluginName string) string {
+	return kvh.kubelet.getPodVolumeDeviceDir(podUID, pluginName)
 }
 
 func (kvh *kubeletVolumeHost) GetPodPluginDir(podUID types.UID, pluginName string) string {
@@ -178,6 +191,10 @@ func (kvh *kubeletVolumeHost) GetNodeLabels() (map[string]string, error) {
 		return nil, fmt.Errorf("error retrieving node: %v", err)
 	}
 	return node.Labels, nil
+}
+
+func (kvh *kubeletVolumeHost) GetNodeName() types.NodeName {
+	return kvh.kubelet.nodeName
 }
 
 func (kvh *kubeletVolumeHost) GetExec(pluginName string) mount.Exec {

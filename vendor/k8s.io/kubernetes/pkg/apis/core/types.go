@@ -269,7 +269,7 @@ type VolumeSource struct {
 	Quobyte *QuobyteVolumeSource
 
 	// FlexVolume represents a generic volume resource that is
-	// provisioned/attached using an exec based plugin. This is an alpha feature and may change in future.
+	// provisioned/attached using an exec based plugin.
 	// +optional
 	FlexVolume *FlexVolumeSource
 
@@ -347,12 +347,12 @@ type PersistentVolumeSource struct {
 	// Quobyte represents a Quobyte mount on the host that shares a pod's lifetime
 	// +optional
 	Quobyte *QuobyteVolumeSource
-	// ISCSIVolumeSource represents an ISCSI resource that is attached to a
+	// ISCSIPersistentVolumeSource represents an ISCSI resource that is attached to a
 	// kubelet's host machine and then exposed to the pod.
 	// +optional
-	ISCSI *ISCSIVolumeSource
+	ISCSI *ISCSIPersistentVolumeSource
 	// FlexVolume represents a generic volume resource that is
-	// provisioned/attached using an exec based plugin. This is an alpha feature and may change in future.
+	// provisioned/attached using an exec based plugin.
 	// +optional
 	FlexVolume *FlexVolumeSource
 	// Cinder represents a cinder volume attached and mounted on kubelets host machine
@@ -391,6 +391,9 @@ type PersistentVolumeSource struct {
 	// More info: https://releases.k8s.io/HEAD/examples/volumes/storageos/README.md
 	// +optional
 	StorageOS *StorageOSPersistentVolumeSource
+	// CSI (Container Storage Interface) represents storage that handled by an external CSI driver
+	// +optional
+	CSI *CSIPersistentVolumeSource
 }
 
 type PersistentVolumeClaimVolumeSource struct {
@@ -459,6 +462,11 @@ type PersistentVolumeSpec struct {
 	// simply fail if one is invalid.
 	// +optional
 	MountOptions []string
+	// volumeMode defines if a volume is intended to be used with a formatted filesystem
+	// or to remain in raw block state. Value of Filesystem is implied when not included in spec.
+	// This is an alpha feature and may change in the future.
+	// +optional
+	VolumeMode *PersistentVolumeMode
 }
 
 // PersistentVolumeReclaimPolicy describes a policy for end-of-life maintenance of persistent volumes
@@ -474,6 +482,16 @@ const (
 	// PersistentVolumeReclaimRetain means the volume will be left in its current phase (Released) for manual reclamation by the administrator.
 	// The default policy is Retain.
 	PersistentVolumeReclaimRetain PersistentVolumeReclaimPolicy = "Retain"
+)
+
+// PersistentVolumeMode describes how a volume is intended to be consumed, either Block or Filesystem.
+type PersistentVolumeMode string
+
+const (
+	// PersistentVolumeBlock means the volume will not be formatted with a filesystem and will remain a raw block device.
+	PersistentVolumeBlock PersistentVolumeMode = "Block"
+	// PersistentVolumeFilesystem means the volume will be or is formatted with a filesystem.
+	PersistentVolumeFilesystem PersistentVolumeMode = "Filesystem"
 )
 
 type PersistentVolumeStatus struct {
@@ -545,6 +563,11 @@ type PersistentVolumeClaimSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#class-1
 	// +optional
 	StorageClassName *string
+	// volumeMode defines what type of volume is required by the claim.
+	// Value of Filesystem is implied when not included in claim spec.
+	// This is an alpha feature and may change in the future.
+	// +optional
+	VolumeMode *PersistentVolumeMode
 }
 
 type PersistentVolumeClaimConditionType string
@@ -770,6 +793,54 @@ type ISCSIVolumeSource struct {
 	InitiatorName *string
 }
 
+// ISCSIPersistentVolumeSource represents an ISCSI disk.
+// ISCSI volumes can only be mounted as read/write once.
+// ISCSI volumes support ownership management and SELinux relabeling.
+type ISCSIPersistentVolumeSource struct {
+	// Required: iSCSI target portal
+	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
+	// +optional
+	TargetPortal string
+	// Required:  target iSCSI Qualified Name
+	// +optional
+	IQN string
+	// Required: iSCSI target lun number
+	// +optional
+	Lun int32
+	// Optional: Defaults to 'default' (tcp). iSCSI interface name that uses an iSCSI transport.
+	// +optional
+	ISCSIInterface string
+	// Filesystem type to mount.
+	// Must be a filesystem type supported by the host operating system.
+	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// TODO: how do we prevent errors in the filesystem from compromising the machine
+	// +optional
+	FSType string
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	// +optional
+	ReadOnly bool
+	// Optional: list of iSCSI target portal ips for high availability.
+	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
+	// +optional
+	Portals []string
+	// Optional: whether support iSCSI Discovery CHAP authentication
+	// +optional
+	DiscoveryCHAPAuth bool
+	// Optional: whether support iSCSI Session CHAP authentication
+	// +optional
+	SessionCHAPAuth bool
+	// Optional: CHAP secret for iSCSI target and initiator authentication.
+	// The secret is used if either DiscoveryCHAPAuth or SessionCHAPAuth is true
+	// +optional
+	SecretRef *SecretReference
+	// Optional: Custom initiator name per volume.
+	// If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
+	// <target portal>:<volume name> will be created for the connection.
+	// +optional
+	InitiatorName *string
+}
+
 // Represents a Fibre Channel volume.
 // Fibre Channel volumes can only be mounted as read/write once.
 // Fibre Channel volumes support ownership management and SELinux relabeling.
@@ -797,7 +868,7 @@ type FCVolumeSource struct {
 }
 
 // FlexVolume represents a generic volume resource that is
-// provisioned/attached using an exec based plugin. This is an alpha feature and may change in future.
+// provisioned/attached using an exec based plugin.
 type FlexVolumeSource struct {
 	// Driver is the name of the driver to use for this volume.
 	Driver string
@@ -1503,6 +1574,23 @@ type LocalVolumeSource struct {
 	Path string
 }
 
+// Represents storage that is managed by an external CSI volume driver
+type CSIPersistentVolumeSource struct {
+	// Driver is the name of the driver to use for this volume.
+	// Required.
+	Driver string
+
+	// VolumeHandle is the unique volume name returned by the CSI volume
+	// plugin’s CreateVolume to refer to the volume on all subsequent calls.
+	// Required.
+	VolumeHandle string
+
+	// Optional: The value to pass to ControllerPublishVolumeRequest.
+	// Defaults to false (read/write).
+	// +optional
+	ReadOnly bool
+}
+
 // ContainerPort represents a network port in a single container
 type ContainerPort struct {
 	// Optional: If specified, this must be an IANA_SVC_NAME  Each named port
@@ -1530,7 +1618,9 @@ type VolumeMount struct {
 	// Optional: Defaults to false (read-write).
 	// +optional
 	ReadOnly bool
-	// Required. Must not contain ':'.
+	// Required. If the path is not an absolute path (e.g. some/path) it
+	// will be prepended with the appropriate root prefix for the operating
+	// system.  On Linux this is '/', on Windows this is 'C:\'.
 	MountPath string
 	// Path within the volume from which the container's volume should be mounted.
 	// Defaults to "" (volume's root).
@@ -1563,6 +1653,14 @@ const (
 	// ("rshared" in Linux terminology).
 	MountPropagationBidirectional MountPropagationMode = "Bidirectional"
 )
+
+// VolumeDevice describes a mapping of a raw block device within a container.
+type VolumeDevice struct {
+	// name must match the name of a persistentVolumeClaim in the pod
+	Name string
+	// devicePath is the path inside of the container that the device will be mapped to.
+	DevicePath string
+}
 
 // EnvVar represents an environment variable present in a Container.
 type EnvVar struct {
@@ -1857,6 +1955,10 @@ type Container struct {
 	Resources ResourceRequirements
 	// +optional
 	VolumeMounts []VolumeMount
+	// volumeDevices is the list of block devices to be used by the container.
+	// This is an alpha feature and may change in the future.
+	// +optional
+	VolumeDevices []VolumeDevice
 	// +optional
 	LivenessProbe *Probe
 	// +optional
@@ -2081,6 +2183,11 @@ const (
 	// DNSDefault indicates that the pod should use the default (as
 	// determined by kubelet) DNS settings.
 	DNSDefault DNSPolicy = "Default"
+
+	// DNSNone indicates that the pod should use empty DNS settings. DNS
+	// parameters such as nameservers and search paths should be defined via
+	// DNSConfig.
+	DNSNone DNSPolicy = "None"
 )
 
 // A node selector represents the union of the results of one or more label queries
@@ -2380,7 +2487,12 @@ type PodSpec struct {
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// +optional
 	ActiveDeadlineSeconds *int64
-	// Required: Set DNS policy.
+	// Set DNS policy for the pod.
+	// Defaults to "ClusterFirst".
+	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
+	// DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
+	// To have DNS options set along with hostNetwork, you have to specify DNS policy
+	// explicitly to 'ClusterFirstWithHostNet'.
 	// +optional
 	DNSPolicy DNSPolicy
 	// NodeSelector is a selector which must be true for the pod to fit on a node
@@ -2444,6 +2556,11 @@ type PodSpec struct {
 	// The higher the value, the higher the priority.
 	// +optional
 	Priority *int32
+	// Specifies the DNS parameters of a pod.
+	// Parameters specified here will be merged to the generated DNS
+	// configuration based on DNSPolicy.
+	// +optional
+	DNSConfig *PodDNSConfig
 }
 
 // HostAlias holds the mapping between IP and hostnames that will be injected as an entry in the
@@ -2532,6 +2649,35 @@ const (
 	// PodQOSBestEffort is the BestEffort qos class.
 	PodQOSBestEffort PodQOSClass = "BestEffort"
 )
+
+// PodDNSConfig defines the DNS parameters of a pod in addition to
+// those generated from DNSPolicy.
+type PodDNSConfig struct {
+	// A list of DNS name server IP addresses.
+	// This will be appended to the base nameservers generated from DNSPolicy.
+	// Duplicated nameservers will be removed.
+	// +optional
+	Nameservers []string
+	// A list of DNS search domains for host-name lookup.
+	// This will be appended to the base search paths generated from DNSPolicy.
+	// Duplicated search paths will be removed.
+	// +optional
+	Searches []string
+	// A list of DNS resolver options.
+	// This will be merged with the base options generated from DNSPolicy.
+	// Duplicated entries will be removed. Resolution options given in Options
+	// will override those that appear in the base DNSPolicy.
+	// +optional
+	Options []PodDNSConfigOption
+}
+
+// PodDNSConfigOption defines DNS resolver options of a pod.
+type PodDNSConfigOption struct {
+	// Required.
+	Name string
+	// +optional
+	Value *string
+}
 
 // PodStatus represents information about the status of a pod. Status may trail the actual
 // state of a system.
@@ -2916,7 +3062,8 @@ type ServiceSpec struct {
 
 	// ExternalName is the external reference that kubedns or equivalent will
 	// return as a CNAME record for this service. No proxying will be involved.
-	// Must be a valid DNS name and requires Type to be ExternalName.
+	// Must be a valid RFC-1123 hostname (https://tools.ietf.org/html/rfc1123)
+	// and requires Type to be ExternalName.
 	ExternalName string
 
 	// ExternalIPs are used by external load balancers, or can be set by
@@ -3406,8 +3553,6 @@ const (
 )
 
 const (
-	// Namespace prefix for opaque counted resources (alpha).
-	ResourceOpaqueIntPrefix = "pod.alpha.kubernetes.io/opaque-int-resource-"
 	// Default namespace prefix.
 	ResourceDefaultNamespacePrefix = "kubernetes.io/"
 	// Name prefix for huge page resources (alpha).
@@ -3813,7 +3958,7 @@ type Event struct {
 	// +optional
 	metav1.ObjectMeta
 
-	// Required. The object that this event is about.
+	// Required. The object that this event is about. Mapped to events.Event.regarding
 	// +optional
 	InvolvedObject ObjectReference
 
@@ -3825,7 +3970,7 @@ type Event struct {
 	Reason string
 
 	// Optional. A human-readable description of the status of this operation.
-	// TODO: decide on maximum length.
+	// TODO: decide on maximum length. Mapped to events.Event.note
 	// +optional
 	Message string
 
@@ -3848,7 +3993,48 @@ type Event struct {
 	// Type of this event (Normal, Warning), new types could be added in the future.
 	// +optional
 	Type string
+
+	// Time when this Event was first observed.
+	// +optional
+	EventTime metav1.MicroTime
+
+	// Data about the Event series this event represents or nil if it's a singleton Event.
+	// +optional
+	Series *EventSeries
+
+	// What action was taken/failed regarding to the Regarding object.
+	// +optional
+	Action string
+
+	// Optional secondary object for more complex actions.
+	// +optional
+	Related *ObjectReference
+
+	// Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
+	// +optional
+	ReportingController string
+
+	// ID of the controller instance, e.g. `kubelet-xyzf`.
+	// +optional
+	ReportingInstance string
 }
+
+type EventSeries struct {
+	// Number of occurrences in this series up to the last heartbeat time
+	Count int32
+	// Time of the last occurence observed
+	LastObservedTime metav1.MicroTime
+	// State of this Series: Ongoing or Finished
+	State EventSeriesState
+}
+
+type EventSeriesState string
+
+const (
+	EventSeriesStateOngoing  EventSeriesState = "Ongoing"
+	EventSeriesStateFinished EventSeriesState = "Finished"
+	EventSeriesStateUnknown  EventSeriesState = "Unknown"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -3966,6 +4152,13 @@ const (
 	ResourceLimitsMemory ResourceName = "limits.memory"
 	// Local ephemeral storage limit, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceLimitsEphemeralStorage ResourceName = "limits.ephemeral-storage"
+)
+
+// The following identify resource prefix for Kubernetes object types
+const (
+	// HugePages request, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	// As burst is not supported for HugePages, we would only quota its request, and ignore the limit.
+	ResourceRequestsHugePagesPrefix = "requests.hugepages-"
 )
 
 // A ResourceQuotaScope defines a filter that must match each object tracked by a quota

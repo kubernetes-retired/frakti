@@ -78,6 +78,36 @@ func (pdev podDevices) containerDevices(podUID, contName, resource string) sets.
 	return devs.deviceIds
 }
 
+// Populates allocatedResources with the device resources allocated to the specified <podUID, contName>.
+func (pdev podDevices) addContainerAllocatedResources(podUID, contName string, allocatedResources map[string]sets.String) {
+	containers, exists := pdev[podUID]
+	if !exists {
+		return
+	}
+	resources, exists := containers[contName]
+	if !exists {
+		return
+	}
+	for resource, devices := range resources {
+		allocatedResources[resource] = allocatedResources[resource].Union(devices.deviceIds)
+	}
+}
+
+// Removes the device resources allocated to the specified <podUID, contName> from allocatedResources.
+func (pdev podDevices) removeContainerAllocatedResources(podUID, contName string, allocatedResources map[string]sets.String) {
+	containers, exists := pdev[podUID]
+	if !exists {
+		return
+	}
+	resources, exists := containers[contName]
+	if !exists {
+		return
+	}
+	for resource, devices := range resources {
+		allocatedResources[resource] = allocatedResources[resource].Difference(devices.deviceIds)
+	}
+}
+
 // Returns all of devices allocated to the pods being tracked, keyed by resourceName.
 func (pdev podDevices) devices() map[string]sets.String {
 	ret := make(map[string]sets.String)
@@ -94,7 +124,8 @@ func (pdev podDevices) devices() map[string]sets.String {
 	return ret
 }
 
-type checkpointEntry struct {
+// podDevicesCheckpointEntry is used to record <pod, container> to device allocation information.
+type podDevicesCheckpointEntry struct {
 	PodUID        string
 	ContainerName string
 	ResourceName  string
@@ -102,26 +133,24 @@ type checkpointEntry struct {
 	AllocResp     []byte
 }
 
-// checkpointData struct is used to store pod to device allocation information
-// in a checkpoint file.
-// TODO: add version control when we need to change checkpoint format.
-type checkpointData struct {
-	Entries []checkpointEntry
-}
-
 // Turns podDevices to checkpointData.
-func (pdev podDevices) toCheckpointData() checkpointData {
-	var data checkpointData
+func (pdev podDevices) toCheckpointData() []podDevicesCheckpointEntry {
+	var data []podDevicesCheckpointEntry
 	for podUID, containerDevices := range pdev {
 		for conName, resources := range containerDevices {
 			for resource, devices := range resources {
 				devIds := devices.deviceIds.UnsortedList()
+				if devices.allocResp == nil {
+					glog.Errorf("Can't marshal allocResp for %v %v %v: allocation response is missing", podUID, conName, resource)
+					continue
+				}
+
 				allocResp, err := devices.allocResp.Marshal()
 				if err != nil {
 					glog.Errorf("Can't marshal allocResp for %v %v %v: %v", podUID, conName, resource, err)
 					continue
 				}
-				data.Entries = append(data.Entries, checkpointEntry{podUID, conName, resource, devIds, allocResp})
+				data = append(data, podDevicesCheckpointEntry{podUID, conName, resource, devIds, allocResp})
 			}
 		}
 	}
@@ -129,8 +158,8 @@ func (pdev podDevices) toCheckpointData() checkpointData {
 }
 
 // Populates podDevices from the passed in checkpointData.
-func (pdev podDevices) fromCheckpointData(data checkpointData) {
-	for _, entry := range data.Entries {
+func (pdev podDevices) fromCheckpointData(data []podDevicesCheckpointEntry) {
+	for _, entry := range data {
 		glog.V(2).Infof("Get checkpoint entry: %v %v %v %v %v\n",
 			entry.PodUID, entry.ContainerName, entry.ResourceName, entry.DeviceIDs, entry.AllocResp)
 		devIDs := sets.NewString()

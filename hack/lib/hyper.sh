@@ -81,6 +81,11 @@ frakti::hyper::preinstall() {
   if ! type "apt-get" > /dev/null 2>&1 ; then
     return 0
   fi
+
+  sudo rm /var/lib/apt/lists/lock
+  sudo rm /var/cache/apt/archives/lock
+  sudo rm /var/lib/dpkg/lock
+
   sudo apt-get update -qq
   sudo apt-get install -y qemu-system-x86 wget autoconf automake pkg-config libdevmapper-dev libsqlite3-dev libvirt-dev libvirt-bin libaio1 libpixman-1-0 -qq
   # wget https://s3-us-west-1.amazonaws.com/hypercontainer-download/qemu-hyper/qemu-hyper_2.4.1-1_amd64.deb && sudo dpkg -i --force-all qemu-hyper_2.4.1-1_amd64.deb

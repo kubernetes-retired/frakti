@@ -20,6 +20,8 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/util/parsers"
 	utilpointer "k8s.io/kubernetes/pkg/util/pointer"
 )
@@ -39,14 +41,6 @@ func SetDefaults_ResourceList(obj *v1.ResourceList) {
 	}
 }
 
-func SetDefaults_PodExecOptions(obj *v1.PodExecOptions) {
-	obj.Stdout = true
-	obj.Stderr = true
-}
-func SetDefaults_PodAttachOptions(obj *v1.PodAttachOptions) {
-	obj.Stdout = true
-	obj.Stderr = true
-}
 func SetDefaults_ReplicationController(obj *v1.ReplicationController) {
 	var labels map[string]string
 	if obj.Spec.Template != nil {
@@ -236,13 +230,26 @@ func SetDefaults_PersistentVolume(obj *v1.PersistentVolume) {
 	if obj.Spec.PersistentVolumeReclaimPolicy == "" {
 		obj.Spec.PersistentVolumeReclaimPolicy = v1.PersistentVolumeReclaimRetain
 	}
+	if obj.Spec.VolumeMode == nil && utilfeature.DefaultFeatureGate.Enabled(features.BlockVolume) {
+		obj.Spec.VolumeMode = new(v1.PersistentVolumeMode)
+		*obj.Spec.VolumeMode = v1.PersistentVolumeFilesystem
+	}
 }
 func SetDefaults_PersistentVolumeClaim(obj *v1.PersistentVolumeClaim) {
 	if obj.Status.Phase == "" {
 		obj.Status.Phase = v1.ClaimPending
 	}
+	if obj.Spec.VolumeMode == nil && utilfeature.DefaultFeatureGate.Enabled(features.BlockVolume) {
+		obj.Spec.VolumeMode = new(v1.PersistentVolumeMode)
+		*obj.Spec.VolumeMode = v1.PersistentVolumeFilesystem
+	}
 }
 func SetDefaults_ISCSIVolumeSource(obj *v1.ISCSIVolumeSource) {
+	if obj.ISCSIInterface == "" {
+		obj.ISCSIInterface = "default"
+	}
+}
+func SetDefaults_ISCSIPersistentVolumeSource(obj *v1.ISCSIPersistentVolumeSource) {
 	if obj.ISCSIInterface == "" {
 		obj.ISCSIInterface = "default"
 	}

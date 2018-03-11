@@ -41,11 +41,6 @@ const (
 	minQuotaPeriod = 1000
 )
 
-var (
-	// The default dns opt strings
-	defaultDNSOptions = []string{"ndots:5"}
-)
-
 type podsByID []*kubecontainer.Pod
 
 func (b podsByID) Len() int           { return len(b) }
@@ -278,7 +273,7 @@ func (m *kubeGenericRuntimeManager) getSeccompProfileFromAnnotations(annotations
 	if strings.HasPrefix(profile, "localhost/") {
 		name := strings.TrimPrefix(profile, "localhost/")
 		fname := filepath.Join(m.seccompProfileRoot, filepath.FromSlash(name))
-		return fname
+		return "localhost/" + fname
 	}
 
 	return profile
