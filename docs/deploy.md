@@ -155,7 +155,7 @@ yum install -y kubernetes-cni
 
 CNI networks should also be configured:
 
-- Skip this section if you want to use existing CNI plugins like Fannel, Weave, Calico etc.
+- Skip this section if you want to use existing CNI plugins like Flannel, Weave, Calico etc.
 - Otherwise, you can use **bridge** network plugin, it's the simplest way.
     - Subnets should be different on different nodes. e.g. `10.244.1.0/24` for the master and `10.244.2.0/24` for the first node
 
