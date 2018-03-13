@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	VolIdKey  = "volumeID"
-	FsTypeKey = "fsType"
+	VolIdKey = "volumeID"
 
 	HyperFlexvolumeDataFile = "hyper-flexvolume.json"
 
@@ -35,9 +34,8 @@ const (
 	CinderConfigFile = "/etc/kubernetes/cinder.conf"
 
 	// GCE PD flexvolume
-	ZoneKey      = "zone"
-	ProjectKey   = "project"
-	DivcePathKey = "devicePath"
+	ZoneKey    = "zone"
+	ProjectKey = "project"
 
 	// Build-in fsType key of flexvolume
 	SystemFsTypeKey = "kubernetes.io/fsType"

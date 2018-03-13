@@ -48,7 +48,13 @@ func NewFlexVolumeDriver(uuid string, name string) *FlexVolumeDriver {
 
 // Invocation: <driver executable> init
 func (d *FlexVolumeDriver) init() (map[string]interface{}, error) {
-	// TODO(harry): check if GOOGLE_APPLICATION_CREDENTIALS is set.
+	cred := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if len(cred) == 0 {
+		return nil, fmt.Errorf("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set")
+	}
+	if _, err := os.Stat(cred); err != nil {
+		return nil, fmt.Errorf("cannot stat %s: %s", cred, err)
+	}
 	// "{\"status\": \"Success\", \"capabilities\": {\"attach\": false}}"
 	return map[string]interface{}{
 		"capabilities": map[string]bool{
@@ -62,8 +68,7 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 	var volOptions map[string]interface{}
 	json.Unmarshal([]byte(jsonOptions), &volOptions)
 
-	// TODO(harry): check "volId zone project" are not nil to avoid panic, below check is useless.
-	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 {
+	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 || len(volOptions[flexvolume.SystemFsTypeKey].(string)) == 0 || len(volOptions[flexvolume.ZoneKey].(string)) == 0 || len(volOptions[flexvolume.ProjectKey].(string)) == 0 {
 		return fmt.Errorf("jsonOptions is not set by user properly: %#v", jsonOptions)
 	}
 

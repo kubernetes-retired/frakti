@@ -78,7 +78,7 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 
 	d.volId = volOptions[flexvolume.VolIdKey].(string)
 	// this is a system option
-	d.fsType = volOptions["kubernetes.io/fsType"].(string)
+	d.fsType = volOptions[flexvolume.SystemFsTypeKey].(string)
 
 	manager, err := NewFlexManager(d.cinderConfig)
 	if err != nil {
