@@ -13,7 +13,7 @@ Firstly, install CNI:
 
 ```sh
 $ sudo mkdir -p /etc/cni/net.d  /opt/cni/bin
-$ git clone https://github.com/containernetworking/plugins $GOPATH/src/github.com/containernetworking/plugins
+$ git clone https://github.com/containernetworking/plugins.git $GOPATH/src/github.com/containernetworking/plugins
 $ cd $GOPATH/src/github.com/containernetworking/plugins
 $ ./build.sh
 $ sudo cp bin/* /opt/cni/bin/
