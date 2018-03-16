@@ -22,7 +22,7 @@ We only maintains minimal components in Frakti v2 by following [KISS](https://en
 
 ## For GSoC '18 candidates
 
-We really appreciate your interest in this `Kata + container + Kubernetes` project! 
+We really appreciate your interest in this `Kubernetes + contaienrd + Kata` project! 
 
 > This topic is not easy, but core maintainer of Kata @laijs, sig-node member @resouer, and Google engineer @Random-liu will mentor your work.
 
