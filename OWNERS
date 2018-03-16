@@ -1,9 +1,11 @@
 reviewers:
-  - resouer
-  - feiskyer
+  - dchen1107
+  - resouer 
+  - bergwolf
+  - laijs
   - crazykev
 approvers:
   - dchen1107
-  - resouer
-  - feiskyer 
+  - resouer 
   - bergwolf
+  - laijs
