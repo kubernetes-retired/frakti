@@ -49,7 +49,7 @@ func (p *PrivilegedRuntime) ServiceName() string {
 	return alternativeruntime.PrivilegedRuntimeName
 }
 
-func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, cgroupDriver, privilegedRuntimeRootDir string) (*PrivilegedRuntime, error) {
+func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, cgroupDriver, privilegedRuntimeRootDir, podSandboxImage string) (*PrivilegedRuntime, error) {
 	// For now we use docker as the only supported privileged runtime
 	glog.Infof("Initialize privileged runtime: docker runtime\n")
 
@@ -85,6 +85,10 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	}
 	var nl *kubelet.NoOpLegacyHost
 	pluginSettings.LegacyRuntimeHost = nl
+
+	if len(podSandboxImage) != 0 {
+		crOption.PodSandboxImage = podSandboxImage
+	}
 
 	ds, err := dockershim.NewDockerService(
 		dockerClientConfig,

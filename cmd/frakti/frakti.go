@@ -63,6 +63,7 @@ var (
 	rootDir                 = pflag.String("root-directory", "/var/lib/frakti", "Path to the frakti root directory")
 	defaultCPUNum           = pflag.Int32("cpu", 1, "Default CPU in number for HyperVM when cpu limit is not specified for the pod")
 	defaultMemoryMB         = pflag.Int32("memory", 64, "Default memory in MB for HyperVM when memory limit is not specified for the pod")
+	podSandboxImage         = pflag.String("pod-infra-container-image", "", "The image whose network/ipc namespaces containers in each pod will use.")
 )
 
 func main() {
@@ -93,6 +94,7 @@ func main() {
 		*cniPluginDir,
 		*cgroupDriver,
 		filepath.Join(*rootDir, "privileged"),
+		*podSandboxImage,
 	)
 	if err != nil && *enablePrivilegedRuntime {
 		glog.Fatalf("Initialize privileged runtime failed: %v", err)
