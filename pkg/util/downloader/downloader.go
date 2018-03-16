@@ -27,10 +27,10 @@ import (
 
 // Downloader is an interface for downloading files
 type Downloader interface {
-	// Donwload donwloads file specified by location
+	// Download downloads file specified by location
 	// and return downloaded file path
 	Download(rawUrl string) (string, error)
-	// DonwloadStream donwloads file specified by location
+	// DownloadStream downloads file specified by location
 	// and return io.ReadCloser as stream
 	DownloadStream(rawUrl string) (io.ReadCloser, error)
 }
