@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/kubernetes/frakti.svg?branch=master)](https://travis-ci.org/kubernetes/frakti) [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/frakti)](https://goreportcard.com/report/github.com/kubernetes/frakti)
 
-## Kubernetes + Containerd + Kata##
+## Kubernetes + Containerd + Kata ##
 
 Frakti v2 is an open-source project created by [sig-node](https://github.com/kubernetes/community/tree/master/sig-node) and [KataContainers](https://katacontainers.io/) maintainers to enable Secure Container Runtime in Kubernetes project.
 
