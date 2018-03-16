@@ -1,30 +1,49 @@
-<!-- TOC -->
-- [v1.1.1](#v111)
-    - [Features and updates](#features-and-updates)
-    - [External Dependency Version Information](#external-dependency-version-information)
-- [v1.1](#v11)
-    - [Features and updates](#features-and-updates)
-    - [External Dependency Version Information](#external-dependency-version-information)
-- [v1.0](#v10)
-    - [Features and updates](#features-and-updates)
-    - [External Dependency Version Information](#external-dependency-version-information)
-- [v0.3](#v03)
-    - [Features and updates](#features-and-updates-1)
-    - [External Dependency Version Information](#external-dependency-version-information-1)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests)
-    - [Known issues](#known-issues)
-- [v0.2](#v02)
-    - [Features and updates](#features-and-updates-2)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests-1)
-    - [Known issues](#known-issues-1)
-- [v0.1](#v01)
-    - [Features](#features)
-    - [HyperContainer specific notes](#hypercontainer-specific-notes)
-    - [External Dependency Version Information](#external-dependency-version-information-2)
-    - [Kubelet Node e2e tests](#kubelet-node-e2e-tests-2)
-    - [Known issues](#known-issues-2)
+# CHANGELOG
 
 <!-- /TOC -->
+# v1.9.1
+This release includes enhances and bug fixes. It has also passed all node e2e conformance tests.
+
+**Features and Updates**
+
+- Enhanced frakti stability.
+- Implemented GCE Persistent Disk as high performance volume.
+- Fixed compatibility bugs.
+- Fixed network interface bug caused by runV change.
+- Fixed image pull bug caused by runV change.
+
+We will skip binaries for ARM64 this time due to lack of available ARM machines. But frakti 1.9.1 do support ARM64.
+
+**External Dependency Version Information**
+
+- Kubernetes v1.9.1
+- Hyperd v1.0
+- Docker v1.12-v17.03
+- CNI v0.6.0
+
+
+# v1.9
+
+This release includes enhances and bug fixes. It has also passed all node e2e conformance tests.
+
+Frakti v1.9 upgrades to kubernetes v1.9, enhances CNI network plugins and support ARM64. It also includes various of enhancements and bug fixes.
+
+NOTE: The reason we update frakti to 1.9 directly means we will lock frakti with Kubernetes version.
+
+**Features and Updates**
+
+- #270 Upgrade to CNI 0.6.0, upgrade dockershim to 1.9, improved ARM64 support.
+- #260 Fix to use new hyperstart kernel path
+- #261 Update status of CNI plugins support
+- #263 Update frakti version in deployment guide
+
+**External Dependency Version Information**
+
+- Kubernetes v1.9.0
+- Hyperd v1.0.0
+- Docker v1.12-v17.03
+- CNI v0.6.0
+
 
 # v1.1.1
 
