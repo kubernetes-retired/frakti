@@ -78,7 +78,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error
 	}
 	podId := userpod.Id
 	sandboxID := podId
-	// workaroud for weave network plugin because it creates a veth pair based on a truncated sandboxID.
+	// workaround for weave network plugin because it creates a veth pair based on a truncated sandboxID.
 	if h.netPlugin.Name() == "weave" {
 		sandboxID = getMD5Hash(podId)
 	}
