@@ -27,7 +27,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	"k8s.io/frakti/pkg/hyper/types"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 // RunPodSandbox creates and starts a pod-level sandbox.

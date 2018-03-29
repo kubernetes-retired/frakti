@@ -24,7 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/tools/remotecommand"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	utilexec "k8s.io/utils/exec"

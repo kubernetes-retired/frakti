@@ -25,7 +25,7 @@ import (
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/util/clock"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 func newTestRuntime() (*Runtime, *fakeClientInterface, *clock.FakeClock) {

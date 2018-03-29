@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 // ExecSync runs a command in a container synchronously.

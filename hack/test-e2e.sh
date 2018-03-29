@@ -137,17 +137,17 @@ function test_cri() {
 
   pushd $(pwd)
     cd $GOPATH/src/github.com/kubernetes-incubator/cri-tools
-    # for Kubernetes 1.9
-    git checkout v1.0.0-alpha.0 
+    # for Kubernetes 1.10
+    git checkout v1.0.0-beta.0
   popd
 
-  wget https://github.com/kubernetes-incubator/cri-tools/releases/download/v1.0.0-alpha.0/critest-v1.0.0-alpha.0-linux-amd64.tar.gz
-  tar -xzf critest-v1.0.0-alpha.0-linux-amd64.tar.gz
+  wget https://github.com/kubernetes-incubator/cri-tools/releases/download/v1.0.0-beta.0/critest-v1.0.0-beta.0-linux-amd64.tar.gz
+  tar -xzf critest-v1.0.0-beta.0-linux-amd64.tar.gz
 
   mv critest $GOPATH/bin/critest
 
   # run critest
-  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -r=/var/run/frakti.sock --focus="Conformance" --skip="port mapping" validation
+  sudo env PATH=$PATH:$GOPATH/bin GOPATH=$GOPATH critest -runtime-endpoint=unix:///var/run/frakti.sock -ginkgo.focus="Conformance" -ginkgo.skip="port mapping|reopening container|image status" validation
 }
 
 FRAKTI_LISTEN_ADDR=${FRAKTI_LISTEN_ADDR:-/var/run/frakti.sock}

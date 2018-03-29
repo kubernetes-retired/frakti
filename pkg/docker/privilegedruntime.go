@@ -28,8 +28,9 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
 	kubeletconfiginternal "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
 	kubeletscheme "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/scheme"
-	kubeletconfigv1alpha1 "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/v1alpha1"
+	kubeletconfigv1beta1 "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/v1beta1"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim"
+	dockerremote "k8s.io/kubernetes/pkg/kubelet/dockershim/remote"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
 
@@ -58,7 +59,7 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 		return nil, err
 	}
 
-	external := &kubeletconfigv1alpha1.KubeletConfiguration{}
+	external := &kubeletconfigv1beta1.KubeletConfiguration{}
 	kubeletScheme.Default(external)
 	kubeCfg := &kubeletconfig.KubeletConfiguration{}
 	if err := kubeletScheme.Convert(external, kubeCfg, nil); err != nil {
@@ -106,8 +107,22 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 		return nil, err
 	}
 
+	glog.V(2).Infof("Starting the GRPC server for the docker CRI shim.")
+	server := dockerremote.NewDockerServer(fraktiDockerShim, ds)
+	if err := server.Start(); err != nil {
+		return nil, err
+	}
+
 	// start streaming server by using dockerService
 	startPrivilegedStreamingServer(streamingConfig, ds)
+
+	// init client
+	if err := getRuntimeClient(); err != nil {
+		return nil, err
+	}
+	if err := getImageClient(); err != nil {
+		return nil, err
+	}
 
 	return &PrivilegedRuntime{ds}, nil
 }

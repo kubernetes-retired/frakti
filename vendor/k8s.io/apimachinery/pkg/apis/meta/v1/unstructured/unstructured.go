@@ -18,10 +18,10 @@ package unstructured
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/conversion/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -50,32 +50,28 @@ var _ runtime.Unstructured = &Unstructured{}
 
 func (obj *Unstructured) GetObjectKind() schema.ObjectKind { return obj }
 
-func (obj *Unstructured) IsUnstructuredObject() {}
-
 func (obj *Unstructured) IsList() bool {
-	if obj.Object != nil {
-		_, ok := obj.Object["items"]
-		return ok
+	field, ok := obj.Object["items"]
+	if !ok {
+		return false
 	}
-	return false
+	_, ok = field.([]interface{})
+	return ok
 }
 
 func (obj *Unstructured) EachListItem(fn func(runtime.Object) error) error {
-	if obj.Object == nil {
-		return fmt.Errorf("content is not a list")
-	}
 	field, ok := obj.Object["items"]
 	if !ok {
-		return fmt.Errorf("content is not a list")
+		return errors.New("content is not a list")
 	}
 	items, ok := field.([]interface{})
 	if !ok {
-		return nil
+		return fmt.Errorf("content is not a list: %T", field)
 	}
 	for _, item := range items {
 		child, ok := item.(map[string]interface{})
 		if !ok {
-			return fmt.Errorf("items member is not an object")
+			return fmt.Errorf("items member is not an object: %T", child)
 		}
 		if err := fn(&Unstructured{Object: child}); err != nil {
 			return err
@@ -89,6 +85,10 @@ func (obj *Unstructured) UnstructuredContent() map[string]interface{} {
 		obj.Object = make(map[string]interface{})
 	}
 	return obj.Object
+}
+
+func (obj *Unstructured) SetUnstructuredContent(content map[string]interface{}) {
+	obj.Object = content
 }
 
 // MarshalJSON ensures that the unstructured object produces proper
@@ -112,7 +112,7 @@ func (in *Unstructured) DeepCopy() *Unstructured {
 	}
 	out := new(Unstructured)
 	*out = *in
-	out.Object = unstructured.DeepCopyJSON(in.Object)
+	out.Object = runtime.DeepCopyJSON(in.Object)
 	return out
 }
 
@@ -138,8 +138,8 @@ func (u *Unstructured) setNestedMap(value map[string]string, fields ...string) {
 }
 
 func (u *Unstructured) GetOwnerReferences() []metav1.OwnerReference {
-	field, ok := nestedFieldNoCopy(u.Object, "metadata", "ownerReferences")
-	if !ok {
+	field, found, err := nestedFieldNoCopy(u.Object, "metadata", "ownerReferences")
+	if !found || err != nil {
 		return nil
 	}
 	original, ok := field.([]interface{})
@@ -161,7 +161,12 @@ func (u *Unstructured) GetOwnerReferences() []metav1.OwnerReference {
 func (u *Unstructured) SetOwnerReferences(references []metav1.OwnerReference) {
 	newReferences := make([]interface{}, 0, len(references))
 	for _, reference := range references {
-		newReferences = append(newReferences, setOwnerReference(reference))
+		out, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&reference)
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("unable to convert Owner Reference: %v", err))
+			continue
+		}
+		newReferences = append(newReferences, out)
 	}
 	u.setNestedField(newReferences, "metadata", "ownerReferences")
 }
@@ -223,8 +228,8 @@ func (u *Unstructured) SetResourceVersion(version string) {
 }
 
 func (u *Unstructured) GetGeneration() int64 {
-	val, ok := NestedInt64(u.Object, "metadata", "generation")
-	if !ok {
+	val, found, err := NestedInt64(u.Object, "metadata", "generation")
+	if !found || err != nil {
 		return 0
 	}
 	return val
@@ -284,8 +289,8 @@ func (u *Unstructured) SetDeletionTimestamp(timestamp *metav1.Time) {
 }
 
 func (u *Unstructured) GetDeletionGracePeriodSeconds() *int64 {
-	val, ok := NestedInt64(u.Object, "metadata", "deletionGracePeriodSeconds")
-	if !ok {
+	val, found, err := NestedInt64(u.Object, "metadata", "deletionGracePeriodSeconds")
+	if !found || err != nil {
 		return nil
 	}
 	return &val
@@ -300,10 +305,7 @@ func (u *Unstructured) SetDeletionGracePeriodSeconds(deletionGracePeriodSeconds 
 }
 
 func (u *Unstructured) GetLabels() map[string]string {
-	m, ok := NestedStringMap(u.Object, "metadata", "labels")
-	if !ok {
-		return nil
-	}
+	m, _, _ := NestedStringMap(u.Object, "metadata", "labels")
 	return m
 }
 
@@ -312,10 +314,7 @@ func (u *Unstructured) SetLabels(labels map[string]string) {
 }
 
 func (u *Unstructured) GetAnnotations() map[string]string {
-	m, ok := NestedStringMap(u.Object, "metadata", "annotations")
-	if !ok {
-		return nil
-	}
+	m, _, _ := NestedStringMap(u.Object, "metadata", "annotations")
 	return m
 }
 
@@ -338,18 +337,14 @@ func (u *Unstructured) GroupVersionKind() schema.GroupVersionKind {
 }
 
 func (u *Unstructured) GetInitializers() *metav1.Initializers {
-	field, ok := nestedFieldNoCopy(u.Object, "metadata", "initializers")
-	if !ok {
-		return nil
-	}
-	obj, ok := field.(map[string]interface{})
-	if !ok {
-		// expected map[string]interface{}, got something else
+	m, found, err := nestedMapNoCopy(u.Object, "metadata", "initializers")
+	if !found || err != nil {
 		return nil
 	}
 	out := &metav1.Initializers{}
-	if err := converter.FromUnstructured(obj, out); err != nil {
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(m, out); err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to retrieve initializers for object: %v", err))
+		return nil
 	}
 	return out
 }
@@ -359,7 +354,7 @@ func (u *Unstructured) SetInitializers(initializers *metav1.Initializers) {
 		RemoveNestedField(u.Object, "metadata", "initializers")
 		return
 	}
-	out, err := converter.ToUnstructured(initializers)
+	out, err := runtime.DefaultUnstructuredConverter.ToUnstructured(initializers)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to retrieve initializers for object: %v", err))
 	}
@@ -367,10 +362,7 @@ func (u *Unstructured) SetInitializers(initializers *metav1.Initializers) {
 }
 
 func (u *Unstructured) GetFinalizers() []string {
-	val, ok := NestedStringSlice(u.Object, "metadata", "finalizers")
-	if !ok {
-		return nil
-	}
+	val, _, _ := NestedStringSlice(u.Object, "metadata", "finalizers")
 	return val
 }
 

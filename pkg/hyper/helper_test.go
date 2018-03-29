@@ -19,7 +19,7 @@ package hyper
 import (
 	"testing"
 
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 func TestBuildSandboxName(t *testing.T) {

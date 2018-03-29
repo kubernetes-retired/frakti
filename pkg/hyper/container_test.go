@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/frakti/pkg/hyper/types"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 func makeContainerConfig(sConfig *kubeapi.PodSandboxConfig, name, image string, attempt uint32, labels, annotations map[string]string, mounts []*kubeapi.Mount) *kubeapi.ContainerConfig {

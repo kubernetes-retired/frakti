@@ -23,12 +23,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 
+	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/frakti/pkg/docker"
 	"k8s.io/frakti/pkg/hyper"
 	"k8s.io/frakti/pkg/manager"
 	unikernel "k8s.io/frakti/pkg/unikernel/service"
 	"k8s.io/frakti/pkg/util/flags"
-	"k8s.io/frakti/pkg/util/logs"
 	"k8s.io/frakti/pkg/util/network"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 )
@@ -41,8 +41,7 @@ const (
 )
 
 var (
-	version = pflag.Bool("version", false, "Print version and exit")
-	listen  = pflag.String("listen", "/var/run/frakti.sock",
+	listen = pflag.String("listen", "/var/run/frakti.sock",
 		"The sockets to listen on, e.g. /var/run/frakti.sock")
 	hyperEndpoint = pflag.String("hyper-endpoint", "127.0.0.1:22318",
 		"The endpoint for connecting hyperd, e.g. 127.0.0.1:22318")
@@ -71,9 +70,8 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	if *version {
-		glog.Fatalf("frakti version: %s\n", fraktiVersion)
-	}
+	// Print out frakti version
+	glog.Infof("frakti version: %s\n", fraktiVersion)
 
 	if *cgroupDriver != "cgroupfs" && *cgroupDriver != "systemd" {
 		glog.Fatalf("cgroup-driver flag should only be set as 'cgroupfs' or 'systemd'")
