@@ -28,7 +28,7 @@ import (
 	metaimage "k8s.io/frakti/pkg/unikernel/metadata/image"
 	"k8s.io/frakti/pkg/unikernel/metadata/store"
 
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 // CreateContainer creates a new container in specified PodSandbox
@@ -404,4 +404,10 @@ func (h *UnikernelRuntime) ContainerStats(containerID string) (*kubeapi.Containe
 func (h *UnikernelRuntime) ListContainerStats(filter *kubeapi.ContainerStatsFilter) (
 	[]*kubeapi.ContainerStats, error) {
 	return nil, fmt.Errorf("ContainerStats is not implemented yet.")
+}
+
+// ReopenContainerLog asks runtime to reopen the stdout/stderr log file for the container.
+func (h *UnikernelRuntime) ReopenContainerLog(ContainerID string) error {
+	glog.V(3).Infof("ReopenContainerLog with request %s", ContainerID)
+	return fmt.Errorf("not implemented")
 }

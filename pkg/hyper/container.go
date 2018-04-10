@@ -27,7 +27,7 @@ import (
 
 	"k8s.io/frakti/pkg/flexvolume"
 	"k8s.io/frakti/pkg/hyper/types"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 const (
@@ -431,4 +431,10 @@ func (h *Runtime) ContainerStats(containerID string) (*kubeapi.ContainerStats, e
 func (h *Runtime) ListContainerStats(filter *kubeapi.ContainerStatsFilter) (
 	[]*kubeapi.ContainerStats, error) {
 	return nil, fmt.Errorf("ContainerStats is not implemented for hyper runtime yet.")
+}
+
+// ReopenContainerLog asks runtime to reopen the stdout/stderr log file for the container.
+func (h *Runtime) ReopenContainerLog(ContainerID string) error {
+	glog.V(3).Infof("ReopenContainerLog with request %s", ContainerID)
+	return fmt.Errorf("not implemented")
 }

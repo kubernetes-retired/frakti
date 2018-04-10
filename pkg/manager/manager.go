@@ -35,7 +35,7 @@ import (
 	"k8s.io/frakti/pkg/runtime"
 	unikernelimage "k8s.io/frakti/pkg/unikernel/image"
 	"k8s.io/frakti/pkg/util/alternativeruntime"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	utilexec "k8s.io/utils/exec"
 )
@@ -422,6 +422,11 @@ func (s *FraktiManager) ExecSync(ctx context.Context, req *kubeapi.ExecSyncReque
 	}, nil
 }
 
+func (s *FraktiManager) ReopenContainerLog(ctx context.Context, req *kubeapi.ReopenContainerLogRequest) (*kubeapi.ReopenContainerLogResponse, error) {
+	glog.V(3).Infof("ReopenContainerLog with request %s", req.String())
+	return nil, fmt.Errorf("not implemented")
+}
+
 // Exec prepares a streaming endpoint to execute a command in the container.
 func (s *FraktiManager) Exec(ctx context.Context, req *kubeapi.ExecRequest) (*kubeapi.ExecResponse, error) {
 	glog.V(3).Infof("Exec with request %s", req.String())
@@ -721,7 +726,7 @@ func isOSContainerRuntimeRequired(podConfig *kubeapi.PodSandboxConfig) bool {
 		if !securityContext.Privileged {
 			// use host namespace
 			if nsOptions := securityContext.GetNamespaceOptions(); nsOptions != nil {
-				if nsOptions.HostIpc || nsOptions.HostNetwork || nsOptions.HostPid {
+				if nsOptions.Ipc == kubeapi.NamespaceMode_NODE || nsOptions.Network == kubeapi.NamespaceMode_NODE || nsOptions.Pid == kubeapi.NamespaceMode_NODE {
 					return true
 				}
 			}

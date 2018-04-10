@@ -27,7 +27,7 @@ import (
 	"k8s.io/frakti/pkg/unikernel/metadata"
 	metaimage "k8s.io/frakti/pkg/unikernel/metadata/image"
 	"k8s.io/frakti/pkg/util/downloader"
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
 const (

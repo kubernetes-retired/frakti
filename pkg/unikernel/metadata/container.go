@@ -19,7 +19,7 @@ package metadata
 import (
 	"encoding/json"
 
-	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 
 	"k8s.io/frakti/pkg/unikernel/metadata/store"
 )
