@@ -172,7 +172,7 @@ func detachDiskLogError(d *FlexVolumeDriver) {
 func (d *FlexVolumeDriver) unmount(targetMountDir string) (map[string]interface{}, error) {
 	// check the target directory
 	if _, err := os.Stat(targetMountDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("volume directory: %v does not exists", targetMountDir)
+		return nil, fmt.Errorf("volume directory: %v does not exist", targetMountDir)
 	}
 
 	//  initialize FlexVolumeDriver manager by reading cinderConfig from metadata file
