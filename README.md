@@ -7,7 +7,7 @@
 Frakti lets Kubernetes run pods and containers directly inside hypervisors via [runV](https://github.com/hyperhq/runv). It is light weighted and portable, but can provide much stronger isolation with independent kernel than linux-namespace-based container runtimes.
 
 <p align="center">
-  <img src="docs/images/frakti.png" width="1000">
+  <img src="docs/images/frakti.png" width="800">
 </p>
 
 Frakti serves as a CRI container runtime server. Its endpoint should be configured while starting kubelet. In the deployment, [hyperd](https://github.com/hyperhq/hyperd) is also required as the API wrapper of runV.
