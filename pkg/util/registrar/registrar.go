@@ -86,7 +86,7 @@ func (r *Registrar) ReleaseByName(name string) {
 	delete(r.keyToName, key)
 }
 
-// ReleaseByKey release the reserved name<->key mapping by key.
+// ReleaseByKey releases the reserved name<->key mapping by key.
 func (r *Registrar) ReleaseByKey(key string) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
