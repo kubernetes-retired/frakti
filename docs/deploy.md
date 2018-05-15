@@ -27,14 +27,6 @@ Frakti is a hypervisor-based container runtime, which depends on a few packages 
 - docker: the docker container engine (auxiliary container runtime)
 - cni: the network plugin
 
-## All in one
-
-An all-in-one kubernetes cluster with frakti runtime could be deployed by running:
-
-```sh
-cluster/allinone.sh
-```
-
 ## Kubernetes cluster
 
 ### Install packages
@@ -92,8 +84,10 @@ systemctl start docker
 
 #### Install frakti
 
+Please note frakti has the same release version of Kubernetes, i.e. frakti `v1.10.*` works with Kubernetes `v1.10.*`, the `*` part does not matter. This doc will always use latest stable release of Kubernetes.
+
 ```sh
-curl -sSL https://github.com/kubernetes/frakti/releases/download/v1.9.1/frakti -o /usr/bin/frakti
+curl -sSL https://github.com/kubernetes/frakti/releases/download/v1.10.0/frakti -o /usr/bin/frakti
 chmod +x /usr/bin/frakti
 cgroup_driver=$(docker info | awk '/Cgroup Driver/{print $3}')
 cat <<EOF > /lib/systemd/system/frakti.service
