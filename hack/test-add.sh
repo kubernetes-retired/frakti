@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2016 The Kubernetes Authors.
+# Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
+cat >$GOPATH/src/github.com/containerd/containerd/cmd/containerd/builtins_kata_linux.go <<EOF
+package main
 
-FRAKTI_ROOT=$(readlink -f $(dirname "${BASH_SOURCE}")/..)
-source "${FRAKTI_ROOT}/hack/lib/init.sh"
-
-frakti::hyper::install_hypercontainer
+import _ "k8s.io/frakti"
+EOF
