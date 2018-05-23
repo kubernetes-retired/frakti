@@ -174,23 +174,16 @@ func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) {
 		if !f.needsQuoting(value) {
 			b.WriteString(value)
 		} else {
-			b.WriteString(f.quoteString(value))
+			fmt.Fprintf(b, "%s%v%s", f.QuoteCharacter, value, f.QuoteCharacter)
 		}
 	case error:
 		errmsg := value.Error()
 		if !f.needsQuoting(errmsg) {
 			b.WriteString(errmsg)
 		} else {
-			b.WriteString(f.quoteString(errmsg))
+			fmt.Fprintf(b, "%s%v%s", f.QuoteCharacter, errmsg, f.QuoteCharacter)
 		}
 	default:
 		fmt.Fprint(b, value)
 	}
-}
-
-func (f *TextFormatter) quoteString(v string) string {
-	escapedQuote := fmt.Sprintf("\\%s", f.QuoteCharacter)
-	escapedValue := strings.Replace(v, f.QuoteCharacter, escapedQuote, -1)
-
-	return fmt.Sprintf("%s%v%s", f.QuoteCharacter, escapedValue, f.QuoteCharacter)
 }

@@ -1,29 +1,40 @@
 language: go
 sudo: required
-dist: xenial
+dist: trusty
 
 services:
   - docker
 
 env:  
     global:
-        - DOCKER_VERSION=17.03.2~ce-0~ubuntu-xenial
+        - DOCKER_VERSION=18.03.0~ce-0~ubuntu
 
 go:
-  - 1.9.x
+  - 1.10.x
 
 go_import_path: k8s.io/frakti
 
-script:  
-    - docker version
+before_install:
+    # libseccomp in trusty is not new enough, need backports version.
+    - sudo sh -c "echo 'deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse' > /etc/apt/sources.list.d/backports.list"
+    - sudo apt-get update
 
 install:
-  - hack/verify-all.sh -v
+    - sudo apt-get install btrfs-tools
+    - sudo apt-get install libseccomp2
+    - sudo apt-get install libseccomp-dev
+    - sudo apt-get install socat
+
+before_script: 
+    - export PATH=$HOME/gopath/bin:$PATH
+    - mkdir -p $GOPATH/src/github.com/containerd && cd $GOPATH/src/github.com/containerd && git clone https://github.com/containerd/containerd.git
+    - cd $GOPATH/src/github.com/containerd/containerd && make && sudo make install
+    - containerd &
+    - cd $GOPATH/src/k8s.io/frakti
 
 jobs:
-   include:
-     - stage: Unit Test
-       script: hack/test-go.sh
-     - stage: End to End Test
-       script: hack/test-e2e.sh
-
+  include:
+    - stage: Test
+      script:
+        - make test
+      go: "1.10.x"
