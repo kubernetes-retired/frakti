@@ -20,7 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/containerd/console"
+	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/runtime"
+	vc "github.com/kata-containers/runtime/virtcontainers"
+	errors "github.com/pkg/errors"
 )
 
 // Process implements containerd.Process and containerd.State
@@ -36,30 +40,94 @@ func (p *Process) ID() string {
 
 // State returns the process state
 func (p *Process) State(ctx context.Context) (runtime.State, error) {
-	return runtime.State{}, fmt.Errorf("not implmented")
+	process := p.t.processList[p.t.id]
+	state, err := process.Status(ctx)
+	if err != nil {
+		return runtime.State{}, errors.Wrap(err, "process state error")
+	}
+
+	var status runtime.Status
+	switch state {
+	case string(vc.StateReady):
+		status = runtime.CreatedStatus
+	case string(vc.StateRunning):
+		status = runtime.RunningStatus
+	case string(vc.StatePaused):
+		status = runtime.PausedStatus
+	case string(vc.StateStopped):
+		status = runtime.StoppedStatus
+	}
+
+	stdio := process.Stdio()
+
+	return runtime.State{
+		Status:     status,
+		Pid:        p.t.pid,
+		Stdin:      stdio.Stdin,
+		Stdout:     stdio.Stdout,
+		Stderr:     stdio.Stderr,
+		Terminal:   stdio.Terminal,
+		ExitStatus: uint32(process.ExitStatus()),
+		ExitedAt:   process.ExitedAt(),
+	}, nil
 }
 
 // Kill signals a container
-func (p *Process) Kill(ctx context.Context, sig uint32, all bool) error {
-	return fmt.Errorf("not implmented")
+func (p *Process) Kill(ctx context.Context, signal uint32, _ bool) error {
+	process := p.t.processList[p.t.id]
+	err := process.Kill(ctx, signal, false)
+	if err != nil {
+		return errors.Wrap(err, "process kill error")
+	}
+
+	return nil
 }
 
 // ResizePty resizes the processes pty/console
 func (p *Process) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
-	return fmt.Errorf("not implmented")
+	ws := console.WinSize{
+		Width:  uint16(size.Width),
+		Height: uint16(size.Height),
+	}
+
+	process := p.t.processList[p.t.id]
+	err := process.Resize(ws)
+	if err != nil {
+		return errors.Wrap(err, "process ResizePty error")
+	}
+
+	return nil
 }
 
 // CloseIO closes the processes stdin
 func (p *Process) CloseIO(ctx context.Context) error {
-	return fmt.Errorf("not implmented")
+	return fmt.Errorf("processs CloseIO not implmented")
 }
 
 // Start the container's user defined process
-func (p *Process) Start(ctx context.Context) (err error) {
-	return fmt.Errorf("not implmented")
+func (p *Process) Start(ctx context.Context) error {
+	process := p.t.processList[p.id]
+	err := process.Start(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "process start error")
+	}
+
+	p.t.events.Publish(ctx, runtime.TaskExecStartedEventTopic, &eventstypes.TaskExecStarted{
+		ContainerID: p.t.id,
+		Pid:         p.t.pid,
+		ExecID:      p.id,
+	})
+
+	return nil
 }
 
 // Wait for the process to exit
 func (p *Process) Wait(ctx context.Context) (*runtime.Exit, error) {
-	return nil, fmt.Errorf("not implmented")
+	init := p.t.processList[p.t.id]
+	init.Wait()
+
+	return &runtime.Exit{
+		Timestamp: init.ExitedAt(),
+		Status:    uint32(init.ExitStatus()),
+	}, nil
 }
