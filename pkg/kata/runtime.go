@@ -53,7 +53,6 @@ type Runtime struct {
 	root    string
 	state   string
 	address string
-	pidPool *pidPool
 
 	monitor runtime.TaskMonitor
 	tasks   *runtime.TaskList
@@ -83,7 +82,6 @@ func New(ic *plugin.InitContext) (interface{}, error) {
 		root:    ic.Root,
 		state:   ic.State,
 		address: ic.Address,
-		pidPool: newPidPool(),
 
 		monitor: monitor.(runtime.TaskMonitor),
 		tasks:   runtime.NewTaskList(),

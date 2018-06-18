@@ -37,12 +37,12 @@ type execProcess struct {
 	mu         sync.Mutex
 	id         string
 	pid        int
-	console    console.Console
-	io         IO
+
 	exitStatus int
 	exited     time.Time
-	closers    []io.Closer
-	stdin      io.Closer
+	stdin      io.WriteCloser
+	stdout     io.Reader
+	stderr     io.Reader
 	stdio      Stdio
 	path       string
 	spec       specs.Process
@@ -92,10 +92,7 @@ func (e *execProcess) Wait() {
 }
 
 func (e *execProcess) resize(ws console.WinSize) error {
-	if e.console == nil {
-		return nil
-	}
-	return e.console.Resize(ws)
+	return fmt.Errorf("exec process resize is not implemented")
 }
 
 func (e *execProcess) start(ctx context.Context) error {
@@ -113,6 +110,5 @@ func (e *execProcess) kill(ctx context.Context, sig uint32, _ bool) error {
 func (e *execProcess) setExited(status int) {
 	e.exitStatus = status
 	e.exited = time.Now()
-	e.parent.platform.ShutdownConsole(context.Background(), e.console)
 	close(e.waitBlock)
 }
