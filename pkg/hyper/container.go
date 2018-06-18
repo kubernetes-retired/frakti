@@ -146,6 +146,30 @@ func makeVolumeForGCEPD(optsData *flexvolume.GCEPDOptsData, volName string, m *k
 	}, nil
 }
 
+func makeVolumeForCephRBD(optsData *flexvolume.CephRBDOptsData, volName string, m *kubeapi.Mount) (*types.UserVolumeReference, error) {
+	// this is a ceph-rbd flexvolume
+	volDetail := &types.UserVolume{
+		Name: volName + fmt.Sprintf("_%08x", rand.Uint32()),
+		// kuberuntime will set HostPath to the abs path of volume directory on host
+		Source: "rbd:" + optsData.Pool + "/" + optsData.VolumeID,
+		Format: "rbd",
+		Fstype: optsData.FsType,
+		Option: &types.UserVolumeOption{
+			User:     optsData.User,
+			Keyring:  optsData.Keyring,
+			Monitors: optsData.Monitors,
+		},
+	}
+
+	return &types.UserVolumeReference{
+		// use the generated volume name above
+		Volume:   volDetail.Name,
+		Path:     m.ContainerPath,
+		ReadOnly: m.Readonly,
+		Detail:   volDetail,
+	}, nil
+}
+
 func isHyperFlexVolume(hostPath, volumeOptsFile string) bool {
 	// no-exist hostPath is allowed, and that case should never be hyper flexvolume
 	if hostPathInfo, err := os.Stat(hostPath); !os.IsNotExist(err) {
@@ -189,6 +213,10 @@ func makeContainerVolumes(config *kubeapi.ContainerConfig) ([]*types.UserVolumeR
 
 			case optsData.GCEPDData != nil:
 				if volumes[i], err = makeVolumeForGCEPD(optsData.GCEPDData, volName, m); err != nil {
+					return nil, err
+				}
+			case optsData.CephRBDData != nil:
+				if volumes[i], err = makeVolumeForCephRBD(optsData.CephRBDData, volName, m); err != nil {
 					return nil, err
 				}
 			default:

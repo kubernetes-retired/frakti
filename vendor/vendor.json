@@ -137,6 +137,12 @@
 			"revisionTime": "2018-03-23T22:34:25Z"
 		},
 		{
+			"checksumSHA1": "7zRryEqzuHHWp8J7sw1t4IUhSM4=",
+			"path": "github.com/Unknwon/goconfig",
+			"revision": "5f601ca6ef4d5cea8d52be2f8b3a420ee4b574a5",
+			"revisionTime": "2016-02-16T18:39:35Z"
+		},
+		{
 			"checksumSHA1": "nVJyEM7n2qWn5vy78f78EA/z8bo=",
 			"origin": "k8s.io/kubernetes/vendor/github.com/abbot/go-http-auth",
 			"path": "github.com/abbot/go-http-auth",
