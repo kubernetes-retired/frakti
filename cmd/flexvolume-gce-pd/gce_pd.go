@@ -19,11 +19,12 @@ package main
 import (
 	"os"
 
+	"k8s.io/frakti/pkg/flexvolume"
 	"k8s.io/frakti/pkg/flexvolume/gcepd"
 	"k8s.io/frakti/pkg/util/uuid"
 )
 
 func main() {
-	driver := gcepd.NewFlexVolumeDriver(uuid.NewUUID(), "gcepd")
+	driver := flexvolume.NewFlexVolume(gcepd.NewFlexVolumeDriver(uuid.NewUUID(), "gcepd"))
 	os.Stdout.WriteString(driver.Run(os.Args[1:]))
 }

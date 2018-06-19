@@ -19,11 +19,12 @@ package main
 import (
 	"os"
 
+	"k8s.io/frakti/pkg/flexvolume"
 	"k8s.io/frakti/pkg/flexvolume/cinder"
 	"k8s.io/frakti/pkg/util/uuid"
 )
 
 func main() {
-	driver := cinder.NewFlexVolumeDriver(uuid.NewUUID(), "cinder")
+	driver := flexvolume.NewFlexVolume(cinder.NewFlexVolumeDriver(uuid.NewUUID(), "cinder"))
 	os.Stdout.WriteString(driver.Run(os.Args[1:]))
 }

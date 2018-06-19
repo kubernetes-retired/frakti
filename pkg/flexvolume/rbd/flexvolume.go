@@ -18,7 +18,6 @@ package rbd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -47,7 +46,7 @@ func NewFlexVolumeDriver(uuid string, name string) *FlexVolumeDriver {
 
 // Invocation: <driver executable> init
 // Check config file existence.
-func (d *FlexVolumeDriver) init() (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) Init() (map[string]interface{}, error) {
 	if _, err := os.Stat(flexvolume.CephRBDConfigFile); err != nil {
 		return nil, fmt.Errorf("cannot stat %s: %s", flexvolume.CephRBDConfigFile, err)
 	}
@@ -89,28 +88,28 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 }
 
 // Invocation: <driver executable> attach <json options> <node name>
-func (d *FlexVolumeDriver) attach(jsonOptions, nodeName string) (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) Attach(jsonOptions, nodeName string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
 // Invocation: <driver executable> detach <mount device> <node name>
-func (d *FlexVolumeDriver) detach(mountDev, nodeName string) (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) Detach(mountDev, nodeName string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
 // Invocation: <driver executable> waitforattach <mount device> <json options>
-func (d *FlexVolumeDriver) waitForAttach(mountDev, jsonOptions string) (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) WaitForAttach(mountDev, jsonOptions string) (map[string]interface{}, error) {
 	return map[string]interface{}{"device": mountDev}, nil
 }
 
 // Invocation: <driver executable> isattached <json options> <node name>
-func (d *FlexVolumeDriver) isAttached(jsonOptions, nodeName string) (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) IsAttached(jsonOptions, nodeName string) (map[string]interface{}, error) {
 	return map[string]interface{}{"attached": true}, nil
 }
 
 // Invocation: <driver executable> mount <mount dir> <json options>
 // mount persist meta data generated from jsonOptions into a tag file in target dir.
-func (d *FlexVolumeDriver) mount(targetMountDir, jsonOptions string) (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) Mount(targetMountDir, jsonOptions string) (map[string]interface{}, error) {
 	if err := d.initFlexVolumeDriverForMount(jsonOptions); err != nil {
 		return nil, err
 	}
@@ -158,7 +157,7 @@ func (d *FlexVolumeDriver) generateOptionsData() (*flexvolume.CephRBDOptsData, e
 }
 
 // Invocation: <driver executable> unmount <mount dir>
-func (d *FlexVolumeDriver) unmount(targetMountDir string) (map[string]interface{}, error) {
+func (d *FlexVolumeDriver) Unmount(targetMountDir string) (map[string]interface{}, error) {
 	// check the target directory
 	if _, err := os.Stat(targetMountDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("volume directory: %v does not exist", targetMountDir)
@@ -173,95 +172,4 @@ func (d *FlexVolumeDriver) unmount(targetMountDir string) (map[string]interface{
 	glog.V(5).Infof("[Unmount] Ceph RBD umounted: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
 
 	return nil, nil
-}
-
-type driverOp func(*FlexVolumeDriver, []string) (map[string]interface{}, error)
-
-type cmdInfo struct {
-	numArgs int
-	run     driverOp
-}
-
-var commands = map[string]cmdInfo{
-	"init": {
-		0, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.init()
-		},
-	},
-	"attach": {
-		2, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.attach(args[0], args[1])
-		},
-	},
-	"detach": {
-		2, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.detach(args[0], args[1])
-		},
-	},
-	"waitforattach": {
-		2, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.waitForAttach(args[0], args[1])
-		},
-	},
-	"isattached": {
-		2, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.isAttached(args[0], args[1])
-		},
-	},
-	"mount": {
-		2, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.mount(args[0], args[1])
-		},
-	},
-	"unmount": {
-		1, func(d *FlexVolumeDriver, args []string) (map[string]interface{}, error) {
-			return d.unmount(args[0])
-		},
-	},
-}
-
-func (d *FlexVolumeDriver) doRun(args []string) (map[string]interface{}, error) {
-	if len(args) == 0 {
-		return nil, errors.New("no arguments passed to flexvolume driver")
-	}
-	nArgs := len(args) - 1
-	op := args[0]
-	if cmdInfo, found := commands[op]; found {
-		if cmdInfo.numArgs == nArgs {
-			return cmdInfo.run(d, args[1:])
-		} else {
-			return nil, fmt.Errorf("unexpected number of args %d (expected %d) for operation %q", nArgs, cmdInfo.numArgs, op)
-		}
-	} else {
-		return map[string]interface{}{
-			"status": "Not supported",
-		}, nil
-	}
-}
-
-func (d *FlexVolumeDriver) Run(args []string) string {
-	r := formatResult(d.doRun(args))
-	return r
-}
-
-func formatResult(fields map[string]interface{}, err error) string {
-	var data map[string]interface{}
-	if err != nil {
-		data = map[string]interface{}{
-			"status":  "Failure",
-			"message": err.Error(),
-		}
-	} else {
-		data = map[string]interface{}{
-			"status": "Success",
-		}
-		for k, v := range fields {
-			data[k] = v
-		}
-	}
-	s, err := json.Marshal(data)
-	if err != nil {
-		panic("error marshalling the data")
-	}
-	return string(s) + "\n"
 }

@@ -19,11 +19,12 @@ package main
 import (
 	"os"
 
+	"k8s.io/frakti/pkg/flexvolume"
 	"k8s.io/frakti/pkg/flexvolume/rbd"
 	"k8s.io/frakti/pkg/util/uuid"
 )
 
 func main() {
-	driver := rbd.NewFlexVolumeDriver(uuid.NewUUID(), "rbd")
+	driver := flexvolume.NewFlexVolume(rbd.NewFlexVolumeDriver(uuid.NewUUID(), "rbd"))
 	os.Stdout.WriteString(driver.Run(os.Args[1:]))
 }
