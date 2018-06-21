@@ -24,6 +24,44 @@
 			"revisionTime": "2018-05-08T19:51:43Z"
 		},
 		{
+			"checksumSHA1": "Z6+EkAXw551hFFIqyenog9uljhM=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/clearcontainers/proxy/api",
+			"path": "github.com/clearcontainers/proxy/api",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "/dw/jvuQOZW8rF1A436TBMl1xvE=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/clearcontainers/proxy/client",
+			"path": "github.com/clearcontainers/proxy/client",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "CMpl3neOBieLSiFBXhrf016zkMM=",
+			"path": "github.com/containerd/cgroups",
+			"revision": "97a7d8e20fdc147a0a64229c16ecf13db16b82cc",
+			"revisionTime": "2018-03-12T14:58:31Z"
+		},
+		{
+			"checksumSHA1": "gERHnZijqW/0cZA72vCjk+Ch65U=",
+			"path": "github.com/containerd/console",
+			"revision": "9290d21dc56074581f619579c43d970b4514bc08",
+			"revisionTime": "2018-06-04T14:12:24Z"
+		},
+		{
+			"checksumSHA1": "bYBh26SOS+1JZgkRae04XmcCBTA=",
+			"path": "github.com/containerd/containerd/api/events",
+			"revision": "84bebdd91d347c99069d1705b7d4e6d6f746160c",
+			"revisionTime": "2018-06-02T09:25:14Z"
+		},
+		{
+			"checksumSHA1": "w8yq52M3/kYjCCU9MxtlKK1UqNI=",
+			"path": "github.com/containerd/containerd/api/types",
+			"revision": "84bebdd91d347c99069d1705b7d4e6d6f746160c",
+			"revisionTime": "2018-06-02T09:25:14Z"
+		},
+		{
 			"checksumSHA1": "2pk03psUzwJMtxnUhnfj4ywkg4o=",
 			"path": "github.com/containerd/containerd/containers",
 			"revision": "01a0741488487779a95035cd85504589034d2e91",
@@ -144,11 +182,78 @@
 			"revisionTime": "2018-05-08T19:51:43Z"
 		},
 		{
+			"checksumSHA1": "cBna1ypnZ4YOQfBrUXp/xJVlH/o=",
+			"path": "github.com/containerd/cri/pkg/annotations",
+			"revision": "6c2e6c2feff77d5512c5ce437aa334e51d3a30a6",
+			"revisionTime": "2018-05-12T00:45:59Z"
+		},
+		{
+			"checksumSHA1": "Ur3lVmFp+HTGUzQU+/ZBolKe8FU=",
+			"path": "github.com/containerd/fifo",
+			"revision": "3d5202aec260678c48179c56f40e6f38a095738c",
+			"revisionTime": "2018-03-07T16:51:37Z"
+		},
+		{
 			"checksumSHA1": "C/zHQIbD/LkUqbcHibiq/goG0Zw=",
 			"origin": "github.com/containerd/containerd/vendor/github.com/containerd/typeurl",
 			"path": "github.com/containerd/typeurl",
 			"revision": "01a0741488487779a95035cd85504589034d2e91",
 			"revisionTime": "2018-05-08T19:51:43Z"
+		},
+		{
+			"checksumSHA1": "ym448FWZpZNMLeS6bDFqG+3X5FE=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/cni/libcni",
+			"path": "github.com/containernetworking/cni/libcni",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "Kh/msV2XTuYy0UB63hhoKcKfkyY=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/cni/pkg/invoke",
+			"path": "github.com/containernetworking/cni/pkg/invoke",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "Sfdjk2zzDd0npAjZdULWjWoKVkQ=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/cni/pkg/types",
+			"path": "github.com/containernetworking/cni/pkg/types",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "lmLYXYR/twmBu+6U678QNF+BQlQ=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/cni/pkg/types/020",
+			"path": "github.com/containernetworking/cni/pkg/types/020",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "r6qX7lyz4pweijiXjWMcxvm4wQQ=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/cni/pkg/types/current",
+			"path": "github.com/containernetworking/cni/pkg/types/current",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "Y9KLxL9fFDnFHaDGOUfDkcbyV0U=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/cni/pkg/version",
+			"path": "github.com/containernetworking/cni/pkg/version",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "Q+N0jWunbuA1Fb5Bcg6m4Yuc0oQ=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/containernetworking/plugins/pkg/ns",
+			"path": "github.com/containernetworking/plugins/pkg/ns",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "1txgvJO9bgE703kK2EQ/NATy1Rg=",
+			"path": "github.com/coreos/go-systemd/dbus",
+			"revision": "a4887aeaa186e68961d2d6af7d5fbac6bd6fa79b",
+			"revisionTime": "2018-05-25T14:22:39Z"
 		},
 		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
@@ -163,6 +268,25 @@
 			"path": "github.com/docker/go-events",
 			"revision": "01a0741488487779a95035cd85504589034d2e91",
 			"revisionTime": "2018-05-08T19:51:43Z"
+		},
+		{
+			"checksumSHA1": "0o/uepI6WDKqPNMXPbjeml1ciNo=",
+			"path": "github.com/docker/go-units",
+			"revision": "47565b4f722fb6ceae66b95f853feed578a4a51c",
+			"revisionTime": "2018-02-12T13:46:57Z"
+		},
+		{
+			"checksumSHA1": "6zuYnXnK05MypZrDWAlUMOX9g28=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/go-ini/ini",
+			"path": "github.com/go-ini/ini",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "YuGQx5ilYzlkaqeyVQh8qpsGExI=",
+			"path": "github.com/godbus/dbus",
+			"revision": "8cbcc64e38bf24e9066af813a0f3236772ceb80a",
+			"revisionTime": "2018-05-31T15:17:15Z"
 		},
 		{
 			"checksumSHA1": "aL8Kur3Rn8TrKcYOOyyWFQsCTjQ=",
@@ -247,6 +371,113 @@
 			"path": "github.com/google/gofuzz",
 			"revision": "66388aefd5f63bcd000e8e19eee32dd1495ca7a1",
 			"revisionTime": "2018-05-11T22:48:13Z"
+		},
+		{
+			"checksumSHA1": "i/sPlnQlKLCdeZUDhJfyiqyf+v8=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/hashicorp/yamux",
+			"path": "github.com/hashicorp/yamux",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "fPQgLSbZ2XlX9YanB/976Q7BZ9g=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/intel/govmm/qemu",
+			"path": "github.com/intel/govmm/qemu",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "s0EBLgmirugYuk1a+tRSa8YTiQM=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/kata-containers/agent/protocols/client",
+			"path": "github.com/kata-containers/agent/protocols/client",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "6oHgCPGalKXbJRi58g2e6IJqiUc=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/kata-containers/agent/protocols/grpc",
+			"path": "github.com/kata-containers/agent/protocols/grpc",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "BvR2CJqGVrAFPoz5weWTKpruKgs=",
+			"path": "github.com/kata-containers/runtime/virtcontainers",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "um7b3dzHMGv5gYWD7PkJYXg3GYk=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/device/api",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "atSkjG/bu2JTOGdkNn6p3QIhE+Q=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/device/config",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "/WsABM+GBjJ4EjnMsVPuuRL9bvg=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/device/drivers",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "6L+5ARELyAg2ALBwlyOIaL62T94=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/device/manager",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "CUKWBapaiocsSxotatsO8ajWLQg=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/annotations",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "7ffSue8Mw9f+92NhIFqN/CBSlL8=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/cni",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "3p+i119YEBXFEj202FVqWaC9PBs=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/hyperstart",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "AaPyBRzKfRDwA1PQj94KsHQCBNg=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/nsenter",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "qfcyNzIPEnZf1DigAyyk5COcS5c=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/pkg/uuid",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "bspyM0IE8mX5xepSSmo+M6U+nXw=",
+			"path": "github.com/kata-containers/runtime/virtcontainers/utils",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "AinF7fDWLXXi/oBrb55Nzo50OUM=",
+			"path": "github.com/mdlayher/vsock",
+			"revision": "738c88d6e4cfd60e8124a5344fa10d205fd828b9",
+			"revisionTime": "2017-12-01T16:10:58Z"
+		},
+		{
+			"checksumSHA1": "AmUEvW3KtUB3Qygks+rgwDHCVUU=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/mitchellh/mapstructure",
+			"path": "github.com/mitchellh/mapstructure",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
 		},
 		{
 			"checksumSHA1": "tI1icpOJOeICEHqvkMQ4/h2Qkgo=",
@@ -476,6 +707,13 @@
 			"revisionTime": "2018-03-14T08:05:35Z"
 		},
 		{
+			"checksumSHA1": "ujnod619ZBgbvTTSS0NugLa77vU=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/safchain/ethtool",
+			"path": "github.com/safchain/ethtool",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
 			"checksumSHA1": "qhdXyUM/JKNOaX/hVKS39pRX96c=",
 			"origin": "github.com/containerd/containerd/vendor/github.com/sirupsen/logrus",
 			"path": "github.com/sirupsen/logrus",
@@ -492,6 +730,27 @@
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "c679ae2cc0cb27ec3293fea7e254e47386f05d69",
 			"revisionTime": "2018-03-14T08:05:35Z"
+		},
+		{
+			"checksumSHA1": "Hd7XDE1CnLHAipcJMzxvqoVU7Ss=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/vishvananda/netlink",
+			"path": "github.com/vishvananda/netlink",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "gOhlrb97I0TtH/stNu6MQpdHveA=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/vishvananda/netlink/nl",
+			"path": "github.com/vishvananda/netlink/nl",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
+		},
+		{
+			"checksumSHA1": "ecWwPwxJFTNoVzKd+L0ZxYZFwxI=",
+			"origin": "github.com/kata-containers/runtime/vendor/github.com/vishvananda/netns",
+			"path": "github.com/vishvananda/netns",
+			"revision": "9fb0b337ef997079b304fe895dacd5d96d6f2fb6",
+			"revisionTime": "2018-05-23T12:28:42Z"
 		},
 		{
 			"checksumSHA1": "Y+HGqEkYM15ir+J93MEaHdyFy0c=",

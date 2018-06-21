@@ -20,13 +20,23 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	eventstypes "github.com/containerd/containerd/api/events"
+	types "github.com/containerd/containerd/api/types"
 	"github.com/containerd/containerd/events/exchange"
+	identifiers "github.com/containerd/containerd/identifiers"
+	log "github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/metadata"
+	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/platforms"
 	"github.com/containerd/containerd/plugin"
 	"github.com/containerd/containerd/runtime"
+	"github.com/containerd/cri/pkg/annotations"
+	"github.com/containerd/typeurl"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
+	errors "github.com/pkg/errors"
 )
 
 const (
@@ -79,6 +89,10 @@ func New(ic *plugin.InitContext) (interface{}, error) {
 		events:  ic.Events,
 	}
 
+	log.G(ic.Context).Infoln("Runtime: start containerd-kata plugin")
+
+	// TODO(ZeroMagic): reconnect the existing kata containers
+
 	return r, nil
 }
 
@@ -90,9 +104,89 @@ func (r *Runtime) ID() string {
 // Create creates a task with the provided id and options.
 func (r *Runtime) Create(ctx context.Context, id string, opts runtime.CreateOpts) (runtime.Task, error) {
 
-	// TODO(ZeroMagic): create a new task
+	// 1. get namespace
+	namespace, err := namespaces.NamespaceRequired(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, fmt.Errorf("not implemented")
+	if err := identifiers.Validate(id); err != nil {
+		return nil, errors.Wrapf(err, "invalid task id")
+	}
+
+	// 2. create bundle to store local image. Generate the rootfs dir and config.json
+	bundle, err := newBundle(id,
+		filepath.Join(r.state, namespace),
+		filepath.Join(r.root, namespace),
+		opts.Spec.Value)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			bundle.Delete()
+		}
+	}()
+
+	// 3. get pid for vm. Now we use the specify pid.
+	var pid uint32
+	pid = 10244
+
+	// 4. mount rootfs
+	var eventRootfs []*types.Mount
+	for _, m := range opts.Rootfs {
+		eventRootfs = append(eventRootfs, &types.Mount{
+			Type:    m.Type,
+			Source:  m.Source,
+			Options: m.Options,
+		})
+	}
+
+	// 5. With containerType, we can tell sandbox from container. In the future, we will use the variable.
+	s, err := typeurl.UnmarshalAny(opts.Spec)
+	if err != nil {
+		return nil, err
+	}
+	spec := s.(*runtimespec.Spec)
+	containerType := spec.Annotations[annotations.ContainerType]
+	log.G(ctx).Infof("Runtime: ContainerType is %s\n", containerType)
+
+	// 6. new task. Init the vm, sandbox, and necessary container.
+	t, err := newTask(ctx, id, namespace, pid, r.monitor, r.events, opts, bundle)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.tasks.Add(ctx, t); err != nil {
+		return nil, err
+	}
+	// 7. after the task is created, add it to the monitor if it has a cgroup
+	// this can be different on a checkpoint/restore
+	if t.cg != nil {
+		if err = r.monitor.Monitor(t); err != nil {
+			if _, err := r.Delete(ctx, t); err != nil {
+				log.G(ctx).WithError(err).Error("deleting task after failed monitor")
+			}
+			return nil, err
+		}
+	}
+
+	// 8. publish create event
+	r.events.Publish(ctx, runtime.TaskCreateEventTopic, &eventstypes.TaskCreate{
+		ContainerID: id,
+		Bundle:      bundle.path,
+		Rootfs:      eventRootfs,
+		IO: &eventstypes.TaskIO{
+			Stdin:    opts.IO.Stdin,
+			Stdout:   opts.IO.Stdout,
+			Stderr:   opts.IO.Stderr,
+			Terminal: opts.IO.Terminal,
+		},
+		Checkpoint: opts.Checkpoint,
+		Pid:        t.pid,
+	})
+
+	return t, nil
 }
 
 // Get a specific task by task id.

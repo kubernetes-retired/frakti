@@ -17,9 +17,9 @@ limitations under the License.
 package kata
 
 import (
-    "testing"
+	"testing"
 )
 
 func TestRuntime(t *testing.T) {
-    // TODO(ZeroMagic): add runtime test
+	// TODO(ZeroMagic): add runtime test
 }
