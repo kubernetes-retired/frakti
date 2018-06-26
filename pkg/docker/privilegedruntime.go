@@ -24,7 +24,6 @@ import (
 
 	"k8s.io/frakti/pkg/util/alternativeruntime"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
-	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
 	kubeletconfiginternal "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
 	kubeletscheme "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/scheme"
@@ -77,15 +76,13 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	// NOTE(harry): pluginSettings should be arguments for dockershim, not part of kubelet.
 	// But standalone dockershim is not ready yet, so we use default values here.
 	pluginSettings := dockershim.NetworkPluginSettings{
-		HairpinMode:       kubeletconfiginternal.HairpinMode(kubeCfg.HairpinMode),
-		NonMasqueradeCIDR: nonMasqueradeCIDR,
-		PluginName:        networkPluginName,
-		PluginConfDir:     cniNetDir,
-		PluginBinDir:      cniPluginDir,
-		MTU:               networkPluginMTU,
+		HairpinMode:        kubeletconfiginternal.HairpinMode(kubeCfg.HairpinMode),
+		NonMasqueradeCIDR:  nonMasqueradeCIDR,
+		PluginName:         networkPluginName,
+		PluginConfDir:      cniNetDir,
+		PluginBinDirString: cniPluginDir,
+		MTU:                networkPluginMTU,
 	}
-	var nl *kubelet.NoOpLegacyHost
-	pluginSettings.LegacyRuntimeHost = nl
 
 	if len(podSandboxImage) != 0 {
 		crOption.PodSandboxImage = podSandboxImage
@@ -101,7 +98,7 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 		// If dockershim detected this cgroupDriver is different with dockerd, it will fail.
 		cgroupDriver,
 		privilegedRuntimeRootDir,
-		true,
+		true, false,
 	)
 	if err != nil {
 		return nil, err
