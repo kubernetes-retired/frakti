@@ -227,4 +227,20 @@ func (p *Init) Metrics(ctx context.Context) (vc.ContainerStats, error) {
 	}
 
 	return stats, nil
-} 
+}
+
+func (p *Init) pause(ctx context.Context) error {
+	err := p.sandbox.Pause()
+	if err != nil {
+		return errors.Wrap(err, "failed to pause container")
+	}
+	return nil
+}
+
+func (p *Init) resume(ctx context.Context) error {
+	err := p.sandbox.Resume()
+	if err != nil {
+		return errors.Wrap(err, "failed to resume container")
+	}
+	return nil
+}

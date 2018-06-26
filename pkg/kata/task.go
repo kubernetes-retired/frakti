@@ -158,12 +158,24 @@ func (t *Task) State(ctx context.Context) (runtime.State, error) {
 
 // Pause pauses the container process
 func (t *Task) Pause(ctx context.Context) error {
-	return fmt.Errorf("task pause not implemented")
+	p := t.processList[t.id]
+	err := p.(*proc.Init).Pause(ctx)
+	if err != nil {
+		return errors.Wrap(err, "task Pause error")
+	}
+
+	return nil
 }
 
 // Resume unpauses the container process
 func (t *Task) Resume(ctx context.Context) error {
-	return fmt.Errorf("task resume not implemented")
+	p := t.processList[t.id]
+	err := p.(*proc.Init).Resume(ctx)
+	if err != nil {
+		return errors.Wrap(err, "task Resume error")
+	}
+
+	return nil
 }
 
 // Exec adds a process into the container
