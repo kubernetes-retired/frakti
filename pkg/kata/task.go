@@ -158,12 +158,24 @@ func (t *Task) State(ctx context.Context) (runtime.State, error) {
 
 // Pause pauses the container process
 func (t *Task) Pause(ctx context.Context) error {
-	return fmt.Errorf("task pause not implemented")
+	p := t.processList[t.id]
+	err := p.(*proc.Init).Pause(ctx)
+	if err != nil {
+		return errors.Wrap(err, "task Pause error")
+	}
+
+	return nil
 }
 
 // Resume unpauses the container process
 func (t *Task) Resume(ctx context.Context) error {
-	return fmt.Errorf("task resume not implemented")
+	p := t.processList[t.id]
+	err := p.(*proc.Init).Resume(ctx)
+	if err != nil {
+		return errors.Wrap(err, "task Resume error")
+	}
+
+	return nil
 }
 
 // Exec adds a process into the container
@@ -193,17 +205,36 @@ func (t *Task) Update(ctx context.Context, resources *types.Any) error {
 
 // Process returns a process within the task for the provided id
 func (t *Task) Process(ctx context.Context, id string) (runtime.Process, error) {
-	return nil, fmt.Errorf("task process not implemented")
+	p := &Process{
+		id: id,
+		t:  t,
+	}
+	if _, err := p.State(ctx); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 // Metrics returns runtime specific metrics for a task
 func (t *Task) Metrics(ctx context.Context) (interface{}, error) {
-	return nil, fmt.Errorf("task metrics not implemented")
+	p := t.processList[t.id]
+	stats, err := p.(*proc.Init).Metrics(ctx)
+	if err != nil {
+		return stats, errors.Wrap(err, "task Mertrics error")
+	}
+
+	return stats, nil
 }
 
 // CloseIO closes the provided IO on the task
 func (t *Task) CloseIO(ctx context.Context) error {
-	return fmt.Errorf("task closeIOnot implemented")
+	process := t.processList[t.id]
+	if stdin := process.Stdin(); stdin != nil {
+		if err := stdin.Close(); err != nil {
+			return errors.Wrap(err, "close stdin error")
+		}
+	}
+	return nil
 }
 
 // Kill the task using the provided signal

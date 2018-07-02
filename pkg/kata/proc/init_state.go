@@ -26,6 +26,9 @@ import (
 
 type initState interface {
 	State
+	
+	Pause(context.Context) error
+	Resume(context.Context) error
 }
 
 type createdState struct {
@@ -89,6 +92,20 @@ func (s *createdState) SetExited(status int) {
 	}
 }
 
+func (s *createdState) Pause(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return errors.Errorf("cannot pause task in created state")
+}
+
+func (s *createdState) Resume(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return errors.Errorf("cannot resume task in created state")
+}
+
 type runningState struct {
 	p *Init
 }
@@ -142,6 +159,22 @@ func (s *runningState) SetExited(status int) {
 	if err := s.transition("stopped"); err != nil {
 		panic(err)
 	}
+}
+
+func (s *runningState) Pause(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+	if err := s.p.pause(ctx); err != nil {
+		return err
+	}
+	return s.transition("paused")
+}
+
+func (s *runningState) Resume(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return errors.Errorf("cannot resume a running process")
 }
 
 type pausedState struct {
@@ -199,6 +232,23 @@ func (s *pausedState) SetExited(status int) {
 	}
 }
 
+func (s *pausedState) Pause(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return errors.Errorf("cannot pause a paused container")
+}
+
+func (s *pausedState) Resume(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	if err := s.p.resume(ctx); err != nil {
+		return err
+	}
+	return s.transition("running")
+}
+
 type stoppedState struct {
 	p *Init
 }
@@ -242,4 +292,18 @@ func (s *stoppedState) Kill(ctx context.Context, sig uint32, all bool) error {
 
 func (s *stoppedState) SetExited(status int) {
 	// no op
+}
+
+func (s *stoppedState) Pause(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return errors.Errorf("cannot pause a stopped container")
+}
+
+func (s *stoppedState) Resume(ctx context.Context) error {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return errors.Errorf("cannot resume a stopped container")
 }

@@ -18,7 +18,6 @@ package kata
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/containerd/console"
 	eventstypes "github.com/containerd/containerd/api/events"
@@ -101,7 +100,13 @@ func (p *Process) ResizePty(ctx context.Context, size runtime.ConsoleSize) error
 
 // CloseIO closes the processes stdin
 func (p *Process) CloseIO(ctx context.Context) error {
-	return fmt.Errorf("processs CloseIO not implmented")
+	process := p.t.processList[p.t.id]
+	if stdin := process.Stdin(); stdin != nil {
+		if err := stdin.Close(); err != nil {
+			return errors.Wrap(err, "process close stdin error")
+		}
+	}
+	return nil
 }
 
 // Start the container's user defined process

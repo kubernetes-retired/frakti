@@ -218,3 +218,29 @@ func (p *Init) setExited(status int) {
 	p.exitStatus = status
 	close(p.waitBlock)
 }
+
+// Metrics return the stats of a container
+func (p *Init) Metrics(ctx context.Context) (vc.ContainerStats, error) {
+	stats, err := p.sandbox.StatsContainer(p.sandbox.ID())
+	if err != nil {
+		return vc.ContainerStats{}, errors.Wrap(err, "failed to get the stats of a container")
+	}
+
+	return stats, nil
+}
+
+func (p *Init) pause(ctx context.Context) error {
+	err := p.sandbox.Pause()
+	if err != nil {
+		return errors.Wrap(err, "failed to pause container")
+	}
+	return nil
+}
+
+func (p *Init) resume(ctx context.Context) error {
+	err := p.sandbox.Resume()
+	if err != nil {
+		return errors.Wrap(err, "failed to resume container")
+	}
+	return nil
+}
