@@ -29,6 +29,8 @@ type initState interface {
 	
 	Pause(context.Context) error
 	Resume(context.Context) error
+	Start(context.Context) error
+	Exec(context.Context, string, *ExecConfig) (Process, error)
 }
 
 type createdState struct {
@@ -106,6 +108,12 @@ func (s *createdState) Resume(ctx context.Context) error {
 	return errors.Errorf("cannot resume task in created state")
 }
 
+func (s *createdState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+	return s.p.exec(ctx, id, conf)
+}
+
 type runningState struct {
 	p *Init
 }
@@ -175,6 +183,12 @@ func (s *runningState) Resume(ctx context.Context) error {
 	defer s.p.mu.Unlock()
 
 	return errors.Errorf("cannot resume a running process")
+}
+
+func (s *runningState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+	return s.p.exec(ctx, id, conf)
 }
 
 type pausedState struct {
@@ -249,6 +263,13 @@ func (s *pausedState) Resume(ctx context.Context) error {
 	return s.transition("running")
 }
 
+func (s *pausedState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return nil, errors.Errorf("cannot exec in a paused state")
+}
+
 type stoppedState struct {
 	p *Init
 }
@@ -306,4 +327,11 @@ func (s *stoppedState) Resume(ctx context.Context) error {
 	defer s.p.mu.Unlock()
 
 	return errors.Errorf("cannot resume a stopped container")
+}
+
+func (s *stoppedState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return nil, errors.Errorf("cannot exec in a stopped state")
 }
