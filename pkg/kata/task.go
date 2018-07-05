@@ -201,7 +201,6 @@ func (t *Task) Exec(ctx context.Context, id string, opts runtime.ExecOpts) (runt
 	}, nil
 }
 
-
 // Pids returns all pids
 func (t *Task) Pids(ctx context.Context) ([]runtime.ProcessInfo, error) {
 	return nil, fmt.Errorf("task pids not implemented")
@@ -214,7 +213,17 @@ func (t *Task) Checkpoint(ctx context.Context, path string, options *types.Any) 
 
 // DeleteProcess deletes a specific exec process via its id
 func (t *Task) DeleteProcess(ctx context.Context, id string) (*runtime.Exit, error) {
-	return nil, fmt.Errorf("task delete process not implemented")
+	p := t.processList[t.id]
+	err := p.(*proc.ExecProcess).Delete(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "task DeleteProcess error")
+	}
+
+	return &runtime.Exit{
+		Pid:       uint32(p.Pid()),
+		Status:    uint32(p.ExitStatus()),
+		Timestamp: p.ExitedAt(),
+	}, nil
 }
 
 // Update sets the provided resources to a running task

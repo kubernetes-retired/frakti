@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/containerd/console"
@@ -108,7 +109,12 @@ func (e *ExecProcess) resize(ws console.WinSize) error {
 }
 
 func (e *ExecProcess) delete(ctx context.Context) error {
-	return fmt.Errorf("exec process delete is not implemented")
+	sandbox := e.parent.sandbox
+	err := sandbox.SignalProcess(sandbox.ID(), e.token, syscall.SIGKILL, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete exec process")
+	}
+	return nil
 }
 
 func (e *ExecProcess) kill(ctx context.Context, sig uint32, _ bool) error {

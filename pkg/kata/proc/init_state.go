@@ -26,7 +26,7 @@ import (
 
 type initState interface {
 	State
-	
+
 	Pause(context.Context) error
 	Resume(context.Context) error
 	Start(context.Context) error
