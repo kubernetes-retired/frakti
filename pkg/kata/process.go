@@ -24,6 +24,8 @@ import (
 	"github.com/containerd/containerd/runtime"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	errors "github.com/pkg/errors"
+
+	"k8s.io/frakti/pkg/kata/proc"
 )
 
 // Process implements containerd.Process and containerd.State
@@ -112,7 +114,7 @@ func (p *Process) CloseIO(ctx context.Context) error {
 // Start the container's user defined process
 func (p *Process) Start(ctx context.Context) error {
 	process := p.t.processList[p.id]
-	err := process.Start(ctx)
+	err := process.(*proc.Init).Start(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "process start error")
 	}

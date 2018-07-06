@@ -18,6 +18,7 @@ package proc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -29,6 +30,7 @@ import (
 	"github.com/containerd/console"
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/mount"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
 
 	"k8s.io/frakti/pkg/kata/server"
@@ -49,12 +51,12 @@ type Init struct {
 
 	workDir string
 
-	id       string
-	bundle   string
+	id     string
+	bundle string
 
 	exitStatus int
 	exited     time.Time
-	pid        int		
+	pid        int
 	stdin      io.WriteCloser
 	stdout     io.Reader
 	stderr     io.Reader
@@ -243,4 +245,63 @@ func (p *Init) resume(ctx context.Context) error {
 		return errors.Wrap(err, "failed to resume container")
 	}
 	return nil
+}
+
+// exec returns a new exec'd process
+func (p *Init) exec(context context.Context, id string, conf *ExecConfig) (Process, error) {
+	var spec specs.Process
+	if err := json.Unmarshal(conf.Spec.Value, &spec); err != nil {
+		return nil, err
+	}
+	spec.Terminal = conf.Terminal
+
+	capabilities := vc.LinuxCapabilities{
+		Bounding:    spec.Capabilities.Bounding,
+		Effective:   spec.Capabilities.Effective,
+		Inheritable: spec.Capabilities.Inheritable,
+		Permitted:   spec.Capabilities.Permitted,
+		Ambient:     spec.Capabilities.Ambient,
+	}
+
+	cmd := vc.Cmd{
+		Args:            spec.Args,
+		Envs:            []vc.EnvVar{},
+		User:            string(spec.User.UID),
+		PrimaryGroup:    string(spec.User.GID),
+		WorkDir:         spec.Cwd,
+		Capabilities:    capabilities,
+		Interactive:     spec.Terminal,
+		Detach:          !spec.Terminal,
+		NoNewPrivileges: spec.NoNewPrivileges,
+	}
+
+	_, process, err := p.sandbox.EnterContainer(p.sandbox.ID(), cmd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot enter container %s", p.sandbox.ID())
+	}
+
+	stdin, stdout, stderr, err := p.sandbox.IOStream(p.sandbox.ID(), process.Token)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get %s IOStream", p.sandbox.ID())
+	}
+
+	e := &ExecProcess{
+		id:     conf.ID,
+		pid:    process.Pid,
+		token:  process.Token,
+		parent: p,
+		stdin:  stdin,
+		stdout: stdout,
+		stderr: stderr,
+		stdio: Stdio{
+			Stdin:    conf.Stdin,
+			Stdout:   conf.Stdout,
+			Stderr:   conf.Stderr,
+			Terminal: conf.Terminal,
+		},
+		spec:      spec,
+		waitBlock: make(chan struct{}),
+	}
+	e.State = &execCreatedState{p: e}
+	return e, nil
 }

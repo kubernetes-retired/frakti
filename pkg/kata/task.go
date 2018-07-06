@@ -98,7 +98,7 @@ func (t *Task) Start(ctx context.Context) error {
 	hasCgroup := t.cg != nil
 	t.mu.Unlock()
 
-	t.processList[t.id].Start(ctx)
+	t.processList[t.id].(*proc.Init).Start(ctx)
 
 	if !hasCgroup {
 		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
@@ -180,7 +180,25 @@ func (t *Task) Resume(ctx context.Context) error {
 
 // Exec adds a process into the container
 func (t *Task) Exec(ctx context.Context, id string, opts runtime.ExecOpts) (runtime.Process, error) {
-	return nil, fmt.Errorf("task exec not implemented")
+	p := t.processList[t.id]
+	conf := &proc.ExecConfig{
+		ID:       id,
+		Stdin:    opts.IO.Stdin,
+		Stdout:   opts.IO.Stdout,
+		Stderr:   opts.IO.Stderr,
+		Terminal: opts.IO.Terminal,
+		Spec:     opts.Spec,
+	}
+	process, err := p.(*proc.Init).Exec(ctx, id, conf)
+	if err != nil {
+		return nil, errors.Wrap(err, "task Exec error")
+	}
+	t.processList[id] = process
+
+	return &Process{
+		id: id,
+		t:  t,
+	}, nil
 }
 
 // Pids returns all pids
@@ -195,7 +213,17 @@ func (t *Task) Checkpoint(ctx context.Context, path string, options *types.Any) 
 
 // DeleteProcess deletes a specific exec process via its id
 func (t *Task) DeleteProcess(ctx context.Context, id string) (*runtime.Exit, error) {
-	return nil, fmt.Errorf("task delete process not implemented")
+	p := t.processList[t.id]
+	err := p.(*proc.ExecProcess).Delete(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "task DeleteProcess error")
+	}
+
+	return &runtime.Exit{
+		Pid:       uint32(p.Pid()),
+		Status:    uint32(p.ExitStatus()),
+		Timestamp: p.ExitedAt(),
+	}, nil
 }
 
 // Update sets the provided resources to a running task
