@@ -94,7 +94,7 @@ cat <<EOF > /lib/systemd/system/frakti.service
 [Unit]
 Description=Hypervisor-based container runtime for Kubernetes
 Documentation=https://github.com/kubernetes/frakti
-After=network.target
+After=network.target docker.service
 
 [Service]
 ExecStart=/usr/bin/frakti --v=3 \
