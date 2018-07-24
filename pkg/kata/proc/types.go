@@ -28,15 +28,15 @@ const (
 
 // InitConfig hold task creation configuration
 type InitConfig struct {
-	ID       string
+	ID            string
 	SandboxID     string
 	ContainerType string
-	Runtime  string
-	Rootfs   []mount.Mount
-	Terminal bool
-	Stdin    string
-	Stdout   string
-	Stderr   string
+	Runtime       string
+	Rootfs        []mount.Mount
+	Terminal      bool
+	Stdin         string
+	Stdout        string
+	Stderr        string
 }
 
 // ExecConfig holds exec creation configuration

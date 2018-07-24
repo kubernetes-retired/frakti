@@ -453,7 +453,7 @@ func (p *Init) exec(context context.Context, id string, conf *ExecConfig) (Proce
 			Stderr:   conf.Stderr,
 			Terminal: conf.Terminal,
 		},
-		spec: spec,
+		spec:      spec,
 		waitBlock: make(chan struct{}),
 	}
 	e.State = &execCreatedState{p: e}

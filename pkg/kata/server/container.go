@@ -33,19 +33,19 @@ import (
 // CreateContainer creates a kata-runtime container
 func CreateContainer(id, sandboxID string) (*vc.Sandbox, *vc.Container, error) {
 
-	criHosts := "/var/lib/containerd/io.containerd.grpc.v1.cri/sandboxes/"+sandboxID+"/hosts"
-	hosts := "/run/kata-containers/shared/sandboxes/"+sandboxID+"/"+id+"-hosts"
-	criResolv := "/var/lib/containerd/io.containerd.grpc.v1.cri/sandboxes/"+sandboxID+"/resolv.conf"
-	resolv := "/run/kata-containers/shared/sandboxes/"+sandboxID+"/"+id+"-resolv.conf"
+	criHosts := "/var/lib/containerd/io.containerd.grpc.v1.cri/sandboxes/" + sandboxID + "/hosts"
+	hosts := "/run/kata-containers/shared/sandboxes/" + sandboxID + "/" + id + "-hosts"
+	criResolv := "/var/lib/containerd/io.containerd.grpc.v1.cri/sandboxes/" + sandboxID + "/resolv.conf"
+	resolv := "/run/kata-containers/shared/sandboxes/" + sandboxID + "/" + id + "-resolv.conf"
 
 	command := exec.Command("cp", criHosts, hosts)
 	if err := command.Start(); err != nil {
-        fmt.Print(err)
+		fmt.Print(err)
 	}
 	command = exec.Command("cp", criResolv, resolv)
 	if err := command.Start(); err != nil {
-        fmt.Print(err)
-    }
+		fmt.Print(err)
+	}
 
 	configFile := "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id + "/config.json"
 	configJ, err := ioutil.ReadFile(configFile)
@@ -65,7 +65,6 @@ func CreateContainer(id, sandboxID string) (*vc.Sandbox, *vc.Container, error) {
 	str = strings.Replace(str, ",\"path\":\"/proc/10244/ns/uts\"", " ", -1)
 	str = strings.Replace(str, ",\"path\":\"/proc/10244/ns/net\"", " ", -1)
 
-	
 	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
 		"containerConfig": str,
 	}).Info("Container OCI Spec")
@@ -80,20 +79,20 @@ func CreateContainer(id, sandboxID string) (*vc.Sandbox, *vc.Container, error) {
 			annotations.BundlePathKey:    "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id,
 			annotations.ContainerTypeKey: string(vc.PodContainer),
 		},
-		Mounts: 	[]vc.Mount{
+		Mounts: []vc.Mount{
 			{
 				Source:      hosts,
 				Destination: "/etc/hosts",
 				Type:        "bind",
 				Options:     []string{"rbind", "rprivate", "rw"},
-				ReadOnly:	false,
+				ReadOnly:    false,
 			},
 			{
 				Source:      resolv,
 				Destination: "/etc/resolv.conf",
 				Type:        "bind",
 				Options:     []string{"rbind", "rprivate", "rw"},
-				ReadOnly:	false,
+				ReadOnly:    false,
 			},
 		},
 	}
