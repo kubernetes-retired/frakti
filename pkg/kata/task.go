@@ -29,9 +29,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	"github.com/containerd/containerd/runtime/kata/proc"
+	"k8s.io/frakti/pkg/kata/proc"
 )
 
 // Task on a hypervisor based system

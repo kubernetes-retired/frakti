@@ -26,7 +26,6 @@ import (
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	errors "github.com/pkg/errors"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -228,9 +227,6 @@ func CreateSandbox(id string) (*vc.Sandbox, error) {
 		Annotations: map[string]string{
 			annotations.BundlePathKey: "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id,
 		},
-
-		ShmSize:    uint64(67108864),
-		SharePidNs: false,
 	}
 
 	sandbox, err := vc.CreateSandbox(sandboxConfig)

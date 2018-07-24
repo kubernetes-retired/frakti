@@ -25,10 +25,9 @@ import (
 	"time"
 
 	"github.com/containerd/console"
+	vc "github.com/kata-containers/runtime/virtcontainers"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
-
-	vc "github.com/kata-containers/runtime/virtcontainers"
 )
 
 type ExecProcess struct {

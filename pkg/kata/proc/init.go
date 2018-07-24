@@ -29,16 +29,13 @@ import (
 	"github.com/containerd/console"
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/mount"
+	"github.com/containerd/fifo"
+	"github.com/containerd/cri/pkg/annotations"
+	vc "github.com/kata-containers/runtime/virtcontainers"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
-
-	"github.com/containerd/containerd/runtime/kata/server"
-
-	vc "github.com/kata-containers/runtime/virtcontainers"
-
 	"github.com/sirupsen/logrus"
-
-	"github.com/containerd/cri/pkg/annotations"
+	"k8s.io/frakti/pkg/kata/server"
 )
 
 // InitPidFile name of the file that contains the init pid
@@ -301,7 +298,7 @@ func (p *Init) Wait(ctx context.Context) (int, error) {
 	// after exiting process, the container will be stopped.
 	_, err = vc.StopContainer(p.sandboxID, p.id)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	return int(exitCode), nil

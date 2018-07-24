@@ -41,10 +41,9 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	runtimespec "github.com/opencontainers/runtime-spec/specs-go"
 	errors "github.com/pkg/errors"
-
-	"github.com/containerd/containerd/runtime/kata/proc"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
+	"k8s.io/frakti/pkg/kata/proc"
 )
 
 const (

@@ -24,7 +24,6 @@ import (
 	"github.com/containerd/containerd/runtime"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	errors "github.com/pkg/errors"
-
 	"k8s.io/frakti/pkg/kata/proc"
 )
 
@@ -131,7 +130,7 @@ func (p *Process) Start(ctx context.Context) error {
 // Wait for the process to exit
 func (p *Process) Wait(ctx context.Context) (*runtime.Exit, error) {
 	init := p.t.processList[p.t.id]
-	init.Wait()
+	init.Wait(ctx)
 
 	return &runtime.Exit{
 		Timestamp: init.ExitedAt(),
