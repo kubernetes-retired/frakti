@@ -19,15 +19,19 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/containerd/containerd/runtime"
 	vc "github.com/kata-containers/runtime/virtcontainers"
+	"github.com/kata-containers/runtime/virtcontainers/pkg/annotations"
 	errors "github.com/pkg/errors"
+
+	"github.com/sirupsen/logrus"
 )
 
 // CreateSandbox creates a kata-runtime sandbox
-func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
+func CreateSandbox(id string) (*vc.Sandbox, error) {
 	envs := []vc.EnvVar{
 		{
 			Var:   "PATH",
@@ -39,8 +43,20 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		},
 	}
 
+	configFile := "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id + "/config.json"
+	configJ, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		fmt.Print(err)
+	}
+	str := string(configJ)
+	str = strings.Replace(str, "bounding", "Bounding", -1)
+	str = strings.Replace(str, "effective", "Effective", -1)
+	str = strings.Replace(str, "inheritable", "Inheritable", -1)
+	str = strings.Replace(str, "permitted", "Permitted", -1)
+	str = strings.Replace(str, "true", "true,\"Ambient\":null", -1)
+
 	cmd := vc.Cmd{
-		Args:    strings.Split("sh", " "),
+		// Args:    strings.Split("sh", " "),
 		Envs:    envs,
 		WorkDir: "/",
 		Capabilities: vc.LinuxCapabilities{
@@ -65,62 +81,70 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 				"CAP_NET_BIND_SERVICE", "CAP_SYS_CHROOT", "CAP_KILL", "CAP_AUDIT_WRITE",
 			},
 		},
+		User:            "0",
+		PrimaryGroup:    "0",
 		NoNewPrivileges: true,
 	}
 
 	// Define the container command and bundle.
 	container := vc.ContainerConfig{
 		ID:     id,
-		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/default/" + id + "/rootfs",
+		RootFs: "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id + "/rootfs",
 		Cmd:    cmd,
+		Annotations: map[string]string{
+			annotations.ConfigJSONKey:    str,
+			annotations.BundlePathKey:    "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id,
+			annotations.ContainerTypeKey: string(vc.PodSandbox),
+		},
 		Mounts: []vc.Mount{
 			{
+				Source:      "proc",
 				Destination: "/proc",
 				Type:        "proc",
-				Source:      "proc",
 				Options:     nil,
+				ReadOnly:    false,
 			},
 			{
+				Source:      "tmpfs",
 				Destination: "/dev",
 				Type:        "tmpfs",
-				Source:      "tmpfs",
 				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
+				ReadOnly:    false,
 			},
 			{
+				Source:      "devpts",
 				Destination: "/dev/pts",
 				Type:        "devpts",
-				Source:      "devpts",
 				Options:     []string{"nosuid", "noexec", "newinstance", "ptmxmode=0666", "mode=0620", "gid=5"},
+				ReadOnly:    false,
 			},
 			{
+				Source:      "shm",
 				Destination: "/dev/shm",
 				Type:        "tmpfs",
-				Source:      "shm",
 				Options:     []string{"nosuid", "noexec", "nodev", "mode=1777", "size=65536k"},
+				ReadOnly:    false,
 			},
 			{
+				Source:      "mqueue",
 				Destination: "/dev/mqueue",
 				Type:        "mqueue",
-				Source:      "mqueue",
 				Options:     []string{"nosuid", "noexec", "nodev"},
+				ReadOnly:    false,
 			},
 			{
+				Source:      "sysfs",
 				Destination: "/sys",
 				Type:        "sysfs",
-				Source:      "sysfs",
 				Options:     []string{"nosuid", "noexec", "nodev", "ro"},
+				ReadOnly:    false,
 			},
 			{
+				Source:      "tmpfs",
 				Destination: "/run",
 				Type:        "tmpfs",
-				Source:      "tmpfs",
 				Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
-			},
-			{
-				Destination: "/sys/fs/cgroup",
-				Type:        "cgroup",
-				Source:      "cgroup",
-				Options:     []string{"nosuid", "noexec", "nodev", "relatime", "ro"},
+				ReadOnly:    false,
 			},
 		},
 	}
@@ -128,6 +152,14 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 	// Sets the hypervisor configuration.
 	hypervisorConfig := vc.HypervisorConfig{
 		KernelParams: []vc.Param{
+			{
+				Key:   "agent.log",
+				Value: "debug",
+			},
+			{
+				Key:   "qemu.cmdline",
+				Value: "-D <logfile>",
+			},
 			{
 				Key:   "ip",
 				Value: "::::::" + id + "::off::",
@@ -144,7 +176,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		DefaultVCPUs:    uint32(1),
 		DefaultMaxVCPUs: uint32(4),
 
-		DefaultMemSz: uint32(2048),
+		DefaultMemSz: uint32(128),
 
 		DefaultBridges: uint32(1),
 
@@ -161,7 +193,7 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 
 	// VM resources
 	vmConfig := vc.Resources{
-		Memory: 2048,
+		Memory: uint(128),
 	}
 
 	// The sandbox configuration:
@@ -179,11 +211,26 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		AgentType:   vc.KataContainersAgent,
 		AgentConfig: agConfig,
 
-		ProxyType: vc.KataBuiltInProxyType,
+		ProxyType:   vc.KataBuiltInProxyType,
+		ProxyConfig: vc.ProxyConfig{},
 
-		ShimType: vc.KataBuiltInShimType,
+		ShimType:   vc.KataBuiltInShimType,
+		ShimConfig: vc.ShimConfig{},
+
+		NetworkModel: vc.CNMNetworkModel,
+		NetworkConfig: vc.NetworkConfig{
+			NumInterfaces:     1,
+			InterworkingModel: 2,
+		},
 
 		Containers: []vc.ContainerConfig{container},
+
+		Annotations: map[string]string{
+			annotations.BundlePathKey: "/run/containerd/io.containerd.runtime.v1.kata-runtime/k8s.io/" + id,
+		},
+
+		ShmSize:    uint64(67108864),
+		SharePidNs: false,
 	}
 
 	sandbox, err := vc.CreateSandbox(sandboxConfig)
@@ -191,17 +238,21 @@ func CreateSandbox(ctx context.Context, id string) (vc.VCSandbox, error) {
 		return nil, errors.Wrapf(err, "Could not create sandbox")
 	}
 
-	return sandbox, err
+	logrus.FieldLogger(logrus.New()).WithFields(logrus.Fields{
+		"sandbox": sandbox,
+	}).Info("Run Sandbox Successfully")
+
+	return sandbox.(*vc.Sandbox), err
 }
 
 // StartSandbox starts a kata-runtime sandbox
-func StartSandbox(ctx context.Context, id string) error {
-	_, err := vc.StartSandbox(id)
+func StartSandbox(id string) (*vc.Sandbox, error) {
+	sandbox, err := vc.StartSandbox(id)
 	if err != nil {
-		return errors.Wrapf(err, "Could not start sandbox")
+		return nil, errors.Wrapf(err, "Could not start sandbox")
 	}
 
-	return err
+	return sandbox.(*vc.Sandbox), err
 }
 
 // StopSandbox stops a kata-runtime sandbox
