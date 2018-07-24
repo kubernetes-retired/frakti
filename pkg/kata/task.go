@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/containerd/cgroups"
 	"github.com/containerd/console"
 	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/events/exchange"
@@ -30,8 +29,9 @@ import (
 	"github.com/gogo/protobuf/types"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
-	"k8s.io/frakti/pkg/kata/proc"
+	"github.com/containerd/containerd/runtime/kata/proc"
 )
 
 // Task on a hypervisor based system
@@ -42,38 +42,26 @@ type Task struct {
 	namespace string
 	pid       uint32
 
-	cg      cgroups.Cgroup
+	containerType string
+	sandboxID     string
+
+	container *vc.Container
+	sandbox   *vc.Sandbox
+
 	monitor runtime.TaskMonitor
 	events  *exchange.Exchange
 
 	processList map[string]proc.Process
 }
 
-func newTask(ctx context.Context, id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange, opts runtime.CreateOpts, bundle *bundle) (*Task, error) {
-	config := &proc.InitConfig{
-		ID:       id,
-		Rootfs:   opts.Rootfs,
-		Terminal: opts.IO.Terminal,
-		Stdin:    opts.IO.Stdin,
-		Stdout:   opts.IO.Stdout,
-		Stderr:   opts.IO.Stderr,
-	}
-
-	init, err := proc.NewInit(ctx, bundle.path, bundle.workDir, namespace, int(pid), config)
-	if err != nil {
-		return nil, errors.Wrap(err, "new init process error")
-	}
-
-	processList := make(map[string]proc.Process)
-	processList[id] = init
-
+func newTask(id, namespace string, pid uint32, monitor runtime.TaskMonitor, events *exchange.Exchange) (*Task, error) {
 	return &Task{
 		id:          id,
 		pid:         pid,
 		namespace:   namespace,
 		monitor:     monitor,
 		events:      events,
-		processList: processList,
+		processList: make(map[string]proc.Process),
 	}, nil
 }
 
@@ -93,25 +81,7 @@ func (t *Task) Info() runtime.TaskInfo {
 
 // Start the task
 func (t *Task) Start(ctx context.Context) error {
-
-	t.mu.Lock()
-	hasCgroup := t.cg != nil
-	t.mu.Unlock()
-
 	t.processList[t.id].(*proc.Init).Start(ctx)
-
-	if !hasCgroup {
-		cg, err := cgroups.Load(cgroups.V1, cgroups.PidPath(int(t.pid)))
-		if err != nil {
-			return err
-		}
-		t.mu.Lock()
-		t.cg = cg
-		t.mu.Unlock()
-		if err := t.monitor.Monitor(t); err != nil {
-			return err
-		}
-	}
 
 	t.events.Publish(ctx, runtime.TaskStartEventTopic, &eventstypes.TaskStart{
 		ContainerID: t.id,
@@ -122,7 +92,6 @@ func (t *Task) Start(ctx context.Context) error {
 
 // State returns runtime information for the task
 func (t *Task) State(ctx context.Context) (runtime.State, error) {
-
 	p := t.processList[t.id]
 
 	state, err := p.Status(ctx)
@@ -141,7 +110,6 @@ func (t *Task) State(ctx context.Context) (runtime.State, error) {
 	case string(vc.StateStopped):
 		status = runtime.StoppedStatus
 	}
-
 	stdio := p.Stdio()
 
 	return runtime.State{
@@ -152,7 +120,7 @@ func (t *Task) State(ctx context.Context) (runtime.State, error) {
 		Stderr:     stdio.Stderr,
 		Terminal:   stdio.Terminal,
 		ExitStatus: uint32(p.ExitStatus()),
-		ExitedAt:   p.ExitedAt(),
+		ExitedAt:   time.Now(),
 	}, nil
 }
 
@@ -273,6 +241,14 @@ func (t *Task) Kill(ctx context.Context, signal uint32, all bool) error {
 		return errors.Wrap(err, "task kill error")
 	}
 
+	t.events.Publish(ctx, runtime.TaskExitEventTopic, &eventstypes.TaskExit{
+		ContainerID: t.id,
+		ID:          t.id,
+		Pid:         uint32(10244),
+		ExitStatus:  128 + signal,
+		ExitedAt:    time.Now(),
+	})
+
 	return nil
 }
 
@@ -295,10 +271,19 @@ func (t *Task) ResizePty(ctx context.Context, size runtime.ConsoleSize) error {
 // Wait for the task to exit returning the status and timestamp
 func (t *Task) Wait(ctx context.Context) (*runtime.Exit, error) {
 	p := t.processList[t.id]
-	p.Wait()
+	exitCode, err := p.Wait(ctx)
+	if err != nil {
+		return &runtime.Exit{}, errors.Wrap(err, "task wait error")
+	}
+	p.SetExited(exitCode)
 	return &runtime.Exit{
 		Pid:       t.pid,
 		Status:    uint32(p.ExitStatus()),
-		Timestamp: time.Time{},
+		Timestamp: time.Now(),
 	}, nil
+}
+
+// GetProcess gets the specify process
+func (t *Task) GetProcess(id string) proc.Process {
+	return t.processList[id]
 }
