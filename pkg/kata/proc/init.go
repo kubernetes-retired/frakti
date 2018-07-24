@@ -198,7 +198,6 @@ func (p *Init) Status(ctx context.Context) (string, error) {
 			}
 			return "", errors.Wrap(err, "failed to get status of sandbox")
 		}
-		logrus.FieldLogger(logrus.New()).Infof("[Init] sandbox status: %v", status.State.State)
 		return string(status.State.State), nil
 	} else {
 		status, err := vc.StatusContainer(p.sandboxID, p.id)
@@ -211,8 +210,101 @@ func (p *Init) Status(ctx context.Context) (string, error) {
 }
 
 // Wait for the process to exit
-func (p *Init) Wait() {
-	<-p.waitBlock
+func (p *Init) Wait(ctx context.Context) (int, error) {
+	stdin, stdout, stderr, err := p.sandbox.IOStream(p.sandboxID, p.id)
+	if err != nil {
+		return -1, errors.Wrap(err, "failed to get a container's stdio streams from kata")
+	}
+	p.stdin = stdin
+	p.stdout = stdout
+	p.stderr = stderr
+
+	// create local stdio
+	var (
+		localStdout io.WriteCloser // localStderr io.WriteCloser
+		localStdin  io.ReadCloser
+		wg          sync.WaitGroup
+	)
+
+	if stdin != nil {
+		localStdin, err = fifo.OpenFifo(ctx, p.stdio.Stdin, syscall.O_RDONLY, 0)
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("open local stdin: %s", err)
+		}
+		wg.Add(1)
+	}
+
+	if stdout != nil {
+		localStdout, err = fifo.OpenFifo(ctx, p.stdio.Stdout, syscall.O_WRONLY, 0)
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("open local stdout: %s", err)
+		}
+		wg.Add(1)
+	}
+
+	// Connect stdin of container.
+	go func() {
+		if stdin == nil {
+			return
+		}
+		buf := bufPool.Get().(*[]byte)
+		defer bufPool.Put(buf)
+		_, err = io.CopyBuffer(stdin, localStdin, *buf)
+		if err == io.ErrClosedPipe {
+			err = nil
+		}
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("stdin copy: %s", err)
+		}
+
+		wg.Done()
+	}()
+
+	// stdout/stderr
+	attachStream := func(name string, stream io.Writer, streamPipe io.Reader) {
+		if stream == nil {
+			return
+		}
+
+		buf := bufPool.Get().(*[]byte)
+		defer bufPool.Put(buf)
+
+		_, err := io.CopyBuffer(stream, streamPipe, *buf)
+		if err == io.ErrClosedPipe {
+			err = nil
+		}
+		if err != nil {
+			logrus.FieldLogger(logrus.New()).Errorf("%s copy: %v", name, err)
+		}
+
+		if localStdin != nil {
+			localStdin.Close()
+		}
+
+		if closer, ok := stream.(io.Closer); ok {
+			closer.Close()
+		}
+		logrus.FieldLogger(logrus.New()).Infof("%s: end", name)
+		wg.Done()
+	}
+
+	go attachStream("stdout", localStdout, stdout)
+	// go attachStream("stderr", localStderr, stderr)
+
+	wg.Wait()
+
+	exitCode, err := p.sandbox.WaitProcess(p.sandboxID, p.id)
+	if err != nil {
+		return -1, err
+	}
+
+	// after exiting process, the container will be stopped.
+	_, err = vc.StopContainer(p.sandboxID, p.id)
+	if err != nil {
+		return err
+	}
+
+	return int(exitCode), nil
 }
 
 func (p *Init) resize(ws console.WinSize) error {
@@ -239,7 +331,6 @@ func (p *Init) start(ctx context.Context) error {
 }
 
 func (p *Init) delete(ctx context.Context) error {
-	logrus.FieldLogger(logrus.New()).Infof("[init] delete %s", p.id)
 
 	if p.containerType == annotations.ContainerTypeSandbox {
 		_, err := vc.DeleteSandbox(p.id)

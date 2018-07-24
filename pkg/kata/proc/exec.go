@@ -95,8 +95,9 @@ func (e *ExecProcess) Status(ctx context.Context) (string, error) {
 	return s, nil
 }
 
-func (e *ExecProcess) Wait() {
+func (e *ExecProcess) Wait(ctx context.Context) (int, error) {
 	<-e.waitBlock
+	return -1, nil
 }
 
 func (e *ExecProcess) resize(ws console.WinSize) error {
@@ -124,5 +125,5 @@ func (e *ExecProcess) kill(ctx context.Context, sig uint32, _ bool) error {
 func (e *ExecProcess) setExited(status int) {
 	e.exitStatus = status
 	e.exited = time.Now()
-	close(e.waitBlock)
+	// close(e.waitBlock)
 }

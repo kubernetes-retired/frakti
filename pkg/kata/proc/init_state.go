@@ -155,7 +155,16 @@ func (s *runningState) Kill(ctx context.Context, sig uint32, all bool) error {
 	s.p.mu.Lock()
 	defer s.p.mu.Unlock()
 
-	return s.p.kill(ctx, sig, all)
+	err := s.p.kill(ctx, sig, all)
+	if err != nil {
+		return err
+	}
+
+	if err := s.transition("stopped"); err != nil {
+		panic(err)
+	}
+
+	return nil
 }
 
 func (s *runningState) SetExited(status int) {
