@@ -21,15 +21,22 @@ import (
 	"github.com/gogo/protobuf/types"
 )
 
+const (
+	// ErrContainerType represents the specific container type which does not exist
+	ErrContainerType = "the containerType does not exist"
+)
+
 // InitConfig hold task creation configuration
 type InitConfig struct {
-	ID       string
-	Runtime  string
-	Rootfs   []mount.Mount
-	Terminal bool
-	Stdin    string
-	Stdout   string
-	Stderr   string
+	ID            string
+	SandboxID     string
+	ContainerType string
+	Runtime       string
+	Rootfs        []mount.Mount
+	Terminal      bool
+	Stdin         string
+	Stdout        string
+	Stderr        string
 }
 
 // ExecConfig holds exec creation configuration

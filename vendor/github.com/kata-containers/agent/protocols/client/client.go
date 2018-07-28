@@ -164,6 +164,7 @@ func agentDialer(addr *url.URL, enableYamux bool) dialer {
 
 // unix addr are parsed by grpc
 func unixDialer(sock string, timeout time.Duration) (net.Conn, error) {
+	sock = strings.Replace(sock, "unix://", "", 1)
 	return net.DialTimeout("unix", sock, timeout)
 }
 

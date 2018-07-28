@@ -57,15 +57,13 @@ type Process interface {
 	// Status returns the process status
 	Status(context.Context) (string, error)
 	// Wait blocks until the process has exited
-	Wait()
+	Wait(context.Context) (int, error)
 }
 
 // State of a process
 type State interface {
 	// Resize resizes the process console
 	Resize(ws console.WinSize) error
-	// Start execution of the process
-	Start(context.Context) error
 	// Delete deletes the process and its resourcess
 	Delete(context.Context) error
 	// Kill kills the process

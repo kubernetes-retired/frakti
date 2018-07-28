@@ -21,22 +21,24 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/containerd/console"
-	specs "github.com/opencontainers/runtime-spec/specs-go"
-
 	vc "github.com/kata-containers/runtime/virtcontainers"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/pkg/errors"
 )
 
-type execProcess struct {
+type ExecProcess struct {
 	wg sync.WaitGroup
 
 	State
 
-	mu         sync.Mutex
-	id         string
-	pid        int
+	mu    sync.Mutex
+	id    string
+	pid   int
+	token string
 
 	exitStatus int
 	exited     time.Time
@@ -53,62 +55,74 @@ type execProcess struct {
 	sandbox vc.VCSandbox
 }
 
-func (e *execProcess) ID() string {
+func (e *ExecProcess) ID() string {
 	return e.id
 }
 
-func (e *execProcess) Pid() int {
+func (e *ExecProcess) Pid() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.pid
 }
 
-func (e *execProcess) ExitStatus() int {
+func (e *ExecProcess) ExitStatus() int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.exitStatus
 }
 
-func (e *execProcess) ExitedAt() time.Time {
+func (e *ExecProcess) ExitedAt() time.Time {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.exited
 }
 
-func (e *execProcess) Stdin() io.Closer {
+func (e *ExecProcess) Stdin() io.Closer {
 	return e.stdin
 }
 
-func (e *execProcess) Stdio() Stdio {
+func (e *ExecProcess) Stdio() Stdio {
 	return e.stdio
 }
 
-func (e *execProcess) Status(ctx context.Context) (string, error) {
-	return "", fmt.Errorf("exec process status is not implemented")
+func (e *ExecProcess) Status(ctx context.Context) (string, error) {
+	s, err := e.parent.Status(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return s, nil
 }
 
-func (e *execProcess) Wait() {
+func (e *ExecProcess) Wait(ctx context.Context) (int, error) {
 	<-e.waitBlock
+	return -1, nil
 }
 
-func (e *execProcess) resize(ws console.WinSize) error {
-	return fmt.Errorf("exec process resize is not implemented")
+func (e *ExecProcess) resize(ws console.WinSize) error {
+	sandbox := e.parent.sandbox
+	err := sandbox.WinsizeProcess(sandbox.ID(), e.token, uint32(ws.Height), uint32(ws.Width))
+	if err != nil {
+		return errors.Wrap(err, "failed to resize")
+	}
+	return nil
 }
 
-func (e *execProcess) start(ctx context.Context) error {
-	return fmt.Errorf("exec process start is not implemented")
+func (e *ExecProcess) delete(ctx context.Context) error {
+	sandbox := e.parent.sandbox
+	err := sandbox.SignalProcess(sandbox.ID(), e.token, syscall.SIGKILL, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete exec process")
+	}
+	return nil
 }
 
-func (e *execProcess) delete(ctx context.Context) error {
-	return fmt.Errorf("exec process delete is not implemented")
-}
-
-func (e *execProcess) kill(ctx context.Context, sig uint32, _ bool) error {
+func (e *ExecProcess) kill(ctx context.Context, sig uint32, _ bool) error {
 	return fmt.Errorf("exec process kill is not implemented")
 }
 
-func (e *execProcess) setExited(status int) {
+func (e *ExecProcess) setExited(status int) {
 	e.exitStatus = status
 	e.exited = time.Now()
-	close(e.waitBlock)
+	// close(e.waitBlock)
 }

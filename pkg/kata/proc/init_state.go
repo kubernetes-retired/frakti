@@ -26,9 +26,11 @@ import (
 
 type initState interface {
 	State
-	
+
 	Pause(context.Context) error
 	Resume(context.Context) error
+	Start(context.Context) error
+	Exec(context.Context, string, *ExecConfig) (Process, error)
 }
 
 type createdState struct {
@@ -106,6 +108,12 @@ func (s *createdState) Resume(ctx context.Context) error {
 	return errors.Errorf("cannot resume task in created state")
 }
 
+func (s *createdState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+	return s.p.exec(ctx, id, conf)
+}
+
 type runningState struct {
 	p *Init
 }
@@ -147,7 +155,16 @@ func (s *runningState) Kill(ctx context.Context, sig uint32, all bool) error {
 	s.p.mu.Lock()
 	defer s.p.mu.Unlock()
 
-	return s.p.kill(ctx, sig, all)
+	err := s.p.kill(ctx, sig, all)
+	if err != nil {
+		return err
+	}
+
+	if err := s.transition("stopped"); err != nil {
+		panic(err)
+	}
+
+	return nil
 }
 
 func (s *runningState) SetExited(status int) {
@@ -175,6 +192,12 @@ func (s *runningState) Resume(ctx context.Context) error {
 	defer s.p.mu.Unlock()
 
 	return errors.Errorf("cannot resume a running process")
+}
+
+func (s *runningState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+	return s.p.exec(ctx, id, conf)
 }
 
 type pausedState struct {
@@ -249,6 +272,13 @@ func (s *pausedState) Resume(ctx context.Context) error {
 	return s.transition("running")
 }
 
+func (s *pausedState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return nil, errors.Errorf("cannot exec in a paused state")
+}
+
 type stoppedState struct {
 	p *Init
 }
@@ -306,4 +336,11 @@ func (s *stoppedState) Resume(ctx context.Context) error {
 	defer s.p.mu.Unlock()
 
 	return errors.Errorf("cannot resume a stopped container")
+}
+
+func (s *stoppedState) Exec(ctx context.Context, id string, conf *ExecConfig) (Process, error) {
+	s.p.mu.Lock()
+	defer s.p.mu.Unlock()
+
+	return nil, errors.Errorf("cannot exec in a stopped state")
 }

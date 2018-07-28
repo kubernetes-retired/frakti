@@ -24,7 +24,7 @@ import (
 )
 
 type execCreatedState struct {
-	p *execProcess
+	p *ExecProcess
 }
 
 func (s *execCreatedState) transition(name string) error {
@@ -46,15 +46,6 @@ func (s *execCreatedState) Resize(ws console.WinSize) error {
 	defer s.p.mu.Unlock()
 
 	return s.p.resize(ws)
-}
-
-func (s *execCreatedState) Start(ctx context.Context) error {
-	s.p.mu.Lock()
-	defer s.p.mu.Unlock()
-	if err := s.p.start(ctx); err != nil {
-		return err
-	}
-	return s.transition("running")
 }
 
 func (s *execCreatedState) Delete(ctx context.Context) error {
@@ -85,7 +76,7 @@ func (s *execCreatedState) SetExited(status int) {
 }
 
 type execRunningState struct {
-	p *execProcess
+	p *ExecProcess
 }
 
 func (s *execRunningState) transition(name string) error {
@@ -103,13 +94,6 @@ func (s *execRunningState) Resize(ws console.WinSize) error {
 	defer s.p.mu.Unlock()
 
 	return s.p.resize(ws)
-}
-
-func (s *execRunningState) Start(ctx context.Context) error {
-	s.p.mu.Lock()
-	defer s.p.mu.Unlock()
-
-	return errors.Errorf("cannot start a running process")
 }
 
 func (s *execRunningState) Delete(ctx context.Context) error {
@@ -138,7 +122,7 @@ func (s *execRunningState) SetExited(status int) {
 }
 
 type execStoppedState struct {
-	p *execProcess
+	p *ExecProcess
 }
 
 func (s *execStoppedState) transition(name string) error {
@@ -156,13 +140,6 @@ func (s *execStoppedState) Resize(ws console.WinSize) error {
 	defer s.p.mu.Unlock()
 
 	return errors.Errorf("cannot resize a stopped container")
-}
-
-func (s *execStoppedState) Start(ctx context.Context) error {
-	s.p.mu.Lock()
-	defer s.p.mu.Unlock()
-
-	return errors.Errorf("cannot start a stopped process")
 }
 
 func (s *execStoppedState) Delete(ctx context.Context) error {
