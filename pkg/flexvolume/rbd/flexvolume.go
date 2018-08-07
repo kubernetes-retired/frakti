@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcepd
+package rbd
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/golang/glog"
 	"k8s.io/frakti/pkg/flexvolume"
@@ -30,11 +31,9 @@ type FlexVolumeDriver struct {
 	name string
 
 	// Options from flexvolume
-	volId   string
-	project string
-	zone    string
-	fsType  string
-	// NOTE: GCE disk type is default to PD, we may want to support more in the future.
+	volId  string
+	pool   string
+	fsType string
 }
 
 // NewFlexVolumeDriver returns a flex volume driver
@@ -46,14 +45,18 @@ func NewFlexVolumeDriver(uuid string, name string) *FlexVolumeDriver {
 }
 
 // Invocation: <driver executable> init
+// Check config file existence.
 func (d *FlexVolumeDriver) Init() (map[string]interface{}, error) {
-	cred := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if len(cred) == 0 {
-		return nil, fmt.Errorf("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set")
+	if _, err := os.Stat(flexvolume.CephRBDConfigFile); err != nil {
+		return nil, fmt.Errorf("cannot stat %s: %s", flexvolume.CephRBDConfigFile, err)
 	}
-	if _, err := os.Stat(cred); err != nil {
-		return nil, fmt.Errorf("cannot stat %s: %s", cred, err)
+	if _, err := os.Stat(flexvolume.CephRBDKeyringFile); err != nil {
+		return nil, fmt.Errorf("cannot stat %s: %s", flexvolume.CephRBDKeyringFile, err)
 	}
+	if _, err := exec.LookPath(rbdBin); err != nil {
+		return nil, fmt.Errorf("rbd command not found")
+	}
+
 	// "{\"status\": \"Success\", \"capabilities\": {\"attach\": false}}"
 	return map[string]interface{}{
 		"capabilities": map[string]bool{
@@ -67,30 +70,19 @@ func (d *FlexVolumeDriver) initFlexVolumeDriverForMount(jsonOptions string) erro
 	var volOptions map[string]interface{}
 	json.Unmarshal([]byte(jsonOptions), &volOptions)
 
-	if len(volOptions[flexvolume.VolIdKey].(string)) == 0 || len(volOptions[flexvolume.SystemFsTypeKey].(string)) == 0 || len(volOptions[flexvolume.ZoneKey].(string)) == 0 || len(volOptions[flexvolume.ProjectKey].(string)) == 0 {
+	if volOptions[flexvolume.VolIdKey] == nil || volOptions[flexvolume.SystemFsTypeKey] == nil ||
+		len(volOptions[flexvolume.VolIdKey].(string)) == 0 || len(volOptions[flexvolume.SystemFsTypeKey].(string)) == 0 {
 		return fmt.Errorf("jsonOptions is not set by user properly: %#v", jsonOptions)
 	}
 
 	d.volId = volOptions[flexvolume.VolIdKey].(string)
 	d.fsType = volOptions[flexvolume.SystemFsTypeKey].(string)
-	d.zone = volOptions[flexvolume.ZoneKey].(string)
-	d.project = volOptions[flexvolume.ProjectKey].(string)
 
-	return nil
-}
-
-// initFlexVolumeDriverForUnMount use targetMountDir to initialize FlexVolumeDriver from tag file.
-func (d *FlexVolumeDriver) initFlexVolumeDriverForUnMount(targetMountDir string) error {
-	// Use the tag file to store volId since flexvolume will execute fresh new binary every time.
-	var optsData flexvolume.FlexVolumeOptsData
-	err := flexvolume.ReadJsonOptsFile(targetMountDir, &optsData)
-	if err != nil {
-		return err
+	if volOptions[flexvolume.PoolKey] != nil && len(volOptions[flexvolume.PoolKey].(string)) != 0 {
+		d.pool = volOptions[flexvolume.PoolKey].(string)
+	} else {
+		d.pool = flexvolume.DefaultCephRBDPool
 	}
-
-	d.volId = optsData.GCEPDData.VolumeID
-	d.zone = optsData.GCEPDData.Zone
-	d.project = optsData.GCEPDData.Project
 
 	return nil
 }
@@ -122,49 +114,46 @@ func (d *FlexVolumeDriver) Mount(targetMountDir, jsonOptions string) (map[string
 		return nil, err
 	}
 
-	// Step 1: Attach GCE PD to the instance.
-	if err := attachDisk(d.project, d.zone, d.volId); err != nil {
+	// Step 1: Format the device.
+	if err := formatDisk(d.volId, d.pool, d.fsType); err != nil {
 		return nil, err
 	}
 
-	// Step 2: Format the device.
-	if err := formatDisk(d.volId, d.fsType); err != nil {
-		detachDiskLogError(d)
+	// Step 2: Create a json file and write metadata into the it.
+	data, err := d.generateOptionsData()
+	if err != nil {
 		return nil, err
 	}
 
-	// Step 3: Create a json file and write metadata into the it.
 	optsData := &flexvolume.FlexVolumeOptsData{
-		GCEPDData: d.generateOptionsData(),
+		CephRBDData: data,
 	}
+
 	if err := flexvolume.WriteJsonOptsFile(targetMountDir, optsData); err != nil {
 		os.Remove(targetMountDir)
-		detachDiskLogError(d)
 		return nil, err
 	}
 
-	glog.V(5).Infof("[Mount] GCE PD tag file is created in: %s with data: %s", targetMountDir, optsData)
+	glog.V(5).Infof("[Mount] Ceph RBD tag file is created in: %s with data: %s", targetMountDir, optsData)
 
 	return nil, nil
 }
 
-// generateOptionsData generates metadata for given GCE PD volume.
-func (d *FlexVolumeDriver) generateOptionsData() *flexvolume.GCEPDOptsData {
-	return &flexvolume.GCEPDOptsData{
-		VolumeID:   d.volId,
-		Zone:       d.zone,
-		Project:    d.project,
-		DevicePath: getDevPathByVolID(d.volId),
-		FsType:     d.fsType,
-	}
-}
-
-// detachDiskLogError is a wrapper to detach first before log error
-func detachDiskLogError(d *FlexVolumeDriver) {
-	err := detachDisk(d.project, d.zone, d.volId)
+// generateOptionsData generates metadata for given ceph rbd volume.
+func (d *FlexVolumeDriver) generateOptionsData() (*flexvolume.CephRBDOptsData, error) {
+	user, keyring, monitors, err := readCephConfig(flexvolume.CephRBDConfigFile, flexvolume.CephRBDKeyringFile)
 	if err != nil {
-		glog.Warningf("Failed to detach disk: %v (%v)", d, err)
+		return nil, err
 	}
+
+	return &flexvolume.CephRBDOptsData{
+		VolumeID: d.volId,
+		Pool:     d.pool,
+		FsType:   d.fsType,
+		User:     user,
+		Keyring:  keyring,
+		Monitors: monitors,
+	}, nil
 }
 
 // Invocation: <driver executable> unmount <mount dir>
@@ -174,22 +163,13 @@ func (d *FlexVolumeDriver) Unmount(targetMountDir string) (map[string]interface{
 		return nil, fmt.Errorf("volume directory: %v does not exist", targetMountDir)
 	}
 
-	//  initialize FlexVolumeDriver manager by reading cinderConfig from metadata file
-	if err := d.initFlexVolumeDriverForUnMount(targetMountDir); err != nil {
-		return nil, err
-	}
-
-	if err := detachDisk(d.project, d.zone, d.volId); err != nil {
-		return nil, err
-	}
-
 	// NOTE: the targetDir will be cleaned by flexvolume,
 	// we just need to clean up the metadata file.
 	if err := flexvolume.CleanUpMetadataFile(targetMountDir); err != nil {
 		return nil, err
 	}
 
-	glog.V(5).Infof("[Unmount] GCE PD is detached: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
+	glog.V(5).Infof("[Unmount] Ceph RBD umounted: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
 
 	return nil, nil
 }

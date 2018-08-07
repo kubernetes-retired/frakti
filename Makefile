@@ -20,12 +20,23 @@ BUILD_DIR ?= ./out
 BUILD_TAGS := $(shell hack/libvirt_tag.sh)
 LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/frakti/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
-.PHONY: frakti
+.PHONY: default frakti flexvolume cinder-rbd gce-pd hyper-rbd
+
+default: frakti flexvolume
+
 frakti: $(shell $(LOCALKUBEFILES))
 	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/frakti ./cmd/frakti
+
+flexvolume: cinder-rbd gce-pd hyper-cephrbd
+
+cinder-rbd:
 	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/rbd ./cmd/flexvolume-cinder-rbd/cinder_rbd.go
+
+gce-pd:
 	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/pd ./cmd/flexvolume-gce-pd/gce_pd.go
 
+hyper-cephrbd:
+	go build -a --tags "$(BUILD_TAGS)" -o ${BUILD_DIR}/cephrbd ./cmd/flexvolume-hyper-cephrbd/cephrbd.go
 
 .PHONY: docker
 docker:

@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 	"os"
 
 	"k8s.io/frakti/pkg/flexvolume"
-	"k8s.io/frakti/pkg/flexvolume/cinder"
+	"k8s.io/frakti/pkg/flexvolume/rbd"
 	"k8s.io/frakti/pkg/util/uuid"
 )
 
 func main() {
-	driver := flexvolume.NewFlexVolume(cinder.NewFlexVolumeDriver(uuid.NewUUID(), "cinder"))
+	driver := flexvolume.NewFlexVolume(rbd.NewFlexVolumeDriver(uuid.NewUUID(), "rbd"))
 	os.Stdout.WriteString(driver.Run(os.Args[1:]))
 }

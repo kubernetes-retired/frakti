@@ -37,8 +37,15 @@ const (
 	ZoneKey    = "zone"
 	ProjectKey = "project"
 
+	// Ceph RBD flexvolume
+	PoolKey            = "pool"
+	CephRBDConfigFile  = "/etc/ceph/ceph.conf"
+	CephRBDKeyringFile = "/etc/ceph/ceph.client.admin.keyring"
+	DefaultCephRBDPool = "hyper"
+
 	// Build-in fsType key of flexvolume
 	SystemFsTypeKey = "kubernetes.io/fsType"
+	DefaultFsType   = "ext4"
 )
 
 // CinderVolumeOptsData is the struct of json file
@@ -67,9 +74,20 @@ type GCEPDOptsData struct {
 	FsType     string `json:"fsType"`
 }
 
+// CephRBDOptsData is the struct of json file
+type CephRBDOptsData struct {
+	VolumeID string   `json:"volumeID"`
+	Pool     string   `json:"pool"`
+	FsType   string   `json:"fsType"`
+	User     string   `json:"user"`
+	Keyring  string   `json:"keyring"`
+	Monitors []string `json:"monitors"`
+}
+
 type FlexVolumeOptsData struct {
-	CinderData *CinderVolumeOptsData `json:"cinderVolumeOptsData,omitempty"`
-	GCEPDData  *GCEPDOptsData        `json:"gCEPDOptsData,omitempty"`
+	CinderData  *CinderVolumeOptsData `json:"cinderVolumeOptsData,omitempty"`
+	GCEPDData   *GCEPDOptsData        `json:"gCEPDOptsData,omitempty"`
+	CephRBDData *CephRBDOptsData      `json:"cephRBDOptsData,omitempty"`
 }
 
 func WriteJsonOptsFile(targetDir string, opts interface{}) error {
