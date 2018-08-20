@@ -1,3 +1,13 @@
+# NOTE
+
+This work has been moved to this new repo and branch: https://github.com/hyperhq/kata-runtime/tree/shimv2
+
+It's mainly because by the end of June 2018, we (GSoC mentors) decided cooperate with containerd upstream by using containerd shimv2 API to finish this task.
+
+Please feel free to track the commits on the new branch there. :D
+
+The vision of porting everything back to containerd and kata upstream is not changed of course.
+
 # Frakti v2
 
 [![Build Status](https://travis-ci.org/kubernetes/frakti.svg?branch=master)](https://travis-ci.org/kubernetes/frakti) [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/frakti)](https://goreportcard.com/report/github.com/kubernetes/frakti)
