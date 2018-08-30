@@ -131,7 +131,7 @@ Frakti v0.3 has been tested against:
 
 ## Kubelet Node e2e tests
 
-Frakti has passed 120 of 121 node e2e tests. ALl failed cases are related with upstream hyperd issues.
+Frakti has passed 120 of 121 node e2e tests. All failed cases are related with upstream hyperd issues.
 
 See [#109](https://github.com/kubernetes/frakti/issues/109) for more details.
 
@@ -157,7 +157,7 @@ This release includes enhances and bug fixes.
 
 ## Kubelet Node e2e tests
 
-Frakti has passed 118 of 121 node e2e tests. ALl failed cases are related with upstream hyperd issues.
+Frakti has passed 118 of 121 node e2e tests. All failed cases are related with upstream hyperd issues.
 
 See [#109](https://github.com/kubernetes/frakti/issues/109) for more details.
 
