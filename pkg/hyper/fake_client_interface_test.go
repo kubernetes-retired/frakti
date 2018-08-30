@@ -150,7 +150,7 @@ func (f *fakeClientInterface) PodInfo(ctx context.Context, in *types.PodInfoRequ
 	PodID := in.PodID
 	podInfo, ok := f.podInfoMap[PodID]
 	if !ok {
-		return nil, fmt.Errorf("pod doesn't existed")
+		return nil, fmt.Errorf("pod doesn't exist")
 	}
 	return &types.PodInfoResponse{PodInfo: podInfo}, f.err
 }
@@ -232,7 +232,7 @@ func (f *fakeClientInterface) ContainerInfo(ctx context.Context, in *types.Conta
 	containerID := in.Container
 	containerInfo, ok := f.containerInfoMap[containerID]
 	if !ok {
-		return nil, fmt.Errorf("container doesn't existed")
+		return nil, fmt.Errorf("container doesn't exist")
 	}
 	return &types.ContainerInfoResponse{ContainerInfo: containerInfo}, f.err
 
@@ -314,7 +314,7 @@ func (f *fakeClientInterface) ContainerStart(ctx context.Context, in *types.Cont
 	containerID := in.ContainerId
 	containerInfo, ok := f.containerInfoMap[containerID]
 	if !ok {
-		return nil, fmt.Errorf("container doesn't existed")
+		return nil, fmt.Errorf("container doesn't exist")
 	}
 	containerInfo.Status.Phase = "running"
 	return &types.ContainerStartResponse{}, f.err
@@ -335,7 +335,7 @@ func (f *fakeClientInterface) ContainerStop(ctx context.Context, in *types.Conta
 	containerID := in.ContainerID
 	containerInfo, ok := f.containerInfoMap[containerID]
 	if !ok {
-		return nil, fmt.Errorf("container doesn't existed")
+		return nil, fmt.Errorf("container doesn't exist")
 	}
 	containerInfo.Status.Phase = "failed"
 	startedAt := containerInfo.Status.Running.StartedAt
