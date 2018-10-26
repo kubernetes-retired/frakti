@@ -24,10 +24,9 @@ import (
 
 	"k8s.io/frakti/pkg/util/alternativeruntime"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
-	"k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
-	kubeletconfiginternal "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
-	kubeletscheme "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/scheme"
-	kubeletconfigv1beta1 "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/v1beta1"
+	kubeletconfig "k8s.io/kubernetes/pkg/kubelet/apis/config"
+	kubeletconfiginternal "k8s.io/kubernetes/pkg/kubelet/apis/config"
+	kubeletscheme "k8s.io/kubernetes/pkg/kubelet/apis/config/scheme"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim"
 	dockerremote "k8s.io/kubernetes/pkg/kubelet/dockershim/remote"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
@@ -58,7 +57,7 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 		return nil, err
 	}
 
-	external := &kubeletconfigv1beta1.KubeletConfiguration{}
+	external := &kubeletconfiginternal.KubeletConfiguration{}
 	kubeletScheme.Default(external)
 	kubeCfg := &kubeletconfig.KubeletConfiguration{}
 	if err := kubeletScheme.Convert(external, kubeCfg, nil); err != nil {
@@ -76,7 +75,8 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 	// NOTE(harry): pluginSettings should be arguments for dockershim, not part of kubelet.
 	// But standalone dockershim is not ready yet, so we use default values here.
 	pluginSettings := dockershim.NetworkPluginSettings{
-		HairpinMode:        kubeletconfiginternal.HairpinMode(kubeCfg.HairpinMode),
+		//HairpinMode:        kubeletconfiginternal.HairpinMode(kubeCfg.HairpinMode),
+		HairpinMode:        kubeletconfiginternal.HairpinMode(kubeletconfig.HairpinNone),
 		NonMasqueradeCIDR:  nonMasqueradeCIDR,
 		PluginName:         networkPluginName,
 		PluginConfDir:      cniNetDir,
@@ -98,7 +98,7 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 		// If dockershim detected this cgroupDriver is different with dockerd, it will fail.
 		cgroupDriver,
 		privilegedRuntimeRootDir,
-		true, false,
+		false,
 	)
 	if err != nil {
 		return nil, err

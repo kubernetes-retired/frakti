@@ -6,6 +6,7 @@ go_library(
         "container.go",
         "manager.go",
     ],
+    importmap = "k8s.io/kubernetes/vendor/github.com/google/cadvisor/manager",
     importpath = "github.com/google/cadvisor/manager",
     visibility = ["//visibility:public"],
     deps = [
@@ -18,6 +19,7 @@ go_library(
         "//vendor/github.com/google/cadvisor/container/containerd:go_default_library",
         "//vendor/github.com/google/cadvisor/container/crio:go_default_library",
         "//vendor/github.com/google/cadvisor/container/docker:go_default_library",
+        "//vendor/github.com/google/cadvisor/container/mesos:go_default_library",
         "//vendor/github.com/google/cadvisor/container/raw:go_default_library",
         "//vendor/github.com/google/cadvisor/container/rkt:go_default_library",
         "//vendor/github.com/google/cadvisor/container/systemd:go_default_library",
@@ -35,6 +37,7 @@ go_library(
         "//vendor/github.com/google/cadvisor/utils/sysfs:go_default_library",
         "//vendor/github.com/google/cadvisor/version:go_default_library",
         "//vendor/github.com/opencontainers/runc/libcontainer/cgroups:go_default_library",
+        "//vendor/golang.org/x/net/context:go_default_library",
         "//vendor/k8s.io/utils/clock:go_default_library",
     ],
 )

@@ -213,7 +213,7 @@ func (p *PrivilegedRuntime) ReopenContainerLog(ContainerID string) error {
 }
 
 // RunPodSandbox creates and starts a pod-level sandbox.
-func (p *PrivilegedRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
+func (p *PrivilegedRuntime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler string) (string, error) {
 	request := &kubeapi.RunPodSandboxRequest{Config: config}
 	logrus.Debugf("RunPodSandboxRequest: %v", request)
 	r, err := runtimeClient.RunPodSandbox(context.Background(), request)

@@ -31,7 +31,7 @@ import (
 )
 
 // RunPodSandbox creates and starts a pod-level sandbox.
-func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig) (string, error) {
+func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler string) (string, error) {
 	userpod, err := h.buildUserPod(config)
 	if err != nil {
 		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)

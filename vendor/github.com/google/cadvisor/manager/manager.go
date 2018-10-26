@@ -33,6 +33,7 @@ import (
 	"github.com/google/cadvisor/container/containerd"
 	"github.com/google/cadvisor/container/crio"
 	"github.com/google/cadvisor/container/docker"
+	"github.com/google/cadvisor/container/mesos"
 	"github.com/google/cadvisor/container/raw"
 	"github.com/google/cadvisor/container/rkt"
 	"github.com/google/cadvisor/container/systemd"
@@ -50,6 +51,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
+	"golang.org/x/net/context"
 	"k8s.io/utils/clock"
 )
 
@@ -58,6 +60,8 @@ var logCadvisorUsage = flag.Bool("log_cadvisor_usage", false, "Whether to log th
 var eventStorageAgeLimit = flag.String("event_storage_age_limit", "default=24h", "Max length of time for which to store events (per type). Value is a comma separated list of key values, where the keys are event types (e.g.: creation, oom) or \"default\" and the value is a duration. Default is applied to all non-specified event types")
 var eventStorageEventLimit = flag.String("event_storage_event_limit", "default=100000", "Max number of events to store (per type). Value is a comma separated list of key values, where the keys are event types (e.g.: creation, oom) or \"default\" and the value is an integer. Default is applied to all non-specified event types")
 var applicationMetricsCountLimit = flag.Int("application_metrics_count_limit", 100, "Max number of application metrics to store (per container)")
+
+const dockerClientTimeout = 10 * time.Second
 
 // The Manager interface defines operations for starting a manager and getting
 // container and machine information.
@@ -138,7 +142,7 @@ type Manager interface {
 }
 
 // New takes a memory storage and returns a new manager.
-func New(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, maxHousekeepingInterval time.Duration, allowDynamicHousekeeping bool, ignoreMetricsSet container.MetricSet, collectorHttpClient *http.Client) (Manager, error) {
+func New(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, maxHousekeepingInterval time.Duration, allowDynamicHousekeeping bool, includedMetricsSet container.MetricSet, collectorHttpClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string) (Manager, error) {
 	if memoryCache == nil {
 		return nil, fmt.Errorf("manager requires memory storage")
 	}
@@ -154,11 +158,10 @@ func New(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, maxHousekeepingIn
 		dockerStatus info.DockerStatus
 		rktPath      string
 	)
-	if tempDockerStatus, err := docker.Status(); err != nil {
-		glog.V(5).Infof("Docker not connected: %v", err)
-	} else {
-		dockerStatus = tempDockerStatus
-	}
+	docker.SetTimeout(dockerClientTimeout)
+	// Try to connect to docker indefinitely on startup.
+	dockerStatus = retryDockerStatus()
+
 	if tmpRktPath, err := rkt.RktPath(); err != nil {
 		glog.V(5).Infof("Rkt not connected: %v", err)
 	} else {
@@ -201,20 +204,21 @@ func New(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, maxHousekeepingIn
 	eventsChannel := make(chan watcher.ContainerEvent, 16)
 
 	newManager := &manager{
-		containers:               make(map[namespacedContainerName]*containerData),
-		quitChannels:             make([]chan error, 0, 2),
-		memoryCache:              memoryCache,
-		fsInfo:                   fsInfo,
-		cadvisorContainer:        selfContainer,
-		inHostNamespace:          inHostNamespace,
-		startupTime:              time.Now(),
-		maxHousekeepingInterval:  maxHousekeepingInterval,
-		allowDynamicHousekeeping: allowDynamicHousekeeping,
-		ignoreMetrics:            ignoreMetricsSet,
-		containerWatchers:        []watcher.ContainerWatcher{},
-		eventsChannel:            eventsChannel,
-		collectorHttpClient:      collectorHttpClient,
-		nvidiaManager:            &accelerators.NvidiaManager{},
+		containers:                            make(map[namespacedContainerName]*containerData),
+		quitChannels:                          make([]chan error, 0, 2),
+		memoryCache:                           memoryCache,
+		fsInfo:                                fsInfo,
+		cadvisorContainer:                     selfContainer,
+		inHostNamespace:                       inHostNamespace,
+		startupTime:                           time.Now(),
+		maxHousekeepingInterval:               maxHousekeepingInterval,
+		allowDynamicHousekeeping:              allowDynamicHousekeeping,
+		includedMetrics:                       includedMetricsSet,
+		containerWatchers:                     []watcher.ContainerWatcher{},
+		eventsChannel:                         eventsChannel,
+		collectorHttpClient:                   collectorHttpClient,
+		nvidiaManager:                         &accelerators.NvidiaManager{},
+		rawContainerCgroupPathPrefixWhiteList: rawContainerCgroupPathPrefixWhiteList,
 	}
 
 	machineInfo, err := machine.Info(sysfs, fsInfo, inHostNamespace)
@@ -232,6 +236,31 @@ func New(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, maxHousekeepingIn
 
 	newManager.eventHandler = events.NewEventManager(parseEventsStoragePolicy())
 	return newManager, nil
+}
+
+func retryDockerStatus() info.DockerStatus {
+	startupTimeout := dockerClientTimeout
+	maxTimeout := 4 * startupTimeout
+	for {
+		ctx, _ := context.WithTimeout(context.Background(), startupTimeout)
+		dockerStatus, err := docker.StatusWithContext(ctx)
+		if err == nil {
+			return dockerStatus
+		}
+
+		switch err {
+		case context.DeadlineExceeded:
+			glog.Warningf("Timeout trying to communicate with docker during initialization, will retry")
+		default:
+			glog.V(5).Infof("Docker not connected: %v", err)
+			return info.DockerStatus{}
+		}
+
+		startupTimeout = 2 * startupTimeout
+		if startupTimeout > maxTimeout {
+			startupTimeout = maxTimeout
+		}
+	}
 }
 
 // A namespaced container name.
@@ -256,21 +285,23 @@ type manager struct {
 	startupTime              time.Time
 	maxHousekeepingInterval  time.Duration
 	allowDynamicHousekeeping bool
-	ignoreMetrics            container.MetricSet
+	includedMetrics          container.MetricSet
 	containerWatchers        []watcher.ContainerWatcher
 	eventsChannel            chan watcher.ContainerEvent
 	collectorHttpClient      *http.Client
 	nvidiaManager            accelerators.AcceleratorManager
+	// List of raw container cgroup path prefix whitelist.
+	rawContainerCgroupPathPrefixWhiteList []string
 }
 
 // Start the container manager.
 func (self *manager) Start() error {
-	err := docker.Register(self, self.fsInfo, self.ignoreMetrics)
+	err := docker.Register(self, self.fsInfo, self.includedMetrics)
 	if err != nil {
 		glog.V(5).Infof("Registration of the Docker container factory failed: %v.", err)
 	}
 
-	err = rkt.Register(self, self.fsInfo, self.ignoreMetrics)
+	err = rkt.Register(self, self.fsInfo, self.includedMetrics)
 	if err != nil {
 		glog.V(5).Infof("Registration of the rkt container factory failed: %v", err)
 	} else {
@@ -281,22 +312,27 @@ func (self *manager) Start() error {
 		self.containerWatchers = append(self.containerWatchers, watcher)
 	}
 
-	err = containerd.Register(self, self.fsInfo, self.ignoreMetrics)
+	err = containerd.Register(self, self.fsInfo, self.includedMetrics)
 	if err != nil {
 		glog.V(5).Infof("Registration of the containerd container factory failed: %v", err)
 	}
 
-	err = crio.Register(self, self.fsInfo, self.ignoreMetrics)
+	err = crio.Register(self, self.fsInfo, self.includedMetrics)
 	if err != nil {
 		glog.V(5).Infof("Registration of the crio container factory failed: %v", err)
 	}
 
-	err = systemd.Register(self, self.fsInfo, self.ignoreMetrics)
+	err = mesos.Register(self, self.fsInfo, self.includedMetrics)
+	if err != nil {
+		glog.V(5).Infof("Registration of the mesos container factory failed: %v", err)
+	}
+
+	err = systemd.Register(self, self.fsInfo, self.includedMetrics)
 	if err != nil {
 		glog.V(5).Infof("Registration of the systemd container factory failed: %v", err)
 	}
 
-	err = raw.Register(self, self.fsInfo, self.ignoreMetrics)
+	err = raw.Register(self, self.fsInfo, self.includedMetrics, self.rawContainerCgroupPathPrefixWhiteList)
 	if err != nil {
 		glog.Errorf("Registration of the raw container factory failed: %v", err)
 	}
@@ -592,6 +628,11 @@ func (self *manager) AllDockerContainers(query *info.ContainerInfoRequest) (map[
 	for name, cont := range containers {
 		inf, err := self.containerDataToContainerInfo(cont, query)
 		if err != nil {
+			// Ignore the error because of race condition and return best-effort result.
+			if err == memory.ErrDataNotFound {
+				glog.Warningf("Error getting data for container %s because of race condition", name)
+				continue
+			}
 			return nil, err
 		}
 		output[name] = *inf
@@ -1045,21 +1086,24 @@ func (m *manager) destroyContainerLocked(containerName string) error {
 
 // Detect all containers that have been added or deleted from the specified container.
 func (m *manager) getContainersDiff(containerName string) (added []info.ContainerReference, removed []info.ContainerReference, err error) {
-	m.containersLock.RLock()
-	defer m.containersLock.RUnlock()
-
 	// Get all subcontainers recursively.
+	m.containersLock.RLock()
 	cont, ok := m.containers[namespacedContainerName{
 		Name: containerName,
 	}]
+	m.containersLock.RUnlock()
 	if !ok {
 		return nil, nil, fmt.Errorf("failed to find container %q while checking for new containers", containerName)
 	}
 	allContainers, err := cont.handler.ListContainers(container.ListRecursive)
+
 	if err != nil {
 		return nil, nil, err
 	}
 	allContainers = append(allContainers, info.ContainerReference{Name: containerName})
+
+	m.containersLock.RLock()
+	defer m.containersLock.RUnlock()
 
 	// Determine which were added and which were removed.
 	allContainersSet := make(map[string]*containerData)

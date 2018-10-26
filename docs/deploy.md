@@ -84,10 +84,10 @@ systemctl start docker
 
 #### Install frakti
 
-Please note frakti has the same release version of Kubernetes, i.e. frakti `v1.11.*` works with Kubernetes `v1.11.*`, the `*` part does not matter. This doc will always use latest stable release of Kubernetes.
+Please note frakti has the same release version of Kubernetes, i.e. frakti `v1.12.*` works with Kubernetes `v1.12.*`, the `*` part does not matter. This doc will always use latest stable release of Kubernetes.
 
 ```sh
-curl -sSL https://github.com/kubernetes/frakti/releases/download/v1.11.0/frakti -o /usr/bin/frakti
+curl -sSL https://github.com/kubernetes/frakti/releases/download/v1.12.0/frakti -o /usr/bin/frakti
 chmod +x /usr/bin/frakti
 cgroup_driver=$(docker info | awk '/Cgroup Driver/{print $3}')
 cat <<EOF > /lib/systemd/system/frakti.service
