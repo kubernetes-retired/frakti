@@ -126,7 +126,7 @@ Further information could be found at:
 - [Kubelet container runtime API](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node/runtime-client-server.md)
 - [runV](https://github.com/hyperhq/runv)
 - [hyperd](https://github.com/hyperhq/hyperd)
-- [The blog on k8s.io about Hypernetes](http://blog.kubernetes.io/2016/05/hypernetes-security-and-multi-tenancy-in-kubernetes.html)
+- [The blog on k8s.io about Hypernetes](http://kubernetes.io/blog/2016/05/hypernetes-security-and-multi-tenancy-in-kubernetes.html)
 
 ## The differences between `frakti` with other Linux container runtimes
 
