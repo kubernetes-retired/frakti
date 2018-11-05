@@ -298,7 +298,7 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 
 	// 4: tear down the cni network.
 	sandboxID := podSandboxID
-	// workaroud for weave network plugin because it creates a veth pair based on a truncated sandboxID.
+	// workaround for weave network plugin because it creates a veth pair based on a truncated sandboxID.
 	if h.netPlugin.Name() == "weave" {
 		sandboxID = getMD5Hash(podSandboxID)
 	}
