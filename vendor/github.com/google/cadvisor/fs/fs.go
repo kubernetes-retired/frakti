@@ -35,6 +35,7 @@ import (
 	"github.com/docker/docker/pkg/mount"
 	"github.com/golang/glog"
 	"github.com/google/cadvisor/devicemapper"
+	"github.com/google/cadvisor/utils"
 	dockerutil "github.com/google/cadvisor/utils/docker"
 	zfs "github.com/mistifyio/go-zfs"
 )
@@ -106,14 +107,16 @@ type CrioContext struct {
 }
 
 func NewFsInfo(context Context) (FsInfo, error) {
-	mounts, err := mount.GetMounts()
+	mounts, err := mount.GetMounts(nil)
 	if err != nil {
 		return nil, err
 	}
 
 	fsUUIDToDeviceName, err := getFsUUIDToDeviceNameMap()
 	if err != nil {
-		return nil, err
+		// UUID is not always avaiable across different OS distributions.
+		// Do not fail if there is an error.
+		glog.Warningf("Failed to get disk UUID mapping, getting disk info by uuid will not work: %v", err)
 	}
 
 	// Avoid devicemapper container mounts - these are tracked by the ThinPoolWatcher
@@ -409,13 +412,17 @@ func (self *RealFsInfo) GetFsInfoForPath(mountSet map[string]struct{}) ([]Fs, er
 				fs.Type = ZFS
 			default:
 				var inodes, inodesFree uint64
-				fs.Capacity, fs.Free, fs.Available, inodes, inodesFree, err = getVfsStats(partition.mountpoint)
-				fs.Inodes = &inodes
-				fs.InodesFree = &inodesFree
-				fs.Type = VFS
+				if utils.FileExists(partition.mountpoint) {
+					fs.Capacity, fs.Free, fs.Available, inodes, inodesFree, err = getVfsStats(partition.mountpoint)
+					fs.Inodes = &inodes
+					fs.InodesFree = &inodesFree
+					fs.Type = VFS
+				} else {
+					glog.V(4).Infof("unable to determine file system type, partition mountpoint does not exist: %v", partition.mountpoint)
+				}
 			}
 			if err != nil {
-				glog.Errorf("Stat fs failed. Error: %v", err)
+				glog.V(4).Infof("Stat fs failed. Error: %v", err)
 			} else {
 				deviceSet[device] = struct{}{}
 				fs.DeviceInfo = DeviceInfo{
@@ -526,6 +533,21 @@ func (self *RealFsInfo) GetDirFsDevice(dir string) (*DeviceInfo, error) {
 	}
 
 	mount, found := self.mounts[dir]
+	// try the parent dir if not found until we reach the root dir
+	// this is an issue on btrfs systems where the directory is not
+	// the subvolume
+	for !found {
+		pathdir, _ := filepath.Split(dir)
+		// break when we reach root
+		if pathdir == "/" {
+			break
+		}
+		// trim "/" from the new parent path otherwise the next possible
+		// filepath.Split in the loop will not split the string any further
+		dir = strings.TrimSuffix(pathdir, "/")
+		mount, found = self.mounts[dir]
+	}
+
 	if found && mount.Fstype == "btrfs" && mount.Major == 0 && strings.HasPrefix(mount.Source, "/dev/") {
 		major, minor, err := getBtrfsMajorMinorIds(mount)
 		if err != nil {
@@ -547,7 +569,7 @@ func GetDirDiskUsage(dir string, timeout time.Duration) (uint64, error) {
 	if dir == "" {
 		return 0, fmt.Errorf("invalid directory")
 	}
-	cmd := exec.Command("nice", "-n", "19", "du", "-s", dir)
+	cmd := exec.Command("ionice", "-c3", "nice", "-n", "19", "du", "-s", dir)
 	stdoutp, err := cmd.StdoutPipe()
 	if err != nil {
 		return 0, fmt.Errorf("failed to setup stdout for cmd %v - %v", cmd.Args, err)
@@ -594,7 +616,7 @@ func GetDirInodeUsage(dir string, timeout time.Duration) (uint64, error) {
 	}
 	var counter byteCounter
 	var stderr bytes.Buffer
-	findCmd := exec.Command("find", dir, "-xdev", "-printf", ".")
+	findCmd := exec.Command("ionice", "-c3", "nice", "-n", "19", "find", dir, "-xdev", "-printf", ".")
 	findCmd.Stdout, findCmd.Stderr = &counter, &stderr
 	if err := findCmd.Start(); err != nil {
 		return 0, fmt.Errorf("failed to exec cmd %v - %v; stderr: %v", findCmd.Args, err, stderr.String())

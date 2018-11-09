@@ -50,7 +50,16 @@ func (m *kubeGenericRuntimeManager) createPodSandbox(pod *v1.Pod, attempt uint32
 		return "", message, err
 	}
 
-	podSandBoxID, err := m.runtimeService.RunPodSandbox(podSandboxConfig)
+	runtimeHandler := ""
+	if utilfeature.DefaultFeatureGate.Enabled(features.RuntimeClass) && m.runtimeClassManager != nil {
+		runtimeHandler, err = m.runtimeClassManager.LookupRuntimeHandler(pod.Spec.RuntimeClassName)
+		if err != nil {
+			message := fmt.Sprintf("CreatePodSandbox for pod %q failed: %v", format.Pod(pod), err)
+			return "", message, err
+		}
+	}
+
+	podSandBoxID, err := m.runtimeService.RunPodSandbox(podSandboxConfig, runtimeHandler)
 	if err != nil {
 		message := fmt.Sprintf("CreatePodSandbox for pod %q failed: %v", format.Pod(pod), err)
 		glog.Error(message)
@@ -151,6 +160,9 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxLinuxConfig(pod *v1.Pod) (
 		sc := pod.Spec.SecurityContext
 		if sc.RunAsUser != nil {
 			lc.SecurityContext.RunAsUser = &runtimeapi.Int64Value{Value: int64(*sc.RunAsUser)}
+		}
+		if sc.RunAsGroup != nil {
+			lc.SecurityContext.RunAsGroup = &runtimeapi.Int64Value{Value: int64(*sc.RunAsGroup)}
 		}
 		lc.SecurityContext.NamespaceOptions = namespacesForPod(pod)
 

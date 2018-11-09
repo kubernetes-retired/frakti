@@ -210,7 +210,7 @@ func (s *FraktiManager) RunPodSandbox(ctx context.Context, req *kubeapi.RunPodSa
 
 	runtimeService := s.getRuntimeServiceBySandboxConfig(req.GetConfig())
 	runtimeName := runtimeService.ServiceName()
-	podID, err := runtimeService.RunPodSandbox(req.Config)
+	podID, err := runtimeService.RunPodSandbox(req.Config, "frakti")
 	if err != nil {
 		glog.Errorf("RunPodSandbox from %s failed: %v", runtimeName, err)
 		return nil, err
