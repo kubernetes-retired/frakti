@@ -30,10 +30,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	libcontainercgroups "github.com/opencontainers/runc/libcontainer/cgroups"
 	"golang.org/x/net/context"
 	"k8s.io/frakti/pkg/hyper/types"
+	"k8s.io/klog"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
@@ -162,7 +162,7 @@ func parseContainerName(name string) (podName, podNamespace, podUID, containerNa
 		return "", "", "", "", 0, err
 	}
 	if len(parts) < 6 {
-		glog.Warningf("Found a container with the %q prefix, but too few fields (%d): %q", kubePrefix, len(parts), name)
+		klog.Warningf("Found a container with the %q prefix, but too few fields (%d): %q", kubePrefix, len(parts), name)
 		err = fmt.Errorf("container name %q has fewer parts than expected %v", name, parts)
 		return "", "", "", "", 0, err
 	}
@@ -172,7 +172,7 @@ func parseContainerName(name string) (podName, podNamespace, podUID, containerNa
 	if len(nameParts) > 1 {
 		attemptNumber, err := strconv.ParseUint(nameParts[1], 10, 32)
 		if err != nil {
-			glog.Warningf("invalid container attempt %q in container %q", nameParts[1], name)
+			klog.Warningf("invalid container attempt %q in container %q", nameParts[1], name)
 		}
 
 		attempt = uint32(attemptNumber)
@@ -194,7 +194,7 @@ func buildLabelsWithAnnotations(labels, annotations map[string]string) map[strin
 
 	rawAnnotations, err := json.Marshal(annotations)
 	if err != nil {
-		glog.Warningf("Unable to marshal annotations %q: %v", annotations, err)
+		klog.Warningf("Unable to marshal annotations %q: %v", annotations, err)
 	}
 
 	newLabels[fraktiAnnotationLabel] = string(rawAnnotations)
@@ -207,7 +207,7 @@ func getAnnotationsFromLabels(labels map[string]string) map[string]string {
 	if strValue, found := labels[fraktiAnnotationLabel]; found {
 		err := json.Unmarshal([]byte(strValue), &annotations)
 		if err != nil {
-			glog.Warningf("Unable to get annotations from labels %q", labels)
+			klog.Warningf("Unable to get annotations from labels %q", labels)
 		}
 	}
 

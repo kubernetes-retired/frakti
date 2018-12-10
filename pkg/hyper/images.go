@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
@@ -28,7 +28,7 @@ import (
 func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, error) {
 	images, err := h.client.GetImages()
 	if err != nil {
-		glog.Errorf("Get image list failed: %v", err)
+		klog.Errorf("Get image list failed: %v", err)
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func (h *Runtime) ListImages(filter *kubeapi.ImageFilter) ([]*kubeapi.Image, err
 		})
 	}
 
-	glog.V(4).Infof("Got imageList: %q", results)
+	klog.V(4).Infof("Got imageList: %q", results)
 	return results, nil
 }
 
@@ -65,13 +65,13 @@ func (h *Runtime) PullImage(image *kubeapi.ImageSpec, authConfig *kubeapi.AuthCo
 	auth := getHyperAuthConfig(authConfig)
 	err := h.client.PullImage(repo, tag, auth, nil)
 	if err != nil {
-		glog.Errorf("Pull image %q failed: %v", image.Image, err)
+		klog.Errorf("Pull image %q failed: %v", image.Image, err)
 		return "", err
 	}
 
 	imageInfo, err := h.client.GetImageInfo(repo, tag)
 	if err != nil {
-		glog.Errorf("Get image info for %q failed: %v", image.Image, err)
+		klog.Errorf("Get image info for %q failed: %v", image.Image, err)
 		return "", err
 	}
 
@@ -83,7 +83,7 @@ func (h *Runtime) RemoveImage(image *kubeapi.ImageSpec) error {
 	repo, tag := parseRepositoryTag(image.Image)
 	err := h.client.RemoveImage(repo, tag)
 	if err != nil {
-		glog.Errorf("Remove image %q failed: %v", image.Image, err)
+		klog.Errorf("Remove image %q failed: %v", image.Image, err)
 		return err
 	}
 
@@ -98,7 +98,7 @@ func (h *Runtime) ImageStatus(image *kubeapi.ImageSpec) (*kubeapi.Image, error) 
 		if strings.Contains(err.Error(), "not found") {
 			return nil, nil
 		}
-		glog.Errorf("Get image info for %q failed: %v", image.Image, err)
+		klog.Errorf("Get image info for %q failed: %v", image.Image, err)
 		return nil, err
 	}
 

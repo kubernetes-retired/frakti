@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/frakti/pkg/flexvolume"
 	"k8s.io/frakti/pkg/hyper/types"
@@ -38,13 +38,13 @@ const (
 func (h *Runtime) CreateContainer(podSandboxID string, config *kubeapi.ContainerConfig, sandboxConfig *kubeapi.PodSandboxConfig) (string, error) {
 	containerSpec, err := buildUserContainer(config, sandboxConfig)
 	if err != nil {
-		glog.Errorf("Build UserContainer for container %q failed: %v", config.String(), err)
+		klog.Errorf("Build UserContainer for container %q failed: %v", config.String(), err)
 		return "", err
 	}
 
 	containerID, err := h.client.CreateContainer(podSandboxID, containerSpec)
 	if err != nil {
-		glog.Errorf("Create container %s in pod %s failed: %v", config.Metadata.Name, podSandboxID, err)
+		klog.Errorf("Create container %s in pod %s failed: %v", config.Metadata.Name, podSandboxID, err)
 		return "", err
 	}
 
@@ -247,7 +247,7 @@ func makeContainerVolumes(config *kubeapi.ContainerConfig) ([]*types.UserVolumeR
 func (h *Runtime) StartContainer(rawContainerID string) error {
 	err := h.client.StartContainer(rawContainerID)
 	if err != nil {
-		glog.Errorf("Start container %q failed: %v", rawContainerID, err)
+		klog.Errorf("Start container %q failed: %v", rawContainerID, err)
 		return err
 	}
 
@@ -258,7 +258,7 @@ func (h *Runtime) StartContainer(rawContainerID string) error {
 func (h *Runtime) StopContainer(rawContainerID string, timeout int64) error {
 	err := h.client.StopContainer(rawContainerID, timeout)
 	if err != nil {
-		glog.Errorf("Stop container %s failed: %v", rawContainerID, err)
+		klog.Errorf("Stop container %s failed: %v", rawContainerID, err)
 		return err
 	}
 
@@ -270,7 +270,7 @@ func (h *Runtime) StopContainer(rawContainerID string, timeout int64) error {
 func (h *Runtime) RemoveContainer(rawContainerID string) error {
 	err := h.client.RemoveContainer(rawContainerID)
 	if err != nil {
-		glog.Errorf("Remove container %q failed: %v", rawContainerID, err)
+		klog.Errorf("Remove container %q failed: %v", rawContainerID, err)
 		return err
 	}
 
@@ -281,7 +281,7 @@ func (h *Runtime) RemoveContainer(rawContainerID string) error {
 func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Container, error) {
 	containerList, err := h.client.GetContainerList()
 	if err != nil {
-		glog.Errorf("Get container list failed: %v", err)
+		klog.Errorf("Get container list failed: %v", err)
 		return nil, err
 	}
 
@@ -292,7 +292,7 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 		_, _, _, containerName, attempt, err := parseContainerName(strings.Replace(c.ContainerName, "/", "", -1))
 
 		if err != nil {
-			glog.V(3).Infof("ParseContainerName for %q failed (%v), assuming it is not managed by frakti", c.ContainerName, err)
+			klog.V(3).Infof("ParseContainerName for %q failed (%v), assuming it is not managed by frakti", c.ContainerName, err)
 			continue
 		}
 
@@ -312,7 +312,7 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 
 		info, err := h.client.GetContainerInfo(c.ContainerID)
 		if err != nil {
-			glog.Errorf("Get container info for %s failed: %v", c.ContainerID, err)
+			klog.Errorf("Get container info for %s failed: %v", c.ContainerID, err)
 			return nil, err
 		}
 
@@ -351,13 +351,13 @@ func (h *Runtime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Co
 func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus, error) {
 	status, err := h.client.GetContainerInfo(containerID)
 	if err != nil {
-		glog.Errorf("Get container info for %s failed: %v", containerID, err)
+		klog.Errorf("Get container info for %s failed: %v", containerID, err)
 		return nil, err
 	}
 
 	podInfo, err := h.client.GetPodInfo(status.PodID)
 	if err != nil {
-		glog.Errorf("Get pod info for %s failed: %v", status.PodID, err)
+		klog.Errorf("Get pod info for %s failed: %v", status.PodID, err)
 		return nil, err
 	}
 
@@ -368,7 +368,7 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 
 	_, _, _, containerName, attempt, err := parseContainerName(strings.Replace(status.Container.Name, "/", "", -1))
 	if err != nil {
-		glog.Errorf("ParseContainerName for %s failed: %v", status.Container.Name, err)
+		klog.Errorf("ParseContainerName for %s failed: %v", status.Container.Name, err)
 		return nil, err
 	}
 
@@ -409,19 +409,19 @@ func (h *Runtime) ContainerStatus(containerID string) (*kubeapi.ContainerStatus,
 	case "running":
 		startedAt, err := parseTimeString(status.Status.Running.StartedAt)
 		if err != nil {
-			glog.Errorf("Hyper: can't parse startedAt %s", status.Status.Running.StartedAt)
+			klog.Errorf("Hyper: can't parse startedAt %s", status.Status.Running.StartedAt)
 			return nil, err
 		}
 		kubeStatus.StartedAt = startedAt
 	case "failed", "succeeded":
 		startedAt, err := parseTimeString(status.Status.Terminated.StartedAt)
 		if err != nil {
-			glog.Errorf("Hyper: can't parse startedAt %s", status.Status.Terminated.StartedAt)
+			klog.Errorf("Hyper: can't parse startedAt %s", status.Status.Terminated.StartedAt)
 			return nil, err
 		}
 		finishedAt, err := parseTimeString(status.Status.Terminated.FinishedAt)
 		if err != nil {
-			glog.Errorf("Hyper: can't parse finishedAt %s", status.Status.Terminated.FinishedAt)
+			klog.Errorf("Hyper: can't parse finishedAt %s", status.Status.Terminated.FinishedAt)
 			return nil, err
 		}
 
@@ -463,6 +463,6 @@ func (h *Runtime) ListContainerStats(filter *kubeapi.ContainerStatsFilter) (
 
 // ReopenContainerLog asks runtime to reopen the stdout/stderr log file for the container.
 func (h *Runtime) ReopenContainerLog(ContainerID string) error {
-	glog.V(3).Infof("ReopenContainerLog with request %s", ContainerID)
+	klog.V(3).Infof("ReopenContainerLog with request %s", ContainerID)
 	return fmt.Errorf("not implemented")
 }

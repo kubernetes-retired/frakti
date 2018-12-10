@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/frakti/pkg/util/alternativeruntime"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
@@ -50,7 +50,7 @@ func (p *PrivilegedRuntime) ServiceName() string {
 
 func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, cgroupDriver, privilegedRuntimeRootDir, podSandboxImage string) (*PrivilegedRuntime, error) {
 	// For now we use docker as the only supported privileged runtime
-	glog.Infof("Initialize privileged runtime: docker runtime\n")
+	klog.Infof("Initialize privileged runtime: docker runtime\n")
 
 	kubeletScheme, _, err := kubeletscheme.NewSchemeAndCodecs()
 	if err != nil {
@@ -104,7 +104,7 @@ func NewPrivilegedRuntimeService(privilegedRuntimeEndpoint string, streamingConf
 		return nil, err
 	}
 
-	glog.V(2).Infof("Starting the GRPC server for the docker CRI shim.")
+	klog.V(2).Infof("Starting the GRPC server for the docker CRI shim.")
 	server := dockerremote.NewDockerServer(fraktiDockerShim, ds)
 	if err := server.Start(); err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func startPrivilegedStreamingServer(streamingConfig *streaming.Config, ds docker
 	}
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {
-			glog.Errorf("Failed to start streaming server for privileged runtime: %v", err)
+			klog.Errorf("Failed to start streaming server for privileged runtime: %v", err)
 			os.Exit(1)
 		}
 	}()

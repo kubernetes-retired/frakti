@@ -24,10 +24,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang/glog"
 	libvirtxml "github.com/libvirt/libvirt-go-xml"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/frakti/pkg/unikernel/metadata"
+	"k8s.io/klog"
 )
 
 const (
@@ -99,7 +99,7 @@ func (vt *VMTool) CreateContainer(ctrMeta *metadata.ContainerMetadata, sbMeta *m
 	if err != nil {
 		if domain != nil {
 			if err1 := domain.Undefine(); err1 != nil {
-				glog.Errorf("Failed to undefine failed domain: %v", err1)
+				klog.Errorf("Failed to undefine failed domain: %v", err1)
 			}
 		}
 		return err
@@ -152,7 +152,7 @@ func (vt *VMTool) StopVM(domainID string, timeout int64) error {
 	} else {
 		err = wait.PollImmediate(1*time.Second, time.Duration(timeout)*time.Second, domainStopped(domainID, domain))
 		if err != nil {
-			glog.Warning("Try to destroy VM(%q) due to shutdown VM failed: %v", domainID, err)
+			klog.Warning("Try to destroy VM(%q) due to shutdown VM failed: %v", domainID, err)
 			if err = domain.Destroy(); err != nil {
 				return fmt.Errorf("failed to destroy domain(%q): %v", domainID, err)
 			}
@@ -184,7 +184,7 @@ func (vt *VMTool) RemoveVM(domainID string) error {
 		err = wait.PollImmediate(1*time.Second, 10*time.Second, domainStopped(domainID, domain))
 		if err != nil {
 			if err = domain.Destroy(); err != nil {
-				glog.Warning("failed to destroy domain(%q): %v", domainID, err)
+				klog.Warning("failed to destroy domain(%q): %v", domainID, err)
 			}
 		}
 	}

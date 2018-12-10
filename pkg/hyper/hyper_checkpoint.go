@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 const (
@@ -132,7 +132,7 @@ func (handler *PersistentCheckpointHandler) RemoveCheckpoint(podSandboxID string
 func (handler *PersistentCheckpointHandler) ListCheckpoints() []string {
 	keys, err := handler.store.List()
 	if err != nil {
-		glog.Errorf("Failed to list checkpoint store: %v", err)
+		klog.Errorf("Failed to list checkpoint store: %v", err)
 		return []string{}
 	}
 	return keys

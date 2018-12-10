@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/spf13/pflag"
+	"k8s.io/klog"
 
 	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/frakti/pkg/docker"
@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	fraktiVersion = "1.12.0"
+	fraktiVersion = "1.13.0"
 
 	// use port 22522 for dockershim streaming
 	privilegedStreamingServerPort = "22522"
@@ -71,17 +71,17 @@ func main() {
 	defer logs.FlushLogs()
 
 	// Print out frakti version
-	glog.Infof("frakti version: %s\n", fraktiVersion)
+	klog.Infof("frakti version: %s\n", fraktiVersion)
 
 	if *cgroupDriver != "cgroupfs" && *cgroupDriver != "systemd" {
-		glog.Fatalf("cgroup-driver flag should only be set as 'cgroupfs' or 'systemd'")
+		klog.Fatalf("cgroup-driver flag should only be set as 'cgroupfs' or 'systemd'")
 	}
 
 	// 1. Initialize hyper runtime and streaming server
 	streamingConfig := getStreamingConfig(*streamingServerPort)
 	hyperRuntime, streamingServer, err := hyper.NewHyperRuntime(*hyperEndpoint, streamingConfig, *cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB)
 	if err != nil {
-		glog.Fatalf("Initialize hyper runtime failed: %v", err)
+		klog.Fatalf("Initialize hyper runtime failed: %v", err)
 	}
 
 	// 2. Initialize privileged runtime and start its own streaming server
@@ -95,7 +95,7 @@ func main() {
 		*podSandboxImage,
 	)
 	if err != nil && *enablePrivilegedRuntime {
-		glog.Fatalf("Initialize privileged runtime failed: %v", err)
+		klog.Fatalf("Initialize privileged runtime failed: %v", err)
 	}
 
 	// 3. Initialize unikernel runtime if enabled
@@ -103,14 +103,14 @@ func main() {
 	if *enableUnikernelRuntime {
 		unikernelRuntime, err = unikernel.NewUnikernelRuntimeService(*cniNetDir, *cniPluginDir, *rootDir, *defaultCPUNum, *defaultMemoryMB, *enableUnikernelLog)
 		if err != nil {
-			glog.Fatalf("Initialize unikernel runtime failed: %v", err)
+			klog.Fatalf("Initialize unikernel runtime failed: %v", err)
 		}
 	}
 
 	// 4. Initialize frakti manager with two runtimes above
 	server, err := manager.NewFraktiManager(hyperRuntime, hyperRuntime, streamingServer, privilegedRuntime, privilegedRuntime, unikernelRuntime, unikernelRuntime)
 	if err != nil {
-		glog.Fatalf("Initialize frakti server failed: %v", err)
+		klog.Fatalf("Initialize frakti server failed: %v", err)
 	}
 
 	fmt.Println(server.Serve(*listen))
@@ -136,13 +136,13 @@ func getStreamingConfig(port string) *streaming.Config {
 	if len(*streamingServerAddress) == 0 {
 		addr, err = network.GetLocalIPAddress()
 		if err != nil {
-			glog.Fatalf("failed to get local IP address of host machine: %v", err)
+			klog.Fatalf("failed to get local IP address of host machine: %v", err)
 		}
 	} else {
 		addr = *streamingServerAddress
 	}
 	config.Addr = fmt.Sprintf("%s:%s", addr, port)
 
-	glog.V(3).Infof("Streaming server is listening on: %v", config.Addr)
+	klog.V(3).Infof("Streaming server is listening on: %v", config.Addr)
 	return config
 }

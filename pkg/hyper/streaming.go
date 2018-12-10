@@ -22,8 +22,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/golang/glog"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
@@ -64,7 +64,7 @@ func (sr *streamingRuntime) Attach(rawContainerID string, stdin io.Reader, stdou
 func (sr *streamingRuntime) PortForward(podSandboxID string, port int32, stream io.ReadWriteCloser) error {
 	running, err := isPodSandboxRunning(sr.client, podSandboxID)
 	if err != nil {
-		glog.Errorf("isPodSandboxRunning for sandbox %q: %v", podSandboxID, err)
+		klog.Errorf("isPodSandboxRunning for sandbox %q: %v", podSandboxID, err)
 		return err
 	}
 	if !running {
@@ -133,7 +133,7 @@ func (h *Runtime) PortForward(req *kubeapi.PortForwardRequest) (*kubeapi.PortFor
 
 	running, err := isPodSandboxRunning(h.client, req.PodSandboxId)
 	if err != nil {
-		glog.Errorf("isPodSandboxRunning for sandbox %q: %v", req.PodSandboxId, err)
+		klog.Errorf("isPodSandboxRunning for sandbox %q: %v", req.PodSandboxId, err)
 		return nil, err
 	}
 	if !running {

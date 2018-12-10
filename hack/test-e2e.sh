@@ -92,7 +92,8 @@ function configure_cni() {
   git clone https://github.com/containernetworking/plugins $GOPATH/src/github.com/containernetworking/plugins
   cd $GOPATH/src/github.com/containernetworking/plugins
 
-  ./build.sh
+  ./build_linux.sh
+
   sudo cp bin/* /opt/cni/bin/
 
   # create network configure file

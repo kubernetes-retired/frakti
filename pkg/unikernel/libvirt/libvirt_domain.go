@@ -20,9 +20,9 @@ package libvirt
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	libvirtgo "github.com/libvirt/libvirt-go"
 	libvirtxml "github.com/libvirt/libvirt-go-xml"
+	"k8s.io/klog"
 )
 
 // LibvirtConnect is a wrapper for libvirt connection
@@ -45,7 +45,7 @@ func (lc *LibvirtConnect) DefineDomain(dxml *libvirtxml.Domain) (*LibvirtDomain,
 	if err != nil {
 		return nil, err
 	}
-	glog.V(2).Infof("Defining domain:%q", xml)
+	klog.V(2).Infof("Defining domain:%q", xml)
 	domain, err := lc.conn.DomainDefineXML(xml)
 	if err != nil {
 		return nil, err

@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
@@ -71,7 +71,7 @@ func attachDisk(project string, zone string, volId string) error {
 	}
 
 	// TODO(harry): Check status of resp?
-	glog.V(5).Infof("[Attach Device] GCE PD: %s is attached to node: %s", volId, nodeName)
+	klog.V(5).Infof("[Attach Device] GCE PD: %s is attached to node: %s", volId, nodeName)
 
 	return nil
 }
@@ -101,7 +101,7 @@ func detachDisk(project string, zone string, volId string) error {
 		return fmt.Errorf("failed to wait for disk disappear on host: %v", err)
 	}
 
-	glog.V(5).Infof("[Detach Device] GCE PD device: %s is detached from node: %s", volId, nodeName)
+	klog.V(5).Infof("[Detach Device] GCE PD device: %s is detached from node: %s", volId, nodeName)
 
 	return nil
 }
@@ -151,15 +151,15 @@ func formatDisk(volId, fstype string) error {
 		if fstype == "ext4" || fstype == "ext3" {
 			args = []string{"-F", source}
 		}
-		glog.Infof("Disk %q appears to be unformatted, attempting to format as type: %q with options: %v", source, fstype, args)
+		klog.Infof("Disk %q appears to be unformatted, attempting to format as type: %q with options: %v", source, fstype, args)
 		_, err := execRun("mkfs."+fstype, args...)
 		if err != nil {
-			glog.Errorf("format of disk %q failed: type:(%q) error:(%v)", source, fstype, err)
+			klog.Errorf("format of disk %q failed: type:(%q) error:(%v)", source, fstype, err)
 			return err
 		}
 	}
 
-	glog.V(5).Infof("[Format Device] GCE PD device: %s is formatted with type: %s", source, fstype)
+	klog.V(5).Infof("[Format Device] GCE PD device: %s is formatted with type: %s", source, fstype)
 
 	return nil
 }
@@ -179,13 +179,13 @@ func buildDiskURL(project, zone, volID string) string {
 // getDiskFormat uses 'lsblk' to return the format of given disk.
 func getDiskFormat(disk string) (string, error) {
 	args := []string{"-n", "-o", "FSTYPE", disk}
-	glog.V(4).Infof("Attempting to determine if disk %q is formatted using lsblk with args: (%v)", disk, args)
+	klog.V(4).Infof("Attempting to determine if disk %q is formatted using lsblk with args: (%v)", disk, args)
 	dataOut, err := execRun("lsblk", args...)
 	output := string(dataOut)
-	glog.V(4).Infof("Output: %q", output)
+	klog.V(4).Infof("Output: %q", output)
 
 	if err != nil {
-		glog.Errorf("Could not determine if disk %q is formatted (%v)", disk, err)
+		klog.Errorf("Could not determine if disk %q is formatted (%v)", disk, err)
 		return "", err
 	}
 

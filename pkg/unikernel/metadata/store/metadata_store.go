@@ -20,7 +20,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 var (
@@ -239,7 +239,7 @@ func (m *metadataStore) Delete(id string) error {
 	if meta != nil {
 		// Do not return error for cleanup.
 		if err := meta.cleanup(); err != nil {
-			glog.Errorf("Failed to cleanup metadata %q: %v", id, err)
+			klog.Errorf("Failed to cleanup metadata %q: %v", id, err)
 		}
 	}
 	return nil

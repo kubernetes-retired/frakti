@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/frakti/pkg/unikernel/metadata"
 	"k8s.io/frakti/pkg/unikernel/metadata/store"
@@ -119,7 +119,7 @@ func (u *UnikernelRuntime) RemovePodSandbox(podSandboxID string) error {
 	}
 
 	if len(ctrs) > 1 {
-		glog.Warningf("Get more than one(%d) containers in sandbox %q, remove them all", len(ctrs), sandbox.ID)
+		klog.Warningf("Get more than one(%d) containers in sandbox %q, remove them all", len(ctrs), sandbox.ID)
 	}
 	// Remove all containers found in sandbox, although we expected only one exist.
 	for _, ctr := range ctrs {
@@ -148,7 +148,7 @@ func (u *UnikernelRuntime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSa
 
 // ListPodSandbox returns a list of Sandbox.
 func (u *UnikernelRuntime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.PodSandbox, error) {
-	glog.V(5).Infof("Unikernel: ListPodSandbox with filter %+v", filter)
+	klog.V(5).Infof("Unikernel: ListPodSandbox with filter %+v", filter)
 	allSandboxes, err := u.sandboxStore.List()
 	if err != nil {
 		return nil, fmt.Errorf("list sandbox failed: %v", err)
