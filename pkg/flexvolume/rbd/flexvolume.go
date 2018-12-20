@@ -22,8 +22,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/golang/glog"
 	"k8s.io/frakti/pkg/flexvolume"
+	"k8s.io/klog"
 )
 
 type FlexVolumeDriver struct {
@@ -134,7 +134,7 @@ func (d *FlexVolumeDriver) Mount(targetMountDir, jsonOptions string) (map[string
 		return nil, err
 	}
 
-	glog.V(5).Infof("[Mount] Ceph RBD tag file is created in: %s with data: %s", targetMountDir, optsData)
+	klog.V(5).Infof("[Mount] Ceph RBD tag file is created in: %s with data: %s", targetMountDir, optsData)
 
 	return nil, nil
 }
@@ -169,7 +169,7 @@ func (d *FlexVolumeDriver) Unmount(targetMountDir string) (map[string]interface{
 		return nil, err
 	}
 
-	glog.V(5).Infof("[Unmount] Ceph RBD umounted: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
+	klog.V(5).Infof("[Unmount] Ceph RBD umounted: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
 
 	return nil, nil
 }

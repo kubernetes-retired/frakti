@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/frakti/pkg/unikernel/metadata"
 	metaimage "k8s.io/frakti/pkg/unikernel/metadata/image"
@@ -71,7 +71,7 @@ func (im *ImageManager) PullImage(imageName string) (imageRef string, err error)
 	if strings.HasPrefix(imageName, UnikernelImagePrefix) {
 		location = imageName[len(UnikernelImagePrefix):]
 	} else {
-		glog.Warningf("Got PullImage request without unikernel image prefix in unikernel runtime.")
+		klog.Warningf("Got PullImage request without unikernel image prefix in unikernel runtime.")
 	}
 	// Check image exist before try to pull it.
 	exist := true
@@ -136,7 +136,7 @@ func (im *ImageManager) PullImage(imageName string) (imageRef string, err error)
 			Copies:    make(map[string]metaimage.Storage, 1),
 		}
 		newImage.Copies[newImage.Digest.String()] = *imageStorage
-		glog.V(5).Infof("Adding image metadata %+v to image store", newImage)
+		klog.V(5).Infof("Adding image metadata %+v to image store", newImage)
 		im.metaStore.Add(newImage)
 	}
 	return imageName, nil
@@ -199,13 +199,13 @@ func (im *ImageManager) RemoveImage(imageName string) error {
 
 	// Clean up image related storage.
 	if len(image.Copies) == 0 {
-		glog.Warningf("Image(%q) has no storage reference")
+		klog.Warningf("Image(%q) has no storage reference")
 	} else {
 		if _, ok := image.Copies[image.Digest.String()]; ok {
 			os.RemoveAll(filepath.Join(im.imageRoot, "storage", image.Digest.String()))
 		} else {
 			// FIXME(Crazykev): should we forcibly remove this
-			glog.Warningf("The last image storage reference is not base storage")
+			klog.Warningf("The last image storage reference is not base storage")
 		}
 	}
 

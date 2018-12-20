@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/golang/glog"
 	"golang.org/x/sys/unix"
+	"k8s.io/klog"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/frakti/pkg/hyper/types"
@@ -34,13 +34,13 @@ import (
 func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler string) (string, error) {
 	userpod, err := h.buildUserPod(config)
 	if err != nil {
-		glog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
+		klog.Errorf("Build UserPod for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 
 	netns, err := ns.NewNS()
 	if err != nil {
-		glog.Errorf("Create Network Namespace sandbox %q failed: %v", config.String(), err)
+		klog.Errorf("Create Network Namespace sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 	netNsPath := netns.Path()
@@ -84,7 +84,7 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler
 	}
 	_, err = h.netPlugin.SetUpPod(netNsPath, sandboxID, config.GetMetadata(), config.GetAnnotations(), capabilities)
 	if err != nil {
-		glog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
+		klog.Errorf("Setup network for sandbox %q by cni plugin failed: %v", config.String(), err)
 		return "", err
 	}
 	defer func() {
@@ -92,42 +92,42 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler
 			// tear down sandbox's network
 			teardownError := h.netPlugin.TearDownPod(netNsPath, sandboxID, config.GetMetadata(), config.GetAnnotations(), capabilities)
 			if teardownError != nil {
-				glog.Errorf("Tear down network for pod %s failed: %v", podId, teardownError)
+				klog.Errorf("Tear down network for pod %s failed: %v", podId, teardownError)
 			}
 		}
 	}()
 
 	containerInterfaces, err := scanContainerInterfaces(netns)
 	if err != nil {
-		glog.Errorf("Get CNI result for sandbox %q failed: %v", config.String(), err)
+		klog.Errorf("Get CNI result for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 
-	glog.V(3).Infof("Get container interfaces in netns %q: %#v", netNsPath, containerInterfaces)
+	klog.V(3).Infof("Get container interfaces in netns %q: %#v", netNsPath, containerInterfaces)
 
 	hostVeth, err := setupRelayBridgeInNs(netns, containerInterfaces)
 	if err != nil {
-		glog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
+		klog.Errorf("Set up relay bridge in ns for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 	defer func() {
 		if err != nil {
 			if tearError := teardownRelayBridgeInNetns(netNsPath, toContainerInterfaceInfos(containerInterfaces)); tearError != nil {
-				glog.Errorf("Tear down bridge inside netns %q failed: %v", netNsPath, err)
+				klog.Errorf("Tear down bridge inside netns %q failed: %v", netNsPath, err)
 			}
 		}
 	}()
 
 	bridgeName, err := setupRelayBridgeInHost(hostVeth)
 	if err != nil {
-		glog.Errorf("Set up relay bridge in host for sandbox %q failed: %v", config.String(), err)
+		klog.Errorf("Set up relay bridge in host for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 	userpod.Labels["HOSTBRIDGE"] = bridgeName
 	defer func() {
 		if err != nil {
 			if tearError := teardownRelayBridgeInHost(bridgeName); tearError != nil {
-				glog.Errorf("Destroy pod %s host relay bridge failed: %v", podId, err)
+				klog.Errorf("Destroy pod %s host relay bridge failed: %v", podId, err)
 			}
 		}
 	}()
@@ -138,13 +138,13 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler
 
 	podID, err := h.client.CreatePod(userpod)
 	if err != nil {
-		glog.Errorf("Create pod for sandbox %q failed: %v", config.String(), err)
+		klog.Errorf("Create pod for sandbox %q failed: %v", config.String(), err)
 		return "", err
 	}
 	defer func() {
 		if err != nil {
 			if removeError := h.client.RemovePod(podID); removeError != nil {
-				glog.Warningf("Remove pod %q failed: %v", removeError)
+				klog.Warningf("Remove pod %q failed: %v", removeError)
 			}
 		}
 	}()
@@ -157,14 +157,14 @@ func (h *Runtime) RunPodSandbox(config *kubeapi.PodSandboxConfig, runtimeHandler
 	defer func() {
 		if err != nil {
 			if removeCheckpointError := h.checkpointHandler.RemoveCheckpoint(podID); removeCheckpointError != nil {
-				glog.Errorf("Remove checkpoint of pod %s failed: %v", podID, removeCheckpointError)
+				klog.Errorf("Remove checkpoint of pod %s failed: %v", podID, removeCheckpointError)
 			}
 		}
 	}()
 
 	err = h.client.StartPod(podID)
 	if err != nil {
-		glog.Errorf("Start pod %q failed: %v", podID, err)
+		klog.Errorf("Start pod %q failed: %v", podID, err)
 		return "", err
 	}
 
@@ -205,7 +205,7 @@ func (h *Runtime) buildUserPod(config *kubeapi.PodSandboxConfig) (*types.UserPod
 		if err != nil {
 			return nil, err
 		}
-		glog.V(5).Infof("Calculated cpu and memory limit: %v, %v based on cgroup parent %s ", cpuNumber, memoryinMegabytes, cgroupParent)
+		klog.V(5).Infof("Calculated cpu and memory limit: %v, %v based on cgroup parent %s ", cpuNumber, memoryinMegabytes, cgroupParent)
 	} else {
 		// If pod level QoS is disabled, or this pod is a BE, use default value instead.
 		// NOTE: thus actually changes BE to guaranteed. But generally, HyperContainer should not be used for BE workload,
@@ -251,7 +251,7 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 
 	checkpoint, err := h.checkpointHandler.GetCheckpoint(podSandboxID)
 	if err != nil {
-		glog.Warningf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
+		klog.Warningf("Failed to get checkpoint for sandbox %q: %v", podSandboxID, err)
 	} else {
 		netNsPath = checkpoint.NetNsPath
 		hostBridge = checkpoint.HostBridge
@@ -325,12 +325,12 @@ func (h *Runtime) StopPodSandbox(podSandboxID string) error {
 func (h *Runtime) RemovePodSandbox(podSandboxID string) error {
 	err := h.client.RemovePod(podSandboxID)
 	if err != nil {
-		glog.Errorf("Remove pod %s failed: %v", podSandboxID, err)
+		klog.Errorf("Remove pod %s failed: %v", podSandboxID, err)
 		return err
 	}
 
 	if err := h.checkpointHandler.RemoveCheckpoint(podSandboxID); err != nil {
-		glog.Errorf("Remove checkpoint of pod %s failed: %v", podSandboxID, err)
+		klog.Errorf("Remove checkpoint of pod %s failed: %v", podSandboxID, err)
 		return err
 	}
 
@@ -341,7 +341,7 @@ func (h *Runtime) RemovePodSandbox(podSandboxID string) error {
 func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStatus, error) {
 	info, err := h.client.GetPodInfo(podSandboxID)
 	if err != nil {
-		glog.Errorf("GetPodInfo for %s failed: %v", podSandboxID, err)
+		klog.Errorf("GetPodInfo for %s failed: %v", podSandboxID, err)
 		return nil, err
 	}
 
@@ -354,7 +354,7 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 
 	podName, podNamespace, podUID, attempt, err := parseSandboxName(info.PodName)
 	if err != nil {
-		glog.Errorf("ParseSandboxName for %s failed: %v", info.PodName, err)
+		klog.Errorf("ParseSandboxName for %s failed: %v", info.PodName, err)
 		return nil, err
 	}
 
@@ -385,7 +385,7 @@ func (h *Runtime) PodSandboxStatus(podSandboxID string) (*kubeapi.PodSandboxStat
 func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.PodSandbox, error) {
 	pods, err := h.client.GetPodList()
 	if err != nil {
-		glog.Errorf("GetPodList failed: %v", err)
+		klog.Errorf("GetPodList failed: %v", err)
 		return nil, err
 	}
 
@@ -425,7 +425,7 @@ func (h *Runtime) ListPodSandbox(filter *kubeapi.PodSandboxFilter) ([]*kubeapi.P
 			if _, ok := sandboxIDs[id]; !ok {
 				checkpoint, err := h.checkpointHandler.GetCheckpoint(id)
 				if err != nil {
-					glog.Errorf("Failed to get checkpoint for sandbox %q: %v", id, err)
+					klog.Errorf("Failed to get checkpoint for sandbox %q: %v", id, err)
 					continue
 				}
 				items = append(items, checkpointToKubeAPISandbox(id, checkpoint))
@@ -474,7 +474,7 @@ func toCheckpointProtocol(protocol kubeapi.Protocol) Protocol {
 	case kubeapi.Protocol_UDP:
 		return ProtocolUDP
 	}
-	glog.Warningf("Unknown protocol %q: defaulting to TCP", protocol)
+	klog.Warningf("Unknown protocol %q: defaulting to TCP", protocol)
 	return ProtocolTCP
 }
 
@@ -482,7 +482,7 @@ func podResultToKubeAPISandbox(pod *types.PodListResult) (*kubeapi.PodSandbox, e
 	state := toPodSandboxState(pod.Status)
 	podName, podNamespace, podUID, attempt, err := parseSandboxName(pod.PodName)
 	if err != nil {
-		glog.V(3).Infof("ParseSandboxName for %q failed (%v), assuming it is not managed by frakti", pod.PodName, err)
+		klog.V(3).Infof("ParseSandboxName for %q failed (%v), assuming it is not managed by frakti", pod.PodName, err)
 		return nil, err
 	}
 

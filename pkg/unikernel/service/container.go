@@ -22,11 +22,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/stringid"
-	"github.com/golang/glog"
 	"k8s.io/frakti/pkg/unikernel/libvirt"
 	"k8s.io/frakti/pkg/unikernel/metadata"
 	metaimage "k8s.io/frakti/pkg/unikernel/metadata/image"
 	"k8s.io/frakti/pkg/unikernel/metadata/store"
+	"k8s.io/klog"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
@@ -41,9 +41,9 @@ func (u *UnikernelRuntime) CreateContainer(podSandboxID string, config *kubeapi.
 		return "", fmt.Errorf("get containers for pod(%q) failed: %v", podSandboxID, err)
 	}
 	for _, container := range createdContainers {
-		glog.Warningf("Unikernel/CreateContainer: container(%q) already exist in pod(%q), remove it", container.ID, podSandboxID)
+		klog.Warningf("Unikernel/CreateContainer: container(%q) already exist in pod(%q), remove it", container.ID, podSandboxID)
 		if err := u.RemoveContainer(container.ID); err != nil {
-			glog.Errorf("Clean up legacy container(%q) failed: %v", container.ID, err)
+			klog.Errorf("Clean up legacy container(%q) failed: %v", container.ID, err)
 		}
 	}
 
@@ -82,14 +82,14 @@ func (u *UnikernelRuntime) CreateContainer(podSandboxID string, config *kubeapi.
 	}
 	storage, err := u.imageManager.PrepareImage(imageRef, podSandboxID)
 	if err != nil {
-		glog.Errorf("Failed to prepare image %q for sandbox %q: %v", imageRef, podSandboxID, err)
+		klog.Errorf("Failed to prepare image %q for sandbox %q: %v", imageRef, podSandboxID, err)
 		return "", fmt.Errorf("prepare image failed: %v", err)
 	}
 	defer func() {
 		if err != nil {
 			err1 := u.imageManager.CleanupImageCopy(imageRef, podSandboxID)
 			if err1 != nil {
-				glog.Errorf("Failed to cleanup image copy when create container failed: %v", err1)
+				klog.Errorf("Failed to cleanup image copy when create container failed: %v", err1)
 			}
 		}
 	}()
@@ -110,7 +110,7 @@ func (u *UnikernelRuntime) CreateContainer(podSandboxID string, config *kubeapi.
 		// Note: For now, we just remove VM directly if create container(VM) failed.
 		if err != nil {
 			if err1 := u.vmTool.RemoveVM(podSandboxID); err1 != nil {
-				glog.Errorf("Failed to clean up failed VM container: %v", err1)
+				klog.Errorf("Failed to clean up failed VM container: %v", err1)
 			}
 		}
 	}()
@@ -186,7 +186,7 @@ func (u *UnikernelRuntime) RemoveContainer(rawContainerID string) error {
 	}
 	// Cleanup image copy
 	if err = u.imageManager.CleanupImageCopy(container.Config.GetImage().GetImage(), container.SandboxID); err != nil {
-		glog.Errorf("Failed to cleanup image copy after remove container: %v", err)
+		klog.Errorf("Failed to cleanup image copy after remove container: %v", err)
 		return err
 	}
 	// Release name and id
@@ -201,7 +201,7 @@ func (u *UnikernelRuntime) RemoveContainer(rawContainerID string) error {
 
 // ListContainers lists all containers by filters.
 func (u *UnikernelRuntime) ListContainers(filter *kubeapi.ContainerFilter) ([]*kubeapi.Container, error) {
-	glog.V(5).Infof("Unikernel: ListContainers with filter %+v", filter)
+	klog.V(5).Infof("Unikernel: ListContainers with filter %+v", filter)
 	// Get containers in store
 	ctrInStore, err := u.containerStore.List()
 	if err != nil {
@@ -212,13 +212,13 @@ func (u *UnikernelRuntime) ListContainers(filter *kubeapi.ContainerFilter) ([]*k
 	if err != nil {
 		return nil, err
 	}
-	glog.V(5).Infof("List all VMs in libvirt: %+v", vmMap)
+	klog.V(5).Infof("List all VMs in libvirt: %+v", vmMap)
 	// Update container state from libvirt
 	var containers []*kubeapi.Container
 	for _, container := range ctrInStore {
 		vm, exist := vmMap[container.SandboxID]
 		if !exist {
-			glog.Warningf("Find sandbox(%q) and container(%q) does not have related VM", container.SandboxID, container.ID)
+			klog.Warningf("Find sandbox(%q) and container(%q) does not have related VM", container.SandboxID, container.ID)
 			// FIXME(Crazykev): Should we remove these container and sandbox?
 			continue
 		}
@@ -268,7 +268,7 @@ func (u *UnikernelRuntime) transformContainerState(meta *metadata.ContainerMetad
 		return nil
 	}
 	if curState != kubeapi.ContainerState_CONTAINER_EXITED {
-		glog.Warningf("Unexpected container(%s) state transform from %d to %d", meta.ID, lastState, curState)
+		klog.Warningf("Unexpected container(%s) state transform from %d to %d", meta.ID, lastState, curState)
 	}
 	err := u.containerStore.Update(meta.ID, func(meta metadata.ContainerMetadata) (metadata.ContainerMetadata, error) {
 		meta.FinishedAt = time.Now().UnixNano()
@@ -408,6 +408,6 @@ func (h *UnikernelRuntime) ListContainerStats(filter *kubeapi.ContainerStatsFilt
 
 // ReopenContainerLog asks runtime to reopen the stdout/stderr log file for the container.
 func (h *UnikernelRuntime) ReopenContainerLog(ContainerID string) error {
-	glog.V(3).Infof("ReopenContainerLog with request %s", ContainerID)
+	klog.V(3).Infof("ReopenContainerLog with request %s", ContainerID)
 	return fmt.Errorf("not implemented")
 }

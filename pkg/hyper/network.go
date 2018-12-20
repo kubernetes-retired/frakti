@@ -25,8 +25,8 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
+	"k8s.io/klog"
 )
 
 const (
@@ -68,7 +68,7 @@ func generateMacAddress() (net.HardwareAddr, error) {
 	_, err := rand.Read(bytes)
 
 	if err != nil {
-		glog.Errorf("get random number failed")
+		klog.Errorf("get random number failed")
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func scanContainerInterfaces(netns ns.NetNS) ([]*containerInterface, error) {
 			var ip *net.IPNet
 			addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
 			if err != nil {
-				glog.Errorf("Get address list of link %s failed: %v", linkName, err)
+				klog.Errorf("Get address list of link %s failed: %v", linkName, err)
 				continue
 			}
 			if addrs != nil {
@@ -109,7 +109,7 @@ func scanContainerInterfaces(netns ns.NetNS) ([]*containerInterface, error) {
 			gateway := ""
 			routes, err := netlink.RouteList(link, netlink.FAMILY_V4)
 			if err != nil {
-				glog.Errorf("Get route list of link %s failed: %v", linkName, err)
+				klog.Errorf("Get route list of link %s failed: %v", linkName, err)
 				continue
 			}
 			for _, route := range routes {
@@ -258,26 +258,26 @@ func setupRelayBridgeInNs(netns ns.NetNS, containerInterfaces []*containerInterf
 
 		br, err := setupBridge(defaultContainerBridgeName)
 		if err != nil {
-			glog.Errorf("Failed to setup bridge in ns: %v", err)
+			klog.Errorf("Failed to setup bridge in ns: %v", err)
 			return err
 		}
 
 		// create the veth pair in the container and move host end to host netns
 		vethName, pairName, err := generateVethPair()
 		if err != nil {
-			glog.Errorf("Failed to generate veth name in ns: %v", err)
+			klog.Errorf("Failed to generate veth name in ns: %v", err)
 			return err
 		}
 
 		hostVeth, containerVeth, err = setupVeth(vethName, pairName, hostNS)
 		if err != nil {
-			glog.Errorf("Failed to create veth pair in ns: %v", err)
+			klog.Errorf("Failed to create veth pair in ns: %v", err)
 			return err
 		}
 
 		// connect both new created veth and the old one to the bridge in ns
 		if err := netlink.LinkSetMaster(containerVeth, br); err != nil {
-			glog.Errorf("Failed to connect new created veth to the bridge in ns: %v", err)
+			klog.Errorf("Failed to connect new created veth to the bridge in ns: %v", err)
 			return err
 		}
 
@@ -354,11 +354,11 @@ func teardownRelayBridgeInNetns(netnsPath string, interfaces []*ContainerInterfa
 
 				addr, err := netlink.ParseAddr(it.Addr.String())
 				if err != nil {
-					glog.Warningf("Parsing addr %q failed: %v", it.Addr.String(), err)
+					klog.Warningf("Parsing addr %q failed: %v", it.Addr.String(), err)
 					continue
 				}
 				if err := netlink.AddrAdd(link, addr); err != nil {
-					glog.Warningf("Adding addr %q failed: %v", it.Addr.String(), err)
+					klog.Warningf("Adding addr %q failed: %v", it.Addr.String(), err)
 				}
 			}
 		}
@@ -375,19 +375,19 @@ func setupRelayBridgeInHost(hostVeth netlink.Link) (string, error) {
 	// setup bridge in host
 	brName, err := generateBridgeName()
 	if err != nil {
-		glog.Errorf("Failed to generate bridge name in host: %v", err)
+		klog.Errorf("Failed to generate bridge name in host: %v", err)
 		return "", err
 	}
 
 	br, err := setupBridge(brName)
 	if err != nil {
-		glog.Errorf("Failed to setup bridge in host: %v", err)
+		klog.Errorf("Failed to setup bridge in host: %v", err)
 		return "", err
 	}
 
 	// connect veth to bridge in host
 	if err := netlink.LinkSetMaster(hostVeth, br); err != nil {
-		glog.Errorf("Failed to connect veth to bridge in host: %v", err)
+		klog.Errorf("Failed to connect veth to bridge in host: %v", err)
 		return "", err
 	}
 

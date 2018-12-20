@@ -25,7 +25,7 @@ import (
 
 	"github.com/containernetworking/cni/libcni"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 )
 
@@ -88,23 +88,23 @@ func getDefaultCNINetwork(netDir string, pluginDirs []string, vendorCNIDirPrefix
 		if strings.HasSuffix(confFile, ".conflist") {
 			confList, err = libcni.ConfListFromFile(confFile)
 			if err != nil {
-				glog.Warningf("Error loading CNI config list file %s: %v", confFile, err)
+				klog.Warningf("Error loading CNI config list file %s: %v", confFile, err)
 				continue
 			}
 		} else {
 			conf, err := libcni.ConfFromFile(confFile)
 			if err != nil {
-				glog.Warningf("Error loading CNI config file %s: %v", confFile, err)
+				klog.Warningf("Error loading CNI config file %s: %v", confFile, err)
 				continue
 			}
 			confList, err = libcni.ConfListFromConf(conf)
 			if err != nil {
-				glog.Warningf("Error converting CNI config file %s to list: %v", confFile, err)
+				klog.Warningf("Error converting CNI config file %s to list: %v", confFile, err)
 				continue
 			}
 		}
 		if len(confList.Plugins) == 0 {
-			glog.Warningf("CNI config list %s has no networks, skipping", confFile)
+			klog.Warningf("CNI config list %s has no networks, skipping", confFile)
 			continue
 		}
 		confType := confList.Plugins[0].Network.Type
@@ -127,7 +127,7 @@ func vendorCNIDir(prefix, pluginType string) string {
 func (plugin *cniNetworkPlugin) syncNetworkConfig() {
 	network, err := getDefaultCNINetwork(plugin.netDir, plugin.pluginDirs, plugin.vendorCNIDirPrefix)
 	if err != nil {
-		glog.Errorf("error updating cni config: %s", err)
+		klog.Errorf("error updating cni config: %s", err)
 		return
 	}
 	plugin.setDefaultNetwork(network)
@@ -167,10 +167,10 @@ func (plugin *cniNetworkPlugin) SetUpPod(podNetnsPath string, podID string, meta
 
 	res, err := plugin.getDefaultNetwork().addToNetwork(podNetnsPath, podID, metadata, capabilities)
 	if err != nil {
-		glog.Errorf("Error while adding to cni network: %s", err)
+		klog.Errorf("Error while adding to cni network: %s", err)
 		return nil, err
 	}
-	glog.V(4).Infof("Pod: %s, PodNetnsPath: %s, Adding default network to cni", podID, podNetnsPath)
+	klog.V(4).Infof("Pod: %s, PodNetnsPath: %s, Adding default network to cni", podID, podNetnsPath)
 
 	return res, nil
 }
@@ -186,15 +186,15 @@ func (plugin *cniNetworkPlugin) TearDownPod(podNetnsPath string, podID string, m
 func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, capabilities map[string]interface{}) (cnitypes.Result, error) {
 	rt, err := buildCNIRuntimeConf(podNetnsPath, podID, metadata, capabilities)
 	if err != nil {
-		glog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
+		klog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
 		return nil, err
 	}
 
 	netConf, cniNet := network.NetworkConfig, network.CNIConfig
-	glog.V(4).Infof("About to add CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
+	klog.V(4).Infof("About to add CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
 	res, err := cniNet.AddNetworkList(netConf, rt)
 	if err != nil {
-		glog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
+		klog.Errorf("Pod: %s, Netns: %s, Error adding network: %v", podID, podNetnsPath, err)
 		return nil, err
 	}
 
@@ -204,28 +204,28 @@ func (network *cniNetwork) addToNetwork(podNetnsPath string, podID string, metad
 func (network *cniNetwork) deleteFromNetwork(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, capabilities map[string]interface{}) error {
 	rt, err := buildCNIRuntimeConf(podNetnsPath, podID, metadata, capabilities)
 	if err != nil {
-		glog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
+		klog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
 		return err
 	}
 
 	netConf, cniNet := network.NetworkConfig, network.CNIConfig
 
-	glog.V(4).Infof("About to del CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
+	klog.V(4).Infof("About to del CNI network %v (type=%v)", netConf.Name, netConf.Plugins[0].Network.Type)
 	err = cniNet.DelNetworkList(netConf, rt)
 	if err != nil {
 		// ignore the error that ns has already not existed
 		if strings.Contains(err.Error(), "no such file or directory") {
 			return nil
 		}
-		glog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
+		klog.Errorf("Pod: %s, Netns: %s, Error deleting network: %v", podID, podNetnsPath, err)
 		return err
 	}
 	return nil
 }
 
 func buildCNIRuntimeConf(podNetnsPath string, podID string, metadata *kubeapi.PodSandboxMetadata, capabilities map[string]interface{}) (*libcni.RuntimeConf, error) {
-	glog.V(4).Infof("Got netns path %v", podNetnsPath)
-	glog.V(4).Infof("Using netns path %v", podNetnsPath)
+	klog.V(4).Infof("Got netns path %v", podNetnsPath)
+	klog.V(4).Infof("Using netns path %v", podNetnsPath)
 
 	rt := &libcni.RuntimeConf{
 		ContainerID: podID,

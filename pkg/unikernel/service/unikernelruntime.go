@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 
@@ -72,7 +72,7 @@ func (u *UnikernelRuntime) ServiceName() string {
 }
 
 func NewUnikernelRuntimeService(cniNetDir, cniPluginDir, fraktiRoot string, defaultCPU, defaultMem int32, enableLog bool) (*UnikernelRuntime, error) {
-	glog.Infof("Initialize unikernel runtime\n")
+	klog.Infof("Initialize unikernel runtime\n")
 
 	// Init VMTools
 	conn, err := libvirt.NewLibvirtConnect(defaultLibvirtdEndpoint)

@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -121,7 +121,7 @@ func (c *Client) StopPod(podID string) (int, string, error) {
 		return 0, "", err
 	}
 	if !isRunning {
-		glog.V(3).Infof("PodSandbox %q is already stopped, skip", podID)
+		klog.V(3).Infof("PodSandbox %q is already stopped, skip", podID)
 		return 0, "", nil
 	}
 
@@ -207,7 +207,7 @@ func (c *Client) StartContainer(containerID string) error {
 		return err
 	}
 	if isRunning {
-		glog.V(3).Infof("Container %q is already running, skip", containerID)
+		klog.V(3).Infof("Container %q is already running, skip", containerID)
 		return nil
 	}
 
@@ -253,7 +253,7 @@ func (c *Client) StopContainer(containerID string, timeout int64) error {
 		return err
 	}
 	if !isRunning {
-		glog.V(3).Infof("Container %q is already stopped, skip", containerID)
+		klog.V(3).Infof("Container %q is already stopped, skip", containerID)
 		return nil
 	}
 	ctx, cancel := getContextWithTimeout(ctxTimeout)
@@ -512,7 +512,7 @@ func (c *Client) ExecInContainer(containerId string, cmd []string, stdin io.Read
 
 	kubecontainer.HandleResizing(resize, func(size remotecommand.TerminalSize) {
 		if err := c.TTYResize(containerId, execID, int32(size.Height), int32(size.Width)); err != nil {
-			glog.Errorf("Resize tty failed: %v", err)
+			klog.Errorf("Resize tty failed: %v", err)
 		}
 	})
 
@@ -626,7 +626,7 @@ func (c *Client) Wait(containerId, execId string, noHang bool) (int32, error) {
 func (c *Client) AttachContainer(containerID string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize) error {
 	kubecontainer.HandleResizing(resize, func(size remotecommand.TerminalSize) {
 		if err := c.TTYResize(containerID, "", int32(size.Height), int32(size.Width)); err != nil {
-			glog.Errorf("Resize tty failed: %v", err)
+			klog.Errorf("Resize tty failed: %v", err)
 		}
 	})
 

@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"k8s.io/frakti/pkg/flexvolume"
+	"k8s.io/klog"
 )
 
 type FlexVolumeDriver struct {
@@ -143,7 +143,7 @@ func (d *FlexVolumeDriver) Mount(targetMountDir, jsonOptions string) (map[string
 		return nil, err
 	}
 
-	glog.V(5).Infof("[Mount] GCE PD tag file is created in: %s with data: %s", targetMountDir, optsData)
+	klog.V(5).Infof("[Mount] GCE PD tag file is created in: %s with data: %s", targetMountDir, optsData)
 
 	return nil, nil
 }
@@ -163,7 +163,7 @@ func (d *FlexVolumeDriver) generateOptionsData() *flexvolume.GCEPDOptsData {
 func detachDiskLogError(d *FlexVolumeDriver) {
 	err := detachDisk(d.project, d.zone, d.volId)
 	if err != nil {
-		glog.Warningf("Failed to detach disk: %v (%v)", d, err)
+		klog.Warningf("Failed to detach disk: %v (%v)", d, err)
 	}
 }
 
@@ -189,7 +189,7 @@ func (d *FlexVolumeDriver) Unmount(targetMountDir string) (map[string]interface{
 		return nil, err
 	}
 
-	glog.V(5).Infof("[Unmount] GCE PD is detached: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
+	klog.V(5).Infof("[Unmount] GCE PD is detached: %s, and volume folder been cleaned: %s", d.volId, targetMountDir)
 
 	return nil, nil
 }

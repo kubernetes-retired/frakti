@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 // Downloader is an interface for downloading files
@@ -68,7 +68,7 @@ func (b *basicDownloader) Download(rawUrl string) (string, error) {
 func (b *basicDownloader) DownloadStream(rawUrl string) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s://%s", b.protocol, rawUrl)
 
-	glog.V(3).Infof("Downloading file from %q", url)
+	klog.V(3).Infof("Downloading file from %q", url)
 
 	resp, err := http.Get(url)
 	if err != nil {

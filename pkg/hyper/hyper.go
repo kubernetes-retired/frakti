@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/frakti/pkg/hyper/ocicni"
 	kubeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
@@ -51,7 +51,7 @@ type Runtime struct {
 func NewHyperRuntime(hyperEndpoint string, streamingConfig *streaming.Config, cniNetDir, cniPluginDir, rootDir string, defaultCPUNum, defaultMemoryMB int32) (*Runtime, streaming.Server, error) {
 	hyperClient, err := NewClient(hyperEndpoint, hyperConnectionTimeout)
 	if err != nil {
-		glog.Fatalf("Initialize hyper client failed: %v", err)
+		klog.Fatalf("Initialize hyper client failed: %v", err)
 		return nil, nil, err
 	}
 
@@ -95,7 +95,7 @@ func (h *Runtime) ServiceName() string {
 func (h *Runtime) Version(kubeApiVersion string) (*kubeapi.VersionResponse, error) {
 	version, apiVersion, err := h.client.GetVersion()
 	if err != nil {
-		glog.Errorf("Get hyper version failed: %v", err)
+		klog.Errorf("Get hyper version failed: %v", err)
 		return nil, err
 	}
 

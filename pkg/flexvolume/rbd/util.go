@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/Unknwon/goconfig"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 const (
@@ -52,7 +52,7 @@ func newRbdDevice(volId, pool, fstype string) (*rbdDevice, error) {
 }
 
 func (r *rbdDevice) mapDevice() (string, error) {
-	glog.V(4).Infof("map device %s", r.volId)
+	klog.V(4).Infof("map device %s", r.volId)
 	if len(r.mappedDev) != 0 {
 		return r.mappedDev, nil
 	}
@@ -63,13 +63,13 @@ func (r *rbdDevice) mapDevice() (string, error) {
 	}
 
 	r.mappedDev = strings.TrimSpace(string(mappedDeviceByte))
-	glog.V(4).Infof("volume %s mapped as %s", r.volId, r.mappedDev)
+	klog.V(4).Infof("volume %s mapped as %s", r.volId, r.mappedDev)
 
 	return r.mappedDev, nil
 }
 
 func (r *rbdDevice) unmapDevice() error {
-	glog.V(4).Infof("unmap device %s", r.mappedDev)
+	klog.V(4).Infof("unmap device %s", r.mappedDev)
 	if len(r.mappedDev) == 0 {
 		return nil
 	}
@@ -85,7 +85,7 @@ func (r *rbdDevice) unmapDevice() error {
 
 // formatDisk check the device status and format it if needed.
 func formatDisk(volId, pool, fstype string) error {
-	glog.V(4).Infof("format volume %s pool %s as %s", volId, pool, fstype)
+	klog.V(4).Infof("format volume %s pool %s as %s", volId, pool, fstype)
 
 	r, err := newRbdDevice(volId, pool, fstype)
 	if err != nil {
@@ -112,13 +112,13 @@ func formatDisk(volId, pool, fstype string) error {
 		if fstype == "ext4" || fstype == "ext3" {
 			args = []string{"-F", device}
 		}
-		glog.V(4).Infof("Disk %q appears to be unformatted, attempting to format as type: %q with options: %v", device, fstype, args)
+		klog.V(4).Infof("Disk %q appears to be unformatted, attempting to format as type: %q with options: %v", device, fstype, args)
 		_, err := exec.Command("mkfs."+fstype, args...).CombinedOutput()
 		if err != nil {
-			glog.Errorf("format of disk %q failed: type:(%q) error:(%v)", device, fstype, err)
+			klog.Errorf("format of disk %q failed: type:(%q) error:(%v)", device, fstype, err)
 			return err
 		}
-		glog.V(5).Infof("[Format Device] rbd device %s is formatted with type: %s", device, fstype)
+		klog.V(5).Infof("[Format Device] rbd device %s is formatted with type: %s", device, fstype)
 	}
 
 	return nil
@@ -127,13 +127,13 @@ func formatDisk(volId, pool, fstype string) error {
 // getDiskFormat uses 'lsblk' to return the format of given disk.
 func getDiskFormat(disk string) (string, error) {
 	args := []string{"-n", "-o", "FSTYPE", disk}
-	glog.V(4).Infof("Attempting to determine if disk %q is formatted using lsblk with args: (%v)", disk, args)
+	klog.V(4).Infof("Attempting to determine if disk %q is formatted using lsblk with args: (%v)", disk, args)
 	dataOut, err := exec.Command("lsblk", args...).CombinedOutput()
 	output := string(dataOut)
-	glog.V(4).Infof("Output: %q", output)
+	klog.V(4).Infof("Output: %q", output)
 
 	if err != nil {
-		glog.Errorf("Could not determine if disk %q is formatted (%v)", disk, err)
+		klog.Errorf("Could not determine if disk %q is formatted (%v)", disk, err)
 		return "", err
 	}
 
@@ -160,7 +160,7 @@ func getDiskFormat(disk string) (string, error) {
 func readCephConfig(configFile, keyringFile string) (string, string, []string, error) {
 	rbdcfg, err := goconfig.LoadConfigFile(configFile)
 	if err != nil {
-		glog.Errorf("Read config file (%s) failed, %s", configFile, err)
+		klog.Errorf("Read config file (%s) failed, %s", configFile, err)
 		return "", "", []string{}, err
 	}
 
@@ -171,7 +171,7 @@ func readCephConfig(configFile, keyringFile string) (string, string, []string, e
 
 	keycfg, err := goconfig.LoadConfigFile(keyringFile)
 	if err != nil {
-		glog.Errorf("Read keyring config file (%s) failed, %s", keyringFile, err)
+		klog.Errorf("Read keyring config file (%s) failed, %s", keyringFile, err)
 		return "", "", []string{}, err
 	}
 
