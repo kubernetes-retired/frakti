@@ -29,7 +29,7 @@ Follow either of the two links above to access the appropriate CLA and instructi
 
 ### Protocols for Collaborative Development
 
-Please read [this doc](docs/devel/collab.md) for information on how we're running development for the project.
+Please read [this doc](docs/guide/collab.md) for information on how we're running development for the project.
 Also take a look at the [development guide](docs/devel/development.md) for information on how to set up your environment, run tests, manage dependencies, etc.
 
 ### Adding dependencies
